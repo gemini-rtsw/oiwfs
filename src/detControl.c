@@ -1,5 +1,5 @@
 static struct {void *v; char *c;} rcsid = {&rcsid,
-   "$Id: detControl.c,v 1.3 2002-02-21 00:58:25 cboyer Exp $"};
+   "$Id: detControl.c,v 1.4 2002-03-06 03:16:47 cboyer Exp $"};
 
 /*+
  *   MODULE NAME:
@@ -31,6 +31,8 @@ static struct {void *v; char *c;} rcsid = {&rcsid,
  *   Steven Beard
  *
  *INDENT-OFF*
+ *   21 Feb 2002: CB - detObserveStart: init prevThresh when ggFrame=0 
+ *                     and AO_MODE_CLOSED_LOOP
  *   19 Feb 2002: CB - detInit: init all geometry SIR records
  *   12 Feb 2002: CB - averageImageNb was not init in the aoCbAoCtrlId.
  *                     Now it is done.
@@ -5295,6 +5297,12 @@ uint32 detObserveStart
                {
                   for ( k = 0 ; k < obsId->aoCcdId->subapUsedNb ; k ++ )
                       obsId->aoCbFgCtrlId->cbFgCtrlRecord[obsId->ggFrame-1].thresholdVect[k] =
+                      obsId->aoCtrlId->threshold;
+               }
+               else
+               {
+                  for ( k = 0 ; k < obsId->aoCcdId->subapUsedNb ; k ++ )
+                      obsId->aoCbFgCtrlId->cbFgCtrlRecord[0].thresholdVect[k] =
                       obsId->aoCtrlId->threshold;
                }
             }

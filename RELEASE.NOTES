@@ -30,4 +30,12 @@ V1-2 20 Feb 2002 CB:
      wfsStatus is not OK (after probe offset subtraction)
    - detInit(): init the geometry SIR records
 
-dev-oiwfs-gmos-threshRT equivalent to V1-2
+V1-3 05 March 2002 CB:
+----------------------
+   - Fix in bug in sequence closed loop if no GG 
+     (prevThresh was not initialized)
+   - startup: new dhs version (mainly tonado2.0)
+   - aoThresholdCompute() and aoThresholdPerSubapCompute(): background now
+     computed between index1 and index2
+
+dev-oiwfs-gmos-threshRT equivalent to V1-3
