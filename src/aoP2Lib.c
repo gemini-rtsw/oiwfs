@@ -79,6 +79,8 @@
  *   aoPoScaleContextShow() - Display a probe offset scale context structure
  * 
  *INDENT-OFF*
+ *   13 Feb 2002: CB - Add pWfsStatus to writeWfsToSynchro()
+ *   09 Feb 2002: CB - Fix bug in aoCtrlContextUpdate (sinAngleWithM1)
  *   07 Feb 2002: CB - Add flip in header of fg and ao circular buffers 
  *   29 Jan 2002: CB - Threshold in real time: add rms, rmsDarkFull, rmsDarkBin
  *                     add writeToRm flag
@@ -3031,7 +3033,7 @@ STATUS aoCtrlContextUpdate (
    aoCtrlId->angleWithM2 = angleWithM2;
 
    aoCtrlId->cosAngleWithM2 = cos ( aoCtrlId->angleWithM2 );
-   aoCtrlId->sinAngleWithM1 = sin ( aoCtrlId->angleWithM2 );
+   aoCtrlId->sinAngleWithM2 = sin ( aoCtrlId->angleWithM2 );
 
    aoCtrlId->flipXWithM2 = flipXWithM2;
    aoCtrlId->flipYWithM2 = flipYWithM2;
@@ -3567,7 +3569,7 @@ STATUS aoGlobalGuide (
 
  
    if ( writeWfsToSynchro(aoCtrlId, pFgVect, pFgVectAfterRot, pFgErrorsVect, 
-                          pTime, writeToRm) != OK )
+                          pTime, pWfsStatus, writeToRm) != OK )
    {
       ERROR_SET ( 0, "Failed to write data to the synchro bus", ERROR_LOG_SAVE);
       return (ERROR);
@@ -3798,7 +3800,7 @@ STATUS aoGlobalGuideAndError (
 
  
    if ( writeWfsToSynchro(aoCtrlId, pFgVect, pFgVectAfterRot, 
-                          pFgErrorsVect, pTime, writeToRm) != OK )
+                          pFgErrorsVect, pTime, pWfsStatus, writeToRm) != OK )
    {
       ERROR_SET ( 0, "Failed to write data to the synchro bus", ERROR_LOG_SAVE);
       return (ERROR);
@@ -4639,14 +4641,14 @@ STATUS aoCbImSave
            ( strcmp (pCbImFilePath, "NONE") == 0 ) )
       {
          sprintf ( aoHeaderCbIm.cbImFileName, 
-                   "./D%04d%02d%02dT%02d%02d%02dP2.cbi",
+                   "./D%04d%02d%02dT%02d%02d%02dOiGmos.cbi",
                    timeArray[0], timeArray[1], timeArray[2], timeArray[3],
                    timeArray[4], timeArray[5] );
       }
       else
       {
          sprintf ( aoHeaderCbIm.cbImFileName, 
-                   "%s/D%04d%02d%02dT%02d%02d%02dP2.cbi",
+                   "%s/D%04d%02d%02dT%02d%02d%02dOiGmos.cbi",
                    pCbImFilePath, timeArray[0], timeArray[1], timeArray[2], 
                    timeArray[3], timeArray[4], timeArray[5] );
       }
@@ -4656,11 +4658,11 @@ STATUS aoCbImSave
       if ( ( strcmp (pCbImFilePath, "") == 0 ) || 
            ( strcmp (pCbImFilePath, "NONE") == 0 ) )
       {
-         strcpy ( aoHeaderCbIm.cbImFileName, "./defaultP2.cbi" );
+         strcpy ( aoHeaderCbIm.cbImFileName, "./defaultOiGmos.cbi" );
       }
       else
       {
-         sprintf ( aoHeaderCbIm.cbImFileName, "%s/defaultP2.cbi" ,
+         sprintf ( aoHeaderCbIm.cbImFileName, "%s/defaultOiGmos.cbi" ,
                    pCbImFilePath );
       }
    }
@@ -5154,14 +5156,14 @@ STATUS aoCbAoCtrlSave
            ( strcmp (pCbAoCtrlFilePath, "NONE") == 0 ) )
       {
          sprintf ( aoHeaderCbAoCtrl.cbAoCtrlFileName,
-                   "./D%04d%02d%02dT%02d%02d%02dP2.cbcao",
+                   "./D%04d%02d%02dT%02d%02d%02dOiGmos.cbcao",
                    timeArray[0], timeArray[1], timeArray[2], timeArray[3],
                    timeArray[4], timeArray[5]);
       }
       else
       {
          sprintf ( aoHeaderCbAoCtrl.cbAoCtrlFileName,
-                   "%s/D%04d%02d%02dT%02d%02d%02dP2.cbcao",
+                   "%s/D%04d%02d%02dT%02d%02d%02dOiGmos.cbcao",
                    pCbAoCtrlFilePath, timeArray[0], timeArray[1], timeArray[2],
                    timeArray[3], timeArray[4], timeArray[5]);
       }
@@ -5171,11 +5173,11 @@ STATUS aoCbAoCtrlSave
       if ( ( strcmp (pCbAoCtrlFilePath, "") == 0 ) ||
            ( strcmp (pCbAoCtrlFilePath, "NONE") == 0 ) )
       {
-         strcpy ( aoHeaderCbAoCtrl.cbAoCtrlFileName, "./defaultP2.cbcao" );
+         strcpy ( aoHeaderCbAoCtrl.cbAoCtrlFileName, "./defaultOiGmos.cbcao" );
       }
       else
       {
-         sprintf ( aoHeaderCbAoCtrl.cbAoCtrlFileName, "%s/defaultP2.cbcao",
+         sprintf ( aoHeaderCbAoCtrl.cbAoCtrlFileName, "%s/defaultOiGmos.cbcao",
                    pCbAoCtrlFilePath );
       }
    }
@@ -5450,14 +5452,14 @@ STATUS aoCbFgCtrlSave
            ( strcmp (pCbFgCtrlFilePath, "NONE") == 0 ) )
       {
          sprintf ( aoHeaderCbFgCtrl.cbFgCtrlFileName,
-                   "./D%04d%02d%02dT%02d%02d%02dP2.cbcfg",
+                   "./D%04d%02d%02dT%02d%02d%02dOiGmos.cbcfg",
                    timeArray[0], timeArray[1], timeArray[2], timeArray[3],
                    timeArray[4], timeArray[5]);
       }
       else
       {
          sprintf ( aoHeaderCbFgCtrl.cbFgCtrlFileName,
-                   "%s/D%04d%02d%02dT%02d%02d%02dP2.cbcfg",
+                   "%s/D%04d%02d%02dT%02d%02d%02dOiGmos.cbcfg",
                    pCbFgCtrlFilePath, timeArray[0], timeArray[1], timeArray[2],
                    timeArray[3], timeArray[4], timeArray[5]);
       }
@@ -5467,11 +5469,11 @@ STATUS aoCbFgCtrlSave
       if ( ( strcmp (pCbFgCtrlFilePath, "") == 0 ) ||
            ( strcmp (pCbFgCtrlFilePath, "NONE") == 0 ) )
       {
-         strcpy ( aoHeaderCbFgCtrl.cbFgCtrlFileName, "./defaultP2.cbcfg" );
+         strcpy ( aoHeaderCbFgCtrl.cbFgCtrlFileName, "./defaultOiGmos.cbcfg" );
       }
       else
       {
-         sprintf ( aoHeaderCbFgCtrl.cbFgCtrlFileName, "%s/defaultP2.cbcfg",
+         sprintf ( aoHeaderCbFgCtrl.cbFgCtrlFileName, "%s/defaultOiGmos.cbcfg",
                    pCbFgCtrlFilePath );
       }
    }
@@ -5827,7 +5829,7 @@ STATUS aoGuideAndFocus (
    };
  
    if ( writeWfsToSynchro(aoCtrlId, pFgVect, pFgVectAfterRot, 
-                          pFgErrorsVect, pTime, writeToRm) != OK )
+                          pFgErrorsVect, pTime, pWfsStatus, writeToRm) != OK )
    {
       ERROR_SET ( 0, "Failed to write data to the synchro bus", ERROR_LOG_SAVE);
       return (ERROR);

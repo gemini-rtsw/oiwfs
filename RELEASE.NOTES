@@ -21,4 +21,13 @@ V1-1 08 Feb 2002 CB:
      detObserveStart if signal processing not initialized
    - Add flip in header of fg and ao circular buffers 
 
-dev-oiwfs-gmos-threshRT equivalent to V1-1
+V1-2 20 Feb 2002 CB:
+--------------------
+   - Fix a bug in aoCtrlContextUpdate()
+   - Init averageImageNb in the aoCbAoCtrlId
+   - circular buffers are D<date>T<time>OiGmos.cbi or cbcfg or cbcao
+   - add wfsStatus in writeWfsToSynchro() in order to set TTF to zero if 
+     wfsStatus is not OK (after probe offset subtraction)
+   - detInit(): init the geometry SIR records
+
+dev-oiwfs-gmos-threshRT equivalent to V1-2

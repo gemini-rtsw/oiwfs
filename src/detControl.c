@@ -1,5 +1,5 @@
 static struct {void *v; char *c;} rcsid = {&rcsid,
-   "$Id: detControl.c,v 1.2 2002-02-08 20:30:09 cboyer Exp $"};
+   "$Id: detControl.c,v 1.3 2002-02-21 00:58:25 cboyer Exp $"};
 
 /*+
  *   MODULE NAME:
@@ -31,6 +31,9 @@ static struct {void *v; char *c;} rcsid = {&rcsid,
  *   Steven Beard
  *
  *INDENT-OFF*
+ *   19 Feb 2002: CB - detInit: init all geometry SIR records
+ *   12 Feb 2002: CB - averageImageNb was not init in the aoCbAoCtrlId.
+ *                     Now it is done.
  *   07 Feb 2002: CB - Reset signal processing when detInit and detReset and
  *                     reject observe command if signal processing not
  *                     initialized
@@ -5225,6 +5228,7 @@ uint32 detObserveStart
          MESSAGE_LOG1 ( MSG_LOG,
                         "For aO: nCoaddFrames=%d",
                         (int)(obsId->nCoaddFrames));
+         obsId->aoCbAoCtrlId->averageImageNb = obsId->nCoaddFrames;
       }
 
       if ( obsId->sigMode == AO_MODE_TOTAL )
@@ -7619,6 +7623,101 @@ uint32 detInit
                         obsId->pAdc3Context ) == ERROR)
    {
       ERROR_LOG ("Failed to init adc3 sad record");
+      return (ERROR);
+   }
+  
+   /* 
+    * Now init all geometry SIR records 
+    */
+
+   if (epToVxPipeWrite( NULL, (char *)(int)& (obsId->aoCcdId->outputsNb) ,
+                        obsId->pOutputsContext ) == ERROR)
+   {
+      ERROR_LOG ("Failed to init outputs sad record");
+      return (ERROR);
+   }
+
+   if (epToVxPipeWrite( NULL, (char *)(int)& (obsId->aoCcdId->xSize) ,
+                        obsId->pDetXsizeContext ) == ERROR)
+   {
+      ERROR_LOG ("Failed to init x size sad record");
+      return (ERROR);
+   }
+
+   if (epToVxPipeWrite( NULL, (char *)(int)& (obsId->aoCcdId->ySize) ,
+                        obsId->pDetYsizeContext ) == ERROR)
+   {
+      ERROR_LOG ("Failed to init ysize sad record");
+      return (ERROR);
+   }
+
+   if (epToVxPipeWrite( NULL, (char *)(int)& (obsId->aoCcdId->xStart) ,
+                        obsId->pXstartContext ) == ERROR)
+   {
+      ERROR_LOG ("Failed to init xstart sad record");
+      return (ERROR);
+   }
+
+   if (epToVxPipeWrite( NULL, (char *)(int)& (obsId->aoCcdId->yStart) ,
+                        obsId->pYstartContext ) == ERROR)
+   {
+      ERROR_LOG ("Failed to init ystart sad record");
+      return (ERROR);
+   }
+
+   if (epToVxPipeWrite( NULL, (char *)(int)& (obsId->aoCcdId->xSubapNb) ,
+                        obsId->pXsubapContext ) == ERROR)
+   {
+      ERROR_LOG ("Failed to init xsubap sad record");
+      return (ERROR);
+   }
+
+   if (epToVxPipeWrite( NULL, (char *)(int)& (obsId->aoCcdId->ySubapNb) ,
+                        obsId->pYsubapContext ) == ERROR)
+   {
+      ERROR_LOG ("Failed to init Ysubap sad record");
+      return (ERROR);
+   }
+
+   if (epToVxPipeWrite( NULL, (char *)(int)& (obsId->aoCcdId->xRaster) ,
+                        obsId->pXrasterContext ) == ERROR)
+   {
+      ERROR_LOG ("Failed to init xraster sad record");
+      return (ERROR);
+   }
+
+   if (epToVxPipeWrite( NULL, (char *)(int)& (obsId->aoCcdId->yRaster) ,
+                        obsId->pYrasterContext ) == ERROR)
+   {
+      ERROR_LOG ("Failed to init yraster sad record");
+      return (ERROR);
+   }
+
+   if (epToVxPipeWrite( NULL, (char *)(int)& (obsId->aoCcdId->xSpace) ,
+                        obsId->pXspaceContext ) == ERROR)
+   {
+      ERROR_LOG ("Failed to init xspace sad record");
+      return (ERROR);
+   }
+
+   if (epToVxPipeWrite( NULL, (char *)(int)& (obsId->aoCcdId->ySpace) ,
+                        obsId->pYspaceContext ) == ERROR)
+   {
+      ERROR_LOG ("Failed to init yspace sad record");
+      return (ERROR);
+   }
+
+   if (epToVxPipeWrite( NULL, (char *)(int)& (obsId->aoCcdId->xBin) ,
+                        obsId->pXbinContext ) == ERROR)
+   {
+      ERROR_LOG ("Failed to init xbin sad record");
+      return (ERROR);
+   }
+
+   if (epToVxPipeWrite( NULL, (char *)(int)& (obsId->aoCcdId->yBin) ,
+                        obsId->pYbinContext ) == ERROR)
+   {
+      ERROR_LOG ("Failed to init ybin sad record");
       return (ERROR);
    }
 

@@ -83,6 +83,7 @@
  *                   writeWfsToTcs () checks now wfsStatus.
  * 31-Jan-2002: cb - add writeToRm to writeWfsToSynchro()
  * 06-Feb-2002: cb - add threshold in real time
+ * 13-Feb-2002: cb - add pWfsStatus to writeWfsToSynchro 
  *
  */
 /* INDENT ON */
@@ -925,7 +926,7 @@ long gensubToTcsAo
  *
  * STATUS writeWfsToTcs(AO_CTRL_ID aoCtrlId, double *pAoVect, 
  *                      double *pAoVectAfterRot, double *pAoErrorsVect, 
- *                      double *pTime
+ *                      double *pTime, int *pWfsStatus)
  *
  * PARAMETERS: (">" input, "!" modified, "<" output)
  * > AO_CTRL_ID aoCtrlId      - Pointer to the AO control context structure
@@ -1356,7 +1357,7 @@ STATUS writeWfsToTcs
  *
  * STATUS writeWfsToSynchro(AO_CTRL_ID aoCtrlId, double *pFgVect,
  *                          double *pFgVectAfterRot, double *pFgErrorsVect, 
- *                          double *pTime, int writeToRm)
+ *                          double *pTime, int * pWfsStatus, int writeToRm)
  *
  * PARAMETERS: (">" input, "!" modified, "<" output)
  * > AO_CTRL_ID aoCtrlId        - Pointer to the AO control context structure
@@ -1365,6 +1366,7 @@ STATUS writeWfsToTcs
  * >                              rotation
  * > double *   pFgErrorsVect   - Vector containing the associated errors
  * > double *   pTime           - Pointer to the associated time stamp value
+ * > int *      pWfsStatus      - Pointer to the wfs status
  * > int        writeToRm       - Flag to indicate if data are written to RM
  *
  * FUNCTION VALUE:
@@ -1412,6 +1414,7 @@ STATUS writeWfsToSynchro
    double     *pFgVectAfterRot,
    double     *pFgErrorsVect,
    double     *pTime,
+   int        *pWfsStatus,
    int        writeToRm
    )
 {
@@ -1433,7 +1436,7 @@ STATUS writeWfsToSynchro
 
    if(semTake(f->access, WFS_TIMEOUT) == OK)
    {
-      if ( optsensorEnable == GUIDE )
+      if ( ( optsensorEnable == GUIDE ) && ( *pWfsStatus != AO_SH_OFF ) )
       {
          /* first rotate the tip and tilt values to the m2 frame of reference */
 
@@ -1476,7 +1479,6 @@ STATUS writeWfsToSynchro
          result.z2 = 0.0;
          result.z3 = 0.0;
          result.z4 = 0.0;
-
       }
 
       /* store the vector after rotation into pFgVectAfterRot */
