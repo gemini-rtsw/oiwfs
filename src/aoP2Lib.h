@@ -17,6 +17,7 @@
  * Corinne Boyer
  *
  * HISTORY MODIFICATION:
+ * 23 Jan 2004: CB - Add gains into aoCtrlFileRead()
  * 31 Jan 2003: CB - Add aoThreshold to aoCtrlId
  * 18 Nov 2002: CB - Implement seeing computation according to FR's method
  * 16 Sep 2002: CB - Implement seeing computation according to BE's method
@@ -1024,7 +1025,9 @@ STATUS aoCtrlFileRead (char * pInitFileName, char * pPath, char * pDarkFileName,
                        double * pRms, double * pThresh, double * pTotalThresh,
                        int currentPort, double * pAngleM2, double * pFlipXM2, 
                        double * pFlipYM2, double * pAngleM1, double * pFlipXM1,
-                       double * pFlipYM1, double * pSeeingGain, double * pAoThreshold);
+                       double * pFlipYM1, double * pSeeingGain, 
+                       double * pAoThreshold,
+                       double *pFgGain, double * pSlidingFocusGain);
 STATUS aoModInit (char * pInitFileName, AST_ZP_MODEL_ID astModelId,
                   TREF_ZP_MODEL_ID trefModelId, COMA_ZP_MODEL_ID comaModelId,
                   FOCUS_ZP_MODEL_ID focModelId);

@@ -6,7 +6,7 @@ display {
 	majv="2"
 	mnrv="4"
 	ndyng="0"
-	npc="24"
+	npc="26"
 	nstr="69"
 	ndynamic="34"
 	nplot="0"
@@ -23,23 +23,23 @@ display {
 	}
 	clr="1"
 	bclr="13"
-	nwords_dspy="5470"
+	nwords_dspy="5502"
 	nwords_sta="1812"
 	nwords_cmap="0"
 	nwords_crules="0"
-	odyng="2964"
-	osta="1152"
-	odynamic="2964"
-	oplot="5298"
-	ord="5298"
-	oes="5458"
-	okd="5458"
-	opd="5470"
-	opo="5470"
+	odyng="2996"
+	osta="1184"
+	odynamic="2996"
+	oplot="5330"
+	ord="5330"
+	oes="5490"
+	okd="5490"
+	opd="5502"
+	opo="5502"
 	opc="68"
-	ostr="390"
-	ocmap="1152"
-	ocrules="1152"
+	ostr="422"
+	ocmap="1184"
+	ocrules="1184"
 	style="solid"
 	fill="outline"
 	width="0"
@@ -52,7 +52,7 @@ display {
 	pixwid="1280"
 	pixht="1024"
 	mmwid="361"
-	mmht="289"
+	mmht="288"
 }
 "<<basic attribute>>" {
 	attr {
@@ -728,7 +728,7 @@ display {
 		groupid="0"
 	}
 	control {
-		chan="$(top)detSigModeSeq.DIR"
+		chan="$(top)initSigModeSeq.PROC"
 		clr="1"
 		bclr="6"
 		label="none"
@@ -763,9 +763,9 @@ display {
 		convertParams=""
 	}
 	inactive_label="DEFAULT"
-	pressed_label="(CLEAR)"
-	press_msg="MARK"
-	release_msg="CLEAR"
+	pressed_label=""
+	press_msg="1"
+	release_msg=""
 }
 "text update" {
 	object {

@@ -1,5 +1,5 @@
 static struct {void *v; char *c;} rcsid = {&rcsid,
-   "$Id: wfsLib.c,v 1.1.1.1 2002-01-29 01:53:31 cboyer Exp $"};
+   "$Id: wfsLib.c,v 1.2 2004-02-11 02:46:58 cboyer Exp $"};
 
 /*+
  *   MODULE NAME:
@@ -108,7 +108,6 @@ IMPORT int      errorCount;              /* Current global error count.       */
 /* Global variables */
 
 char tcsTelName [40] ;
-long issPort ;
 
 /* -------------------------------------------------------------------------- */
 
@@ -925,89 +924,3 @@ void   wfsGetTelName (char *pTelName)
     return;
 }
 
-/* -------------------------------------------------------------------------- */
-
-/*+
- *   FUNCTION NAME:
- *   wfsInitPort
- *
- *   INVOCATION:
- *   wfsInitPort (pgensub)
- *
- *   PARAMETERS: (">" input, "!" modified, "<" output)
- *   None
- *
- *   FUNCTION VALUE:
- *   (STATUS)   OK if successful, or ERROR if unsuccessful
- *
- *   PURPOSE:
- *   Init the ISS port on which GMOS OIWFS is installed
- *
- *   DESCRIPTION:
- *   This routine is called ones during the initialization process and inits the
- *   ISS port on which GMOS OIWFS is installed
- *
- *   EXTERNAL VARIABLES:
- *
- *   PRIOR REQUIREMENTS:
- *
- *   INCLUDE FILES:
- *
- *   DEFICIENCIES:
- *
- *   BUGS:
- *-
- */
-
-STATUS   wfsInitPort (struct genSubRecord *pgensub)
-{
-
-    issPort = *((long *)pgensub->a ) ; 
-    if ( (issPort != 1) && (issPort != 3) && (issPort !=5) )
-       issPort = 0;
-
-    printf ( "wfsInitPort(): issPort = %d\n", (int)issPort );
-
-    return (OK) ;
-}
-
-/* -------------------------------------------------------------------------- */
-
-/*+
- *   FUNCTION NAME:
- *   wfsGetPort
- *
- *   INVOCATION:
- *   wfsGetPort (int *pPort)
- *
- *   PARAMETERS: (">" input, "!" modified, "<" output)
- *   (<) pPort (int *) ISS port
- *
- *   FUNCTION VALUE:
- *   None
- *
- *   PURPOSE:
- *   Get the local copy of the ISS port
- *
- *   DESCRIPTION:
- *   Update the ISS port
- *
- *   EXTERNAL VARIABLES:
- *   (>)   issPort
- *
- *   PRIOR REQUIREMENTS:
- *
- *   INCLUDE FILES:
- *
- *   DEFICIENCIES:
- *
- *   BUGS:
- *-
- */
-
-void   wfsGetPort (int *pPort)
-{
-    *pPort = (int)issPort;
-
-    return;
-}

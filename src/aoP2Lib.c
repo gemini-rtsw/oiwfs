@@ -83,6 +83,7 @@
  *   aoNewSeeingCompute () - Compute the seeing according to FR's method
  * 
  *INDENT-OFF*
+ *   23 Jan 2004: CB - Read FG gain from default file
  *   31 Jan 2003: CB - Implement proportional law for aO
  *   18 Nov 2002: CB - Implement seeing computation according FR's method
  *   17 Sep 2002: CB - Add outGuide to aoGlobalGuide and aoGuideAndFocus
@@ -2697,6 +2698,7 @@ STATUS aoCtrlContextInit (
       return (ERROR);
    }
 
+   printf ("aoCtrlContextInit: port =%d\n", aoCtrlId->port);
    if ( (aoCtrlId->port != 1) && (aoCtrlId->port != 3) &&
         (aoCtrlId->port != 5) )
       aoCtrlId->port = usedPort;
@@ -2734,11 +2736,13 @@ STATUS aoCtrlContextInit (
       }
    }
 
+#ifdef DEBUG
    for ( i = 0 ; i < PORT_NB ; i ++ )
    {
        printf ( "%d %f %f %f %f %f %f\n", port[i], angleM2[i], flipXM2[i], 
                 flipYM2[i], angleM1[i], flipXM1[i], flipYM1[i] );
    }
+#endif
 
    index = 0;
    for ( i = 0 ; i < PORT_NB ; i ++ )
@@ -2747,7 +2751,9 @@ STATUS aoCtrlContextInit (
          index = i;
    }
 
+/*
    printf ( "index = %d\n" , index );
+*/
 
    aoCtrlId->angleWithM2 = angleM2[index];
 
@@ -3649,6 +3655,7 @@ STATUS aoCtrlContextShow (
    printf ( "Average total counts: %f\n" , aoCtrlId->averageTotal );
    printf ( "Threshold for total counts: %f\n" , aoCtrlId->totalThreshold );
    printf ( "Total mult coeff : %f\n" , aoCtrlId->multCoeffTotal );
+   printf ( "Port number : %d\n" , aoCtrlId->port );
    printf ( "Angle with M2 (rad): %f\n" , aoCtrlId->angleWithM2 );
    printf ( "Cos Angle with M2: %f\n" , aoCtrlId->cosAngleWithM2 );
    printf ( "Sin Angle with M2: %f\n" , aoCtrlId->sinAngleWithM2 );
@@ -6926,7 +6933,8 @@ STATUS aoDarkUpdate (
  *                   pFgCmFileName, pSeeingCmFileName, pSeeingCvFileName,
  *                   pRms, pThresh, pTotalThresh, currentPort, 
  *                   pAngleM2, pFlipXM2, pFlipYM2, 
- *                   pAngleM1, pFlipXM1, pFlipYM1, pSeeingGain, pAoThreshold)
+ *                   pAngleM1, pFlipXM1, pFlipYM1, pSeeingGain, pAoThreshold,
+ *                   pFgGain, pSlidingFocusGain)
  *
  *   PARAMETERS: (">" input, "!" modified, "<" output)
  *   (>) pInitFileName     (char *)   Pointer to the AO init file name 
@@ -6956,6 +6964,8 @@ STATUS aoDarkUpdate (
  *   (<) pFlipYM1          (double *) Pointer to the flip Y with M1
  *   (<) pSeeingGain       (double *) Pointer to the seeing scale factor
  *   (<) pAoThreshold      (double *) Pointer to the aO threshold
+ *   (<) pFgGain           (double *) Pointer to array of gain (TTF)
+ *   (<) pSlidingFocusGain (double *) Pointer to the focus sliding gain
  *
  *   FUNCTION VALUE:
  *   (STATUS)   OK if successful, ERROR if unsuccessful
@@ -7004,7 +7014,9 @@ STATUS aoCtrlFileRead (
    double * pFlipXM1,
    double * pFlipYM1,
    double * pSeeingGain,
-   double * pAoThreshold
+   double * pAoThreshold,
+   double * pFgGain,
+   double * pSlidingFocusGain
    )
 {
    FILE *     pFile;
@@ -7019,6 +7031,7 @@ STATUS aoCtrlFileRead (
    double     angleM1[PORT_NB];
    double     flipXM1[PORT_NB];
    double     flipYM1[PORT_NB];
+   double     value;
 
    /* Open the file in read mode */
 
@@ -7365,10 +7378,12 @@ STATUS aoCtrlFileRead (
    printf ( "aoCtrlFileRead(): FG CM file name: %s\n", pFgCmFileName );
 #endif
 
-   /* Skip the next lines of comments */
+   /* Read the FG gains */
 
-   for ( i = 0 ; i < 8 ; i ++ )
+   for ( i = 0 ; i < 3 ; i ++ )
    {
+      /* Skip the next line of comment */
+
       if ( fgets (comment, STRING_SIZE, pFile) == (char *)NULL )
       {
          printf (
@@ -7382,7 +7397,53 @@ STATUS aoCtrlFileRead (
       printf ( "aoCtrlFileRead(): %s\n", comment );
 #endif
 
+      /* Read FG gain */
+
+      if ( (fscanf (pFile, "%lf\n", &value)) == EOF )
+      {
+         ERROR_SET2 ( 0,
+               "Failed to read FG gain [%d] from the AO init file %s",
+               ERROR_LOG_SAVE, i, pInitFileName );
+         fclose (pFile);
+         return (ERROR);
+      }
+
+      *(pFgGain + i) = value;
+
+#ifdef DEBUG
+      printf ( "aoCtrlFileRead(): FG gain [%d] = %f\n", i, *(pFgGain + i) );
+#endif
    }
+
+   /* Skip the next line of comment */
+
+   if ( fgets (comment, STRING_SIZE, pFile) == (char *)NULL )
+   {
+      printf (
+      "Failed to read the next line of comments from the AO init file %s\n",
+      pInitFileName );
+      fclose (pFile);
+      return (ERROR);
+   }
+
+#ifdef DEBUG
+   printf ( "aoCtrlFileRead(): %s\n", comment );
+#endif
+
+   /* Read sliding focus gain */
+
+   if ( (fscanf (pFile, "%lf\n", pSlidingFocusGain)) == EOF )
+   {
+      ERROR_SET1 ( 0,
+            "Failed to read sliding focus gain from the AO init file %s",
+            ERROR_LOG_SAVE, pInitFileName );
+      fclose (pFile);
+      return (ERROR);
+   }
+
+#ifdef DEBUG
+   printf ( "aoCtrlFileRead(): sliding focus gain = %f\n", *pSlidingFocusGain );
+#endif
 
    /* Skip the next line of comment */
 
@@ -7529,11 +7590,13 @@ STATUS aoCtrlFileRead (
       }
    }
 
+#ifdef DEBUG
    for ( i = 0 ; i < PORT_NB ; i ++ )
    {
        printf ( "%d %f %f %f %f %f %f\n", port[i], angleM2[i], flipXM2[i], 
                 flipYM2[i], angleM1[i], flipXM1[i], flipYM1[i] );
    }
+#endif
 
    index = 0;
    for ( i = 0 ; i < PORT_NB ; i ++ )
@@ -7541,8 +7604,6 @@ STATUS aoCtrlFileRead (
       if ( port[i] == usedPort )
          index = i;
    }
-
-   printf ( "index = %d\n" , index );
 
    *pAngleM2 = angleM2[index];
 

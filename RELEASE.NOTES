@@ -112,3 +112,10 @@ V2-5 22 January 2004 CB:
     (now SDSU VME board hardware identical to OIWFS NIRI SDSU VME board)
     and also comment out in detObserveEnd error messages when frame status is
     faulty
+
+V2-6 10 February 2004 CB:
+-------------------------
+  - read default gains from .dat file when pressing the default button
+  - set default of the detSigModeSeq CAD from pv load file (one per site)
+  - startup: increase stack size for tasks: recD, p2:detControlD and wfsControlD
+  - update internal parameters when the GMOS port change detPortGet()
