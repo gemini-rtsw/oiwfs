@@ -1,5 +1,5 @@
 static struct {void *v; char *c;} rcsid = {&rcsid,
- "$Id: wfsDb.c,v 1.8 2003-02-04 20:12:28 cboyer Exp $"};
+ "$Id: wfsDb.c,v 1.9 2003-02-04 21:11:23 cboyer Exp $"};
 
 /*+
  * MODULE NAME:
@@ -481,7 +481,7 @@ CAD_RECORD pWfsDbCadList [] =
   CAD_ATTRIB_Q, EPICS_DATA_TYPE_DOUBLE, "0.0", {NO_ATTRIBUTE_LIMITS},
   CAD_ATTRIB_R, EPICS_DATA_TYPE_DOUBLE, "0.0", {NO_ATTRIBUTE_LIMITS},
   CAD_ATTRIB_S, EPICS_DATA_TYPE_DOUBLE, "0.0", {NO_ATTRIBUTE_LIMITS},
-  CAD_ATTRIB_T, EPICS_DATA_TYPE_DOUBLE, "0.5", {NO_ATTRIBUTE_LIMITS}
+  CAD_ATTRIB_T, EPICS_DATA_TYPE_DOUBLE, "0.5", {"0.01", "10.0"}
  },
  {
   RECORD_NAME ("dc:detSigInitFgGain"),
