@@ -17,6 +17,7 @@
  * Corinne Boyer
  *
  * HISTORY MODIFICATION:
+ * 16 Sep 2002: CB - Implement seeing computation
  * 07 Feb 2002: CB - Add flip in header of fg and ao circular buffers 
  * 28 Jan 2002: CB - Threshold in real time
  * 09 Oct 2001: CB - OIWFS GMOS modifications
@@ -139,6 +140,8 @@ typedef double AO_VECT [ AO_MODE_NB ];
 typedef double AO_MATRIX [ 2 * SUBAP_NB * AO_MODE_NB ];
 
 typedef double FG_MATRIX [ 2 * SUBAP_NB * FG_MODE_NB ];
+
+typedef double CENT_MATRIX [ 4 * SUBAP_NB * SUBAP_NB ];
 
 typedef struct                         /* Structure needed to measure a column*/
                                        /* of the interaction matrixes         */
@@ -290,6 +293,44 @@ typedef struct
    int          fgContMatInitFlag;     /* TRUE or FALSE, if FG control matrix */
                                        /* is init or not                      */
 
+   int          seeingCoeffMatInitFlag;/* TRUE or FALSE, if seeing coefficient*/
+                                       /* matrix is init or not               */
+
+   int          allowedSubapOff;       /* Number of subapertures allowed to   */
+                                       /* be off when computing the centroids */
+
+   int          focusCounter;          /* Counter used for computing the focus*/
+
+   int          coaddCounter;          /* Counter used for coadd images       */
+
+   int          seeingCounter;         /* Counter used to compute the seeing  */
+
+   int          aoModeNb;              /* Number of aO modes to correct       */
+
+   int          aoModeNotUsedNb;       /* Number of aO modes not used         */
+
+   int          aoModeUsedNb;          /* Total number of used modes, must be */
+                                       /* equal to aoModeNb - aoModeNotUsedNb */
+
+   int          aoModeUsedVect [ AO_MODE_NB ];
+                                       /* Vector describing the aO modes      */
+                                       /* which are used or not used for the  */
+                                       /* correction : TRUE or FALSE          */
+
+   int          fgModeNb;              /* Number of FG modes to correct       */
+
+   int          thresholdMethod;       /* Method to compute threshold         */
+                                       /* AO_THRESH_SPOTS, AO_THRESH_NOSPOTS, */
+                                       /* AO_THRESH_VALUE                     */
+
+   int          totalMethod;           /* Method to compute average flux      */
+                                       /* AO_TOTAL_SPOTS, AO_TOTAL_VALUE      */
+
+   int          port;                  /* ISS port where OIWFS is connected   */
+
+   int          unused;                /* The structure size must be equal to */
+                                       /* a number multiple of a double       */
+
    char         darkFileName [ STRING_SIZE ]; 
                                        /* Name of the file which contains the */
                                        /* dark image                          */
@@ -316,6 +357,10 @@ typedef struct
    char         fgContMatFileName [ STRING_SIZE ];
                                        /* Name of the FG control matrix file  */
    
+   char         seeingCoeffMatFileName [ STRING_SIZE ];
+                                       /* Name of the seeing coefficient      */
+                                       /* matrix file                         */
+
    IMAGE_VECT   darkVect;              /* Vector containing the dark image for*/
                                        /* the whole CCD                       */
 
@@ -324,11 +369,20 @@ typedef struct
 
    IMAGE_VECT   sumVect;               /* Vector containing a coadd image     */
 
+   GUIDE_VECT   refGuideVect;          /* Vector containing the center of the */
+                                       /* whole CCD                           */
+
    WFS_VECT     refWfsVect;            /* Vector containing the center of each*/
                                        /* subapertures                        */
 
-   GUIDE_VECT   refGuideVect;          /* Vector containing the center of the */
-                                       /* whole CCD                           */
+   WFS_VECT     thresholdVect;         /* Threshold computed for each         */
+                                       /* subaperture                         */
+
+   WFS_VECT     averageThreshVect;     /* Average threshold computed for each */
+                                       /* subaperture used when aO            */
+
+   WFS_VECT     averageCentroidsVect;  /* Average centroids vector used for   */
+                                       /* seeing computation                  */
 
    AO_VECT      aoScaleFactorVect;     /* Vector containing the scale factor  */
                                        /* for each ao modes                   */
@@ -346,12 +400,11 @@ typedef struct
 
    FG_MATRIX    fgContMat;             /* FG control matrix                   */
 
-   int          thresholdMethod;       /* Method to compute threshold         */
-                                       /* AO_THRESH_SPOTS, AO_THRESH_NOSPOTS, */
-                                       /* AO_THRESH_VALUE                     */
+   CENT_MATRIX  averageCentroidsMat;   /* Average of the product of the       */
+                                       /* centroids vector by its transposed  */
+                                       /* used for seeing computation         */
 
-   int          totalMethod;           /* Method to compute average flux      */
-                                       /* AO_TOTAL_SPOTS, AO_TOTAL_VALUE      */
+   CENT_MATRIX  seeingCoeffMat;        /* Seeing Coefficient matrix           */
 
    double       rms;                   /* RMS used for the threshold          */
                                        /* computation                         */
@@ -373,12 +426,6 @@ typedef struct
 
    double       rmsDarkBin;            /* RMS computed during sequence dark   */
                                        /* when binning - save                 */
-
-   WFS_VECT     thresholdVect;         /* Threshold computed for each         */
-                                       /* subaperture                         */
-
-   WFS_VECT     averageThreshVect;     /* Average threshold computed for each */
-                                       /* subaperture used when aO            */
 
    double       averageTotal;          /* Average of the total counts for the */
                                        /* whole CCD                           */
@@ -432,32 +479,10 @@ typedef struct
 
    double       previousFocus;         /* Previous focus mode value           */
 
-   int          allowedSubapOff;       /* Number of subapertures allowed to   */
-                                       /* be off when computing the centroids */
+   double       seeing;                /* Seeing                              */
 
-   int          focusCounter;          /* Counter used for computing the focus*/
-
-
-   int          coaddCounter;          /* Counter used for coadd images       */
-
-   int          aoModeNb;              /* Number of aO modes to correct       */
-
-   int          aoModeNotUsedNb;       /* Number of aO modes not used         */
-
-   int          aoModeUsedNb;          /* Total number of used modes, must be */
-                                       /* equal to aoModeNb - aoModeNotUsedNb */
-
-   int          aoModeUsedVect [ AO_MODE_NB ];
-                                       /* Vector describing the aO modes      */
-                                       /* which are used or not used for the  */
-                                       /* correction : TRUE or FALSE          */
-
-   int          fgModeNb;              /* Number of FG modes to correct       */
-
-   int          port;                  /* ISS port where OIWFS is connected   */
-
-   int          unused;                /* The structure size must be equal to */
-                                       /* a number multiple of a double       */
+   double       seeingScaleFactor;     /* Scale factor used to compute the    */
+                                       /* seeing                              */
 
 } AO_CTRL_ID_STRUCT, * AO_CTRL_ID;
 
@@ -878,12 +903,13 @@ STATUS aoCtrlContextInit (char * pInitFileName, AO_CCD_ID aoCcdId,
 STATUS aoCtrlContextUpdate (char * pDarkFileName, char * pFlatFileName,
                             char * pRefFileName, char * pAoIntMatFileName,
                             char * pAoContMatFileName, 
-                            char * pFgContMatFileName, double xCenter, 
-                            double yCenter, double angleWithM2, 
+                            char * pFgContMatFileName, 
+                            char * pSeeingCoeffMatFileName,
+                            double xCenter, double yCenter, double angleWithM2, 
                             double flipXWithM2, double flipYWithM2, 
                             double angleWithM1, double flipXWithM1,
-                            double flipYWithM1, AO_CCD_ID aoCcdId,
-                            AO_CTRL_ID aoCtrlId);
+                            double flipYWithM1, double seeingScaleFactor,
+                            AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId);
 STATUS aoCtrlContextShow (AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId, int verbose);
 STATUS aoDarkSubtract (float * pImage, float * pDark, int xPixels,
                        int yPixels);
@@ -891,12 +917,13 @@ STATUS aoGlobalGuide (float * pImage, AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId,
                       double * pTotalCountsVect, double * pGuidesVect, 
                       double * pFgVect, double * pFgVectAfterRot,
                       double * pFgErrorsVect, double * pTime, int * pWfsStatus,
-                      int writeToRm);
+                      int writeToRm, int outGuide);
 STATUS aoGlobalGuideAndError (float * pImage, AO_CCD_ID aoCcdId, 
                               AO_CTRL_ID aoCtrlId, double * pTotalCountsVect, 
                               double * pGuidesVect, double * pFgVect, 
                               double * pFgVectAfterRot, double * pFgErrorsVect, 
-                              double * pTime, int * pWfsStatus, int writeToRm);
+                              double * pTime, int * pWfsStatus, int writeToRm, 
+                              int outGuide);
 STATUS aoImageFloatAverage (float * pImage, AO_CCD_ID aoCcdId, 
                             AO_CTRL_ID aoCtrlId, int imageNb);
 STATUS aoRmsNoiseImageCompute (float * pImage, AO_CCD_ID aoCcdId, 
@@ -908,8 +935,8 @@ STATUS aoCentroidsCompute (float * pImage, AO_CCD_ID aoCcdId,
                            AO_CTRL_ID aoCtrlId, double * pThreshVect,
                            double * pTotalCountsVect, double * pCentroidsVect, 
                            double * pErrorCentroidsVect, int * pWfsStatus);
-STATUS aoModeCompute (float * pImage, AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId, 
-                      int imageNb, double *pThreshVect,
+STATUS aoModeCompute (float * pImage, int imageStatus, AO_CCD_ID aoCcdId, 
+                      AO_CTRL_ID aoCtrlId, int imageNb, double *pThreshVect,
                       AO_CB_AO_CTRL_ID aoCbAoCtrlId);
 STATUS aoCbImSave (char *pCbImFilePath, AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId, 
                    AO_CB_IM_ID aoCbImId);
@@ -925,7 +952,7 @@ STATUS aoGuideAndFocus (float * pImage, AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId,
                         double * pCentroidsVect, double * pErrorCentroidsVect, 
                         double * pFgVect, double * pFgVectAfterRot, 
                         double * pFgErrorsVect, double * pTime, 
-                        int * pWfsStatus, int writeToRm);
+                        int * pWfsStatus, int writeToRm, int outGuide);
 STATUS aoModeAnalyze (float * pImage, AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId,
                       double * pThreshVect, AO_CB_AO_CTRL_ID aoCbAoCtrlId);
 STATUS aoCentroidsWrite ( char * pCentroidsFileName, double * pCentroids, 
@@ -940,10 +967,11 @@ STATUS aoCtrlFileRead (char * pInitFileName, char * pPath, char * pDarkFileName,
                        char * pFlatFileName, char * pRefFileName, 
                        double * pRefX, double * pRefY, char * pAoImFileName, 
                        char * pAoCmFileName, char * pFgCmFileName, 
-                       double * pRms, double * pThresh, double * pTotalThresh,
+                       char * pSeeingCmFileName, double * pRms, 
+                       double * pThresh, double * pTotalThresh,
                        int currentPort, double * pAngleM2, double * pFlipXM2, 
                        double * pFlipYM2, double * pAngleM1, double * pFlipXM1,
-                       double * pFlipYM1);
+                       double * pFlipYM1, double * pSeeingGain);
 STATUS aoModInit (char * pInitFileName, AST_ZP_MODEL_ID astModelId,
                   TREF_ZP_MODEL_ID trefModelId, COMA_ZP_MODEL_ID comaModelId,
                   FOCUS_ZP_MODEL_ID focModelId);
@@ -973,6 +1001,10 @@ STATUS aoPoScaleFileRead (char * pInitFileName, double * pScaleX,
                           double * pScaleY, double * pScaleZ,
                           double * pPAangle, double * pCRangle);
 STATUS aoPoScaleContextShow (PO_SCALE_ID poScaleId);
+STATUS aoSeeingCompute (double * pCentroidsVect, int * pWfsStatus,
+                        AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId, int framesNb);
+STATUS aoSeeingCoeffMatRead (char * pSeeingCoeffMatFileName, AO_CCD_ID aoCcdId,
+                             AO_CTRL_ID aoCtrlId);
 #endif
 
 #endif /* __INCaoP2Libh */

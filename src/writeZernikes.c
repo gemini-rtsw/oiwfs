@@ -84,12 +84,16 @@
  * 31-Jan-2002: cb - add writeToRm to writeWfsToSynchro()
  * 06-Feb-2002: cb - add threshold in real time
  * 13-Feb-2002: cb - add pWfsStatus to writeWfsToSynchro 
+ * 16-Sep-2002: cb - implement butterworth filter for focus correction
+ * 17-Sep-2002: cb - add outGuide to writeWfsToSynchro
  *
  */
 /* INDENT ON */
 /* ===================================================================== */
 
 /* specify constant definitions */
+
+#define RUNNING_AVERAGE
 
 #ifndef PI
 #define PI 3.14159265358979
@@ -232,7 +236,7 @@ AO_CB_IM_ID aoCbImIdP2;
 AO_CTRL_ID aoCtrlIdP2;
 
 double sampleData[5][3];
-double coeffData[5];
+double coeffData[5][3];
 
 AST_ZP_MODEL_ID_STRUCT astigModel;
 SEM_ID  accessAstigModel=NULL;
@@ -407,7 +411,7 @@ double newDfilter
    /* multiply samples by coefficients and accumulate */
 
    for(i=0; i < 5; i++)
-      sum += sampleData[i][Id]*coeffData[i];
+      sum += sampleData[i][Id]*coeffData[i][Id];
 
    /* ripple samples ready for next call */
 
@@ -1357,7 +1361,8 @@ STATUS writeWfsToTcs
  *
  * STATUS writeWfsToSynchro(AO_CTRL_ID aoCtrlId, double *pFgVect,
  *                          double *pFgVectAfterRot, double *pFgErrorsVect, 
- *                          double *pTime, int * pWfsStatus, int writeToRm)
+ *                          double *pTime, int * pWfsStatus, int writeToRm,
+ *                          int outGuide)
  *
  * PARAMETERS: (">" input, "!" modified, "<" output)
  * > AO_CTRL_ID aoCtrlId        - Pointer to the AO control context structure
@@ -1368,6 +1373,7 @@ STATUS writeWfsToTcs
  * > double *   pTime           - Pointer to the associated time stamp value
  * > int *      pWfsStatus      - Pointer to the wfs status
  * > int        writeToRm       - Flag to indicate if data are written to RM
+ * > int        outGuide        - Write guide values to SCS or AO
  *
  * FUNCTION VALUE:
  * long  Status value returned to calling routine, a non-zero value indicates
@@ -1415,7 +1421,8 @@ STATUS writeWfsToSynchro
    double     *pFgErrorsVect,
    double     *pTime,
    int        *pWfsStatus,
-   int        writeToRm
+   int        writeToRm,
+   int        outGuide
    )
 {
    converted  result;
@@ -1458,6 +1465,8 @@ STATUS writeWfsToSynchro
 
          focus = *(pz+2) - focusModel.focus;
 
+#ifdef RUNNING_AVERAGE
+
          if ( aoCtrlId->focusCounter == 0 )
          {
             aoCtrlId->previousFocus = focus;
@@ -1467,11 +1476,16 @@ STATUS writeWfsToSynchro
          averageFocus = 
          (aoCtrlId->slidingFocusGain * focus) +
          (aoCtrlId->one_slidingFocusGain * aoCtrlId->previousFocus) ;
+#else
+         averageFocus = newDfilter (focus,2);
+#endif
 
          result.z4 = (averageFocus - f->probe[7]) * 
                      aoCtrlId->fgScaleFactorVect[2];
 
+#ifdef RUNNING_AVERAGE
          aoCtrlId->previousFocus = averageFocus;
+#endif
 
       }
       else
@@ -1512,9 +1526,12 @@ STATUS writeWfsToSynchro
 
      ptrPwfs2->time = (double)(*pTime);
 
-     /* raise interrupt on SCS */
+     /* raise interrupt on SCS or AO */
 
-     rmIntSend (INT3, SCS_NODE);
+     if ( outGuide == SCS_NODE )
+        rmIntSend (INT3, SCS_NODE);
+     else
+        rmIntSend (INT3, AO_NODE);
    }
 
    /* filter the tilt values and make available to the TCS gensubs */

@@ -1,5 +1,5 @@
 static struct {void *v; char *c;} rcsid = {&rcsid,
- "$Id: wfsDb.c,v 1.3 2002-03-29 20:12:07 cboyer Exp $"};
+ "$Id: wfsDb.c,v 1.4 2002-09-18 01:30:34 cboyer Exp $"};
 
 /*+
  * MODULE NAME:
@@ -61,6 +61,11 @@ static struct {void *v; char *c;} rcsid = {&rcsid,
  * Steven Beard
  *
  * HISTORY MODIFICATIONS
+ * 17 Sep 2002 - cb Add detSigOutput CAD and outGuide SIR
+ * 16 Sep 2002 - cb Implement seeing computation (seeing SIR record, detSigInit
+ *                  modified)
+ *                  add fgTipGain, fgTiltGain, fgFocusGain, cfFocusBw,
+ *                  cfTipTiltBw sir records
  * 22 Mar 2002 - cb modify init and detReset
  * 30 Jan 2002 - cb add aoRms sir record
  * 09 Oct 2001 - cb Modifications for OIWFS GMOS
@@ -406,7 +411,9 @@ CAD_RECORD pWfsDbCadList [] =
   CAD_ATTRIB_L, EPICS_DATA_TYPE_DOUBLE,  "1.0",  {"-1.0", "1.0"},
   CAD_ATTRIB_M, EPICS_DATA_TYPE_DOUBLE,  "1.0",  {"-1.0", "1.0"},
   CAD_ATTRIB_N, EPICS_DATA_TYPE_DOUBLE,  "1.0",  {"-1.0", "1.0"},
-  CAD_ATTRIB_O, EPICS_DATA_TYPE_DOUBLE,  "1.0",  {"-1.0", "1.0"}
+  CAD_ATTRIB_O, EPICS_DATA_TYPE_DOUBLE,  "1.0",  {"-1.0", "1.0"},
+  CAD_ATTRIB_P, EPICS_DATA_TYPE_DOUBLE,  "1.0", {NO_ATTRIBUTE_LIMITS},
+  CAD_ATTRIB_Q, EPICS_DATA_TYPE_STRING, "defSeeingCoeffMatOiGmosMK.dat", {NO_ATTRIBUTE_LIMITS}
  },
 #else
  {
@@ -430,7 +437,9 @@ CAD_RECORD pWfsDbCadList [] =
   CAD_ATTRIB_L, EPICS_DATA_TYPE_DOUBLE,  "1.0",  {"-1.0", "1.0"},
   CAD_ATTRIB_M, EPICS_DATA_TYPE_DOUBLE,  "1.0",  {"-1.0", "1.0"},
   CAD_ATTRIB_N, EPICS_DATA_TYPE_DOUBLE,  "1.0",  {"-1.0", "1.0"},
-  CAD_ATTRIB_O, EPICS_DATA_TYPE_DOUBLE,  "1.0",  {"-1.0", "1.0"}
+  CAD_ATTRIB_O, EPICS_DATA_TYPE_DOUBLE,  "1.0",  {"-1.0", "1.0"},
+  CAD_ATTRIB_P, EPICS_DATA_TYPE_DOUBLE,  "1.0", {NO_ATTRIBUTE_LIMITS},
+  CAD_ATTRIB_Q, EPICS_DATA_TYPE_STRING, "defSeeingCoeffMatOiGmosMK.dat", {NO_ATTRIBUTE_LIMITS}
  },
 #endif
  {
@@ -479,7 +488,8 @@ CAD_RECORD pWfsDbCadList [] =
   STOP_DIRECTIVE_UNSUPPORTED,
   SIMULATION_MODE_SUPPORTED,
   180.0,
-  CAD_ATTRIB_A, EPICS_DATA_TYPE_DOUBLE, "6.0", {"0.0","100"}
+  CAD_ATTRIB_A, EPICS_DATA_TYPE_DOUBLE, "10.0", {"0.0","20"},
+  CAD_ATTRIB_B, EPICS_DATA_TYPE_DOUBLE, ".0167", {"0.0","0.1"}
  },
  {
   RECORD_NAME ("dc:detSigModeNone"),
@@ -632,7 +642,8 @@ CAD_RECORD pWfsDbCadList [] =
   CAD_ATTRIB_P, EPICS_DATA_TYPE_LONG, "1", {"0", "1"},
   CAD_ATTRIB_Q, EPICS_DATA_TYPE_LONG, "1", {"0", "1"},
   CAD_ATTRIB_R, EPICS_DATA_TYPE_DOUBLE, "15.0", {"0.0", "100.0"},
-  CAD_ATTRIB_S, EPICS_DATA_TYPE_DOUBLE, "3", {"0.0", NO_HI_LIMIT}
+  CAD_ATTRIB_S, EPICS_DATA_TYPE_DOUBLE, "3", {"0.0", NO_HI_LIMIT},
+  CAD_ATTRIB_T, EPICS_DATA_TYPE_LONG, "1", {"0", "1"}
  },
  {
   RECORD_NAME ("dc:detSigModeTotal"),
@@ -781,6 +792,15 @@ CAD_RECORD pWfsDbCadList [] =
   CAD_ATTRIB_C, EPICS_DATA_TYPE_DOUBLE, "0.02", {NO_ATTRIBUTE_LIMITS},
   CAD_ATTRIB_D, EPICS_DATA_TYPE_DOUBLE, "-1.0", {NO_ATTRIBUTE_LIMITS},
   CAD_ATTRIB_E, EPICS_DATA_TYPE_DOUBLE, "1.0", {NO_ATTRIBUTE_LIMITS}
+ },
+ {
+  RECORD_NAME ("dc:detSigOutput"),
+  TASK_NAME ("p2", DET_CONTROL_TASK_NAME),
+  DET_CONTROL_CMD_SIG_OUTPUT,
+  STOP_DIRECTIVE_UNSUPPORTED,
+  SIMULATION_MODE_SUPPORTED,
+  180.0,
+  CAD_ATTRIB_A, EPICS_DATA_TYPE_LONG, "0", {"0","1"}
  }
 };
 
@@ -932,10 +952,6 @@ SIR_RECORD pWfsDbSirList [] =
   EPICS_DATA_TYPE_STRING
  },
  {
-  RECORD_NAME ("seeing"),
-  EPICS_DATA_TYPE_DOUBLE
- },
- {
   RECORD_NAME ("historyLog"),
   EPICS_DATA_TYPE_STRING
  },
@@ -1036,6 +1052,42 @@ SIR_RECORD pWfsDbSirList [] =
  },
  {
   RECORD_NAME ("dc:aoProcessMode"),
+  EPICS_DATA_TYPE_STRING
+ },
+ {
+  RECORD_NAME ("dc:fgTipGain"),
+  EPICS_DATA_TYPE_DOUBLE
+ },
+ {
+  RECORD_NAME ("dc:fgTiltGain"),
+  EPICS_DATA_TYPE_DOUBLE
+ },
+ {
+  RECORD_NAME ("dc:fgFocusGain"),
+  EPICS_DATA_TYPE_DOUBLE
+ },
+ {
+  RECORD_NAME ("dc:fgFocusGain100"),
+  EPICS_DATA_TYPE_DOUBLE
+ },
+ {
+  RECORD_NAME ("dc:cfFocusBw"),
+  EPICS_DATA_TYPE_DOUBLE
+ },
+ {
+  RECORD_NAME ("dc:cfTipTiltBw"),
+  EPICS_DATA_TYPE_DOUBLE
+ },
+ {
+  RECORD_NAME ("dc:seeing"),
+  EPICS_DATA_TYPE_DOUBLE
+ },
+ {
+  RECORD_NAME ("dc:seeingGain"),
+  EPICS_DATA_TYPE_DOUBLE
+ },
+ {
+  RECORD_NAME ("dc:seeingCoeffMatInit"),
   EPICS_DATA_TYPE_STRING
  },
  {
@@ -1173,6 +1225,10 @@ SIR_RECORD pWfsDbSirList [] =
  {
   RECORD_NAME ("port"),
   EPICS_DATA_TYPE_LONG
+ },
+ {
+  RECORD_NAME ("dc:outGuide"),
+  EPICS_DATA_TYPE_STRING
  }
 };
 

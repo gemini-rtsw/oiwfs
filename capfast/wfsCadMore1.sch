@@ -1,9 +1,16 @@
 [schematic2]
-uniq 150
+uniq 151
 [tools]
 [detail]
 s 2464 -704 500 512 wfsCadMore1.sch
 [cell use]
+use ecad2 3296 1031 100 0 detSigOutput
+xform 0 3456 1344
+p 3376 976 100 0 1 DESC:Select output for guide values
+p 3392 1376 100 0 1 FTVA:LONG
+p 3376 944 100 0 1 INAM:epToVxCadInit
+p 3376 880 100 0 1 PV:$(top)$(wfs)
+p 3376 912 100 0 1 SNAM:epToVxCadExecute
 use ecad8 -736 -121 100 0 detSigModeFgCoadd
 xform 0 -576 384
 p -672 -192 100 0 1 DESC:Set FG and Focus and coadd dark mode
@@ -175,6 +182,7 @@ use ecad2 -160 1607 100 0 detSigInitBw
 xform 0 0 1920
 p -80 1552 100 0 1 DESC:Set butterworth cutoff frequency
 p -64 1952 100 0 1 FTVA:DOUBLE
+p -64 1888 100 0 1 FTVB:DOUBLE
 p -80 1520 100 0 1 INAM:epToVxCadInit
 p -80 1456 100 0 1 PV:$(top)$(wfs)
 p -80 1488 100 0 1 SNAM:epToVxCadExecute
@@ -190,10 +198,10 @@ xform 0 1616 784
 p 2608 -688 200 0 1 author:S.M.Beard
 p 3120 -720 100 0 0 border:D
 p 2608 -768 200 0 0 checked:B.Goodrich
-p 3120 -784 200 0 -1 date:$Date: 2002-02-08 20:30:08 $
-p 2592 2304 200 0 -1 id:$Id: wfsCadMore1.sch,v 1.2 2002-02-08 20:30:08 cboyer Exp $
+p 3120 -784 200 0 -1 date:$Date: 2002-09-18 01:30:31 $
+p 2592 2304 200 0 -1 id:$Id: wfsCadMore1.sch,v 1.3 2002-09-18 01:30:31 cboyer Exp $
 p 2720 -768 100 0 1 modified:C. Boyer
 p 3120 -432 200 0 -1 project:Gemini PWFS2
-p 2592 -528 200 0 -1 revision:$Revision: 1.2 $
+p 2592 -528 200 0 -1 revision:$Revision: 1.3 $
 p 3120 -560 200 0 -1 title:Wavefront Sensor CAD Records
 [comments]

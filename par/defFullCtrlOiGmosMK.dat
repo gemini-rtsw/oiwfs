@@ -25,7 +25,7 @@ data/defFgContMatOiGmosMK.dat
 0.05
 # Scale factor for tilt mode (double)
 0.05
-# Scale factor for focus mode (double)
+# Scale factor for focus mode at 100Hz (double)
 0.0003
 # Gain for focus sliding average (double)
 0.0005
@@ -41,3 +41,7 @@ data/defFgContMatOiGmosMK.dat
   1    1.5708       1.0       1.0       1.5708       1.0       1.0
   3    0.0          1.0       1.0       0.0          1.0       1.0
   5    1.5708       1.0       -1.0      1.5708       1.0       -1.0
+# Name of seeing coefficient matrix file
+data/defSeeingCoeffMatOiGmosMK.dat
+# Scale factor for seeing computation (double)
+0.00103

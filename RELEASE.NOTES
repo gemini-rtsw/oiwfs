@@ -48,3 +48,15 @@ V2-0 29 March 2002 CB:
   - aoP2Lib.c: aoTotalThresholdCompute(): comment out ERROR_SET if N>2
 
 dev-oiwfs-gmos-eeprom equivalent to V2-0
+  - oiwfs:dc:aoRms precision of 9
+  - add bancom card status in main screen 
+  - add fgTipGain, fgTiltGain, fgFocusGain, cfTipTiltBw, cfFocusBw SIR records
+  - split butterwoth filter in two one for probe arme guiding (TT only) and the
+    second one for focus M2 guiding
+  - adjust focus scale factor according to the exposure time, detSigInitFgGain
+    and updates the default focus gain at 100Hz when no observing
+  - Allow ao + chopping: aoModeCompute() modified to check the status of the
+    raw image
+  - Implement seeing computation following BE method
+  - set binning mode as the default mode
+  - add detSigOutput CAD and outGuide SIR

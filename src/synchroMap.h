@@ -11,7 +11,8 @@ enum
 	M2_NODE,
 	AGP1_NODE,              /* Add by cb 12 April 1999      */
 	AGP2_NODE,              /* 3 splitted backplanes for AG */
-	AGOI_NODE
+	AGOI_NODE,
+        AO_NODE
 };
 
 

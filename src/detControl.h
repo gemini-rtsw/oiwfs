@@ -13,6 +13,8 @@
  *   *** THE SDSU CONTROLLERS AT YOUR SITE. SEE DEFINITIONS BELOW.
  *
  *INDENT-OFF*
+ *   16 Sep 2002: CB - Add fgFocusGain100, fgTipGain, fgTiltGain, fgFocusGain, 
+ *                     cfFocusBw, cfTipTiltBw sir records 
  *   22 Mar 2002: CB - Major modification to download the code from EEPROMS
  *   30 Jan 2002: CB - Add aoRms sir record
  *   09 Oct 2001: CB - Modifications for OIWFS GMOS
@@ -154,6 +156,48 @@
 #define   DET_CONTROL_AO_PROCESS_MODE_SIR_NAME    "aoProcessMode"
                                     /* Name of SIR record containing the      */
                                     /* processing mode                        */
+
+#define   DET_CONTROL_FG_TIP_GAIN_SIR_NAME    "fgTipGain"
+                                    /* Name of SIR record containing the      */
+                                    /* FG Tip gain                            */
+
+#define   DET_CONTROL_FG_TILT_GAIN_SIR_NAME    "fgTiltGain"
+                                    /* Name of SIR record containing the      */
+                                    /* FG Tilt gain                           */
+
+#define   DET_CONTROL_FG_FOCUS_GAIN_SIR_NAME   "fgFocusGain"
+                                    /* Name of SIR record containing the      */
+                                    /* FG Focus gain                          */
+
+#define   DET_CONTROL_FG_FOCUS_GAIN_100_SIR_NAME   "fgFocusGain100"
+                                    /* Name of SIR record containing the      */
+                                    /* FG Focus gain at 100Hz                 */
+
+#define   DET_CONTROL_CF_FOCUS_BW_SIR_NAME    "cfFocusBw"
+                                    /* Name of SIR record containing the      */
+                                    /* cutoff frequency of the Focus          */
+                                    /* butterworth filter                     */
+
+#define   DET_CONTROL_CF_TT_BW_SIR_NAME       "cfTipTiltBw"
+                                    /* Name of SIR record containing the      */
+                                    /* cutoff frequency of the tip tilt       */
+                                    /* butterworth filter                     */
+
+#define   DET_CONTROL_SEEING_SIR_NAME         "seeing"
+                                    /* Name of SIR record containing the      */
+                                    /* current seeing                         */
+
+#define   DET_CONTROL_SEEING_GAIN_SIR_NAME    "seeingGain"
+                                    /* Name of SIR record containing the      */
+                                    /* seeing scale factor                    */
+
+#define   DET_CONTROL_SEEING_COEFF_MAT_INIT_SIR_NAME    "seeingCoeffMatInit"
+                                    /* Name of SIR record containing the      */
+                                    /* init state of the seeing coeff matrix  */
+
+#define   DET_CONTROL_OUT_GUIDE_SIR_NAME      "outGuide"
+                                    /* Name of SIR record indicating the      */
+                                    /* output for the guide values (SCS|AO)   */
 
 #define   DET_CONTROL_OUTPUTS_SIR_NAME        "outputs"
                                     /* Name of SIR record containing the      */
@@ -370,6 +414,16 @@
                                     /* Define the CP default probe offset init*/
                                     /* file for GMOS OIWFS when binning.      */
 
+#define DET_CONTROL_PWFS2_BW_MK_INIT_FILE             "defBwOiGmosMK.dat"
+                                    /* Define the MK butterworth filter init  */
+                                    /* file for OIWFS GMOS. Set to "NONE" if  */
+                                    /* no butterworth filter required         */
+
+#define DET_CONTROL_PWFS2_BW_CP_INIT_FILE             "defBwOiGmosCP.dat"
+                                    /* Define the CP butterworth filter init  */
+                                    /* file for OIWFS GMOS. Set to "NONE" if  */
+                                    /* no butterworth filter required         */
+
 #define   DET_CONTROL_OMF_FILE_PATH           "./bin/asm56000"
                                     /* Directory containing OMF files for the */
                                     /* DSP code                               */
@@ -521,9 +575,11 @@ typedef   struct      /* Context structure used to describe an observation.   */
                            /* Number of frames to average for computing the   */
                            /* average flux                                    */
    long         writeToRm; /* Write to RM flag (TRUE/FALSE)                   */
+   long         outGuide;  /* output the guide values to the SCS or AO        */
    long         threshRealTimeFlag;
                            /* Compute the threshold in real time during fast  */
                            /* guide (TRUE/FALSE)                              */
+   long         seeingFlag;/* seeing Flag in sequence closed loop             */
    double       ggTime;    /* Time with GG only over the whole CCD in the     */
                            /* closed loop sequence                            */
    double       aoTime;    /* Time to average aO data                         */
@@ -548,6 +604,8 @@ typedef   struct      /* Context structure used to describe an observation.   */
    double       tipScale;  /* Scale factor of the tip mode                    */
    double       tiltScale; /* Scale factor of the tilt mode                   */
    double       focusScale;/* Scale factor of the focus mode                  */
+   double       defFocusScale100Hz;
+                           /* Default scale factor of the focus mode at 100Hz */
    double       slidingFocusGain; 
                            /* Gain for the sliding average for the focus mode */
    double       amplitude; /* Amplitude of the mode when computing a column   */
@@ -584,10 +642,10 @@ typedef   struct      /* Context structure used to describe an observation.   */
    double       rawtEnd;   /* Raw Gemini time at end of observation.          */
    double       exposureTime;
                            /* Current exposure time                           */
-   double       cutoffFrequency;
-                           /* Cuttof frequency (bandwidth ) of the system     */
-   double       rateSamplingFrequency;
-                           /* Rate of sampling frequency (between 0 and 1)    */
+   double       cutoffFrequencyTipTilt;
+                           /* Cuttof frequency (bandwidth) of the system      */
+   double       cutoffFrequencyFocus;
+                           /* Cuttof frequency (bandwidth) of the system      */
    double       exposedRQ; /* Requested total exposure time.                  */
    double       exposed;   /* Actual total exposure time.                     */
 
@@ -700,6 +758,28 @@ typedef   struct      /* Context structure used to describe an observation.   */
    DATREC_CONTEXT pAoSaveCbFgCtrlContext;
                                       /* Context structure for aoSaveCbFgCtrl */
                                       /* SIR record.                          */
+   DATREC_CONTEXT pFgTipGainContext;  /* Context structure for fgTipGain SIR  */
+                                      /* record.                              */
+   DATREC_CONTEXT pFgTiltGainContext; /* Context structure for fgTiltGain SIR */
+                                      /* record.                              */
+   DATREC_CONTEXT pFgFocusGainContext;/* Context structure for fgFocusGain SIR*/
+                                      /* record.                              */
+   DATREC_CONTEXT pFgFocusGain100Context;
+                                      /* Context structure for fgFocusGain100 */
+                                      /* SIR record.                          */
+   DATREC_CONTEXT pCfFocusBwContext;  /* Context structure for cfFocusBw SIR  */
+                                      /* record.                              */
+   DATREC_CONTEXT pCfTipTiltBwContext;/* Context structure for cfTipTiltBw SIR*/
+                                      /* record.                              */
+   DATREC_CONTEXT pSeeingContext;     /* Context structure for seeing SIR     */
+                                      /* record.                              */
+   DATREC_CONTEXT pSeeingGainContext; /* Context structure for seeingGain SIR */
+                                      /* record.                              */
+   DATREC_CONTEXT pSeeingCoeffMatInitContext;
+                                      /* Context structure for                */
+                                      /* seeingCoeffMatInit SIR record.       */
+   DATREC_CONTEXT pOutGuideContext;   /* Context structure for outGuide SIR   */
+                                      /* record.                              */
    DATREC_CONTEXT pDetTypeContext;    /* Context structure for detector       */
                                       /* controller type.                     */
    DATREC_CONTEXT pDetIdContext;      /* Context structure for detector Id or */
@@ -824,6 +904,8 @@ enum
                                /* Init zero point model for focus off axis    */
    DET_CONTROL_CMD_SIG_INIT_PO,
                                /* Init probe offset scale factors             */
+   DET_CONTROL_CMD_SIG_OUTPUT,
+                               /* Output guide values to SCS/AO               */
 
    /* genSub commands. */
 
