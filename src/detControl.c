@@ -1,5 +1,5 @@
 static struct {void *v; char *c;} rcsid = {&rcsid,
-   "$Id: detControl.c,v 1.6 2002-09-18 01:30:33 cboyer Exp $"};
+   "$Id: detControl.c,v 1.7 2002-10-03 00:34:56 cboyer Exp $"};
 
 /*+
  *   MODULE NAME:
@@ -1419,7 +1419,19 @@ STATUS   detControl
       if ( aoCtrlId->initFlag == TRUE )
       {
 
-         obsId->defFocusScale100Hz = aoCtrlId->fgScaleFactorVect[2];
+         if ( obsId->aoCcdId->binningFlag == FALSE )
+            expTime = 0.01 ;  /* 10ms */
+         else
+            expTime = 0.005 ; /* 5ms */
+
+         if ( obsId->aoCcdId->binningFlag == FALSE )
+            obsId->defFocusScale100Hz = aoCtrlId->fgScaleFactorVect[2];
+         else
+         {
+            obsId->defFocusScale100Hz = aoCtrlId->fgScaleFactorVect[2];
+            obsId->aoCtrlId->fgScaleFactorVect[2] = obsId->defFocusScale100Hz *
+                                                    (100.0 *  expTime);
+         }
 
          if (epToVxPipeWrite (NULL, "Initialized", obsId->pAoCtrlInitContext) 
              == ERROR)

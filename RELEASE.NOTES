@@ -47,7 +47,8 @@ V2-0 29 March 2002 CB:
   - remove from the user interface the detReset command
   - aoP2Lib.c: aoTotalThresholdCompute(): comment out ERROR_SET if N>2
 
-dev-oiwfs-gmos-eeprom equivalent to V2-0
+V2-1 02 October 2002 CB:
+------------------------
   - oiwfs:dc:aoRms precision of 9
   - add bancom card status in main screen 
   - add fgTipGain, fgTiltGain, fgFocusGain, cfTipTiltBw, cfFocusBw SIR records
@@ -62,3 +63,8 @@ dev-oiwfs-gmos-eeprom equivalent to V2-0
   - add detSigOutput CAD and outGuide SIR
   - add test36FullRefOiGmos.dat, test36BinRefOiGmos.dat, 
     and test37FullRefOiGmos.dat, test36BinRefOiGmos.dat
+  - set default for focus gain to be 0.0003 and TT gain 0.04 for MK
+  - update vmeboot.asm and vmehead.asm with last version of DSP code V3.09
+  - compiled with GEM8.4
+
+dev-oiwfs-gmos equivalent to V2-1
