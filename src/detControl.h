@@ -13,6 +13,7 @@
  *   *** THE SDSU CONTROLLERS AT YOUR SITE. SEE DEFINITIONS BELOW.
  *
  *INDENT-OFF*
+ *   22 Mar 2002: CB - Major modification to download the code from EEPROMS
  *   30 Jan 2002: CB - Add aoRms sir record
  *   09 Oct 2001: CB - Modifications for OIWFS GMOS
  *   21 Aug 2001: CB - Major modifications to have aO correction with P2 also
@@ -376,10 +377,10 @@
 #define   DET_CONTROL_OMF_VME_FILE            "vme-39.lod"
                                     /* OMF file to download to VME DSP.       */
 
-#define   DET_CONTROL_GBD_OMF_TIM_FILE        "tim-39.lod"
+#define   DET_CONTROL_GBD_OMF_TIM_FILE        "timrom.lod"
                                     /* OMF file to download to TIMING DSP     */
 
-#define   DET_CONTROL_OMF_UTL_FILE            "util.lod"
+#define   DET_CONTROL_OMF_UTL_FILE            "utilrom.lod"
                                     /* OMF file to download to UTILITY DSP.   */
 
 #define   DET_CONTROL_PAR_FILE_PATH           "./data"

@@ -39,3 +39,12 @@ V1-3 05 March 2002 CB:
      computed between index1 and index2
 
 dev-oiwfs-gmos-threshRT equivalent to V1-3
+
+V2-0 29 March 2002 CB:
+----------------------
+  - major modifications to have the timing and utility code downloaded from
+    EEPROMs
+  - remove from the user interface the detReset command
+  - aoP2Lib.c: aoTotalThresholdCompute(): comment out ERROR_SET if N>2
+
+dev-oiwfs-gmos-eeprom equivalent to V2-0
