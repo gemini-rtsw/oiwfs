@@ -1,0 +1,9 @@
+V1-0 18 Janv 2002 CB:
+---------------------
+   - Copy of P2 V2-3 + specific modififications due to oiwfs-gmos
+   - TT guide values x 2 when binning. Gains for TT divided by 2 in par files.
+   - aO: add wfsStatus to writeWfsToTcs() in order to Zernikes to zero if 
+     wfsStatus is not OK
+   - add detPowerOn
+   - Port to epics3.13.4
+   - detDhsInit is now started from detControl.c

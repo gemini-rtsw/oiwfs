@@ -1,0 +1,2718 @@
+/* id:$ */
+/* ===================================================================== */
+/* INDENT OFF */
+/*+
+ *
+ * FILENAME
+ * -------- 
+ * writeZernikes.c
+ * 
+ * PURPOSE
+ * -------
+ * Take zernike data from the wavefront processing section and make available
+ * on the synchro bus and to the TCS
+ * 
+ * FUNCTION NAME(S)
+ * ----------------
+ * gensubToTcsInit   - Initialisation semaphores
+ * gensubToTcsTtf    - Write ttf data from global array to port VALJ
+ * gensubToTcsAo     - Write ao data from global array to port VALJ
+ * writeWfsToTcs     - Write data from designated structure to global array
+ *                     and low pass filter
+ * writeWfsToSynchro - Write data from designated structure to synchro bus
+ * dfilter           - low pass filter
+ * ttfZero           - Receive ttfZero array from TCS
+ * aoZero            - Receive aoZero array from TCS
+ * showFgDiagP2      - Write diagnostic data from PWFS2 FG structure to gensub
+ *                     outputs for display
+ * showAoDiagP2      - Write diagnostic data from PWFS2 aO structure to gensub
+ *                     outputs for display
+ * showCbDiag        - Write diagnostic data from cb structure to gensub
+ *                     outputs for display 
+ * showThreshDiagP2  - Write diagnostic data from ao control structure to 
+ *                     gensub outputs for display
+ * gensubFanDouble   - receive array of doubles on port A, write elements to
+ *                     individual output ports
+ * 
+ * DEPENDENCIES
+ * ------------
+ *
+ * LIMITATIONS
+ * -----------
+ * 
+ * AUTHOR
+ * ------
+ * Sean Prior (srp@roe.ac.uk)
+ * 
+ * HISTORY
+ * -------
+ * 
+ * 28-Oct-1998: Original (srp)
+ * 29-Oct-1998: Array indexing for wfs structures is 1 ->np, not 0 -> (np-1)
+ * 11-Nov-1998: Add frame of reference conversion
+ * 05-Jan-1999: Include nulling zernike values from ttfZero and aoZero
+ * 12-Jan-1999: Add showAoDiags and showFgDiags function
+ * 13-Jan-1999: Modify gensubToTcsTtf to write zernikes and errors to output 
+ *              ports
+ * 21-Jan-1999: Modify to continue initialisation even if synchro bus
+ *              not present then inhibit synchro writes accordingly. Also 
+ *              initialise time written to synchro to zero until format sorted 
+ *              out, increment time count for each write to the synchro bus as 
+ *              temporary measure.
+ * 22-Jan-1999: Add function to read guide probe angle in ttfZero and aoZero.
+ * 23-Jan-1999: Modify gensubToTcsAo to write arrays of zernikes and errors 
+ *              to outputs a and b
+ *              Add function gensubFanDoubles to read array of doubles and 
+ *              write elements to the output ports
+ * 24-Jan-1999: ttfZero and aoZero - read ports B and C for fudge factors in 
+ *              polarity and rotation
+ * 10-Feb-1999: cb - add check max/min TT and focus to writeWfsToSynchro()
+ * 17-Feb-1999: cb - ttfZero change computation of theta for TCS and SCS
+ * 29-Jun-1999: cb - ttfZero change computation of theta for TCS and SCS
+ * 28-Mar-2000: cb - Major modifications, new aoP2Lib library
+ * 08-Feb-2001: cb - writeWfsToSynchro(), store the zernikes values into CB
+ *                   after rotation
+ * 29-Mar-2001: cb - fix bug for rotation matrix (two bugs which compensate 
+ *                   each others)
+ * 22-Aug-2001: cb - Major modifications to have ao Correction with P2 also
+ * 14-Sep-2001: cb - Add showThreshDiagP2()
+ * 09-Oct-2001: cb - Modification for OIWFS GMOS
+ * 07-Nov-2001: cb - Probe offset bug fixed (now reported to both TTF and aO)
+ *                   writeWfsToTcs () checks now wfsStatus.
+ *
+ */
+/* INDENT ON */
+/* ===================================================================== */
+
+/* specify constant definitions */
+
+#ifndef PI
+#define PI 3.14159265358979
+#endif
+
+#define MAX_WFS_SOURCES      5
+#define TTF_ARRAY_SIZE       8
+#define TTF_ZERO_ARRAY_SIZE  9
+#define AO_ZERO_ARRAY_SIZE   24
+#define AO_ARRAY_SIZE        40
+#define MAX_FILTERS          (3 * MAX_WFS_SOURCES)
+#define WFS_TIMEOUT          40
+#define DEGS2RADS            ((double)(2.0*PI)/(double)360.0)   
+                                 /* conversion factor for degrees to radians  */
+#define DISCARD_THRESHOLD    60
+#define LOW_PROBE_ANGLE      -360.0   
+                                 /* high limit on guide probe angle (degrees) */
+#define HIGH_PROBE_ANGLE     360.0   
+                                 /* low limit on guide probe angle (degrees)  */
+#define MAX_TT_M2            12.5   
+                                 /* max tip/tilt for AO correction (arcsec)   */
+#define MIN_TT_M2            -12.5   
+                                 /* min tip/tilt for AO correction (arcsec)   */
+#define MAX_FOCUS_M2         0.84   
+                                 /* max focus for AO correction (microns)     */
+#define MIN_FOCUS_M2         -0.84   
+                                 /* min focus for AO correction (microns)     */
+#define MICRON2MM            1.0e-3  
+                                 /* conversion factor for microns to mm       */
+
+#define PROBE_ARRAY_SIZE    9
+#define PROBE_SCALE_X       0.1   /* mm/pixel */
+#define PROBE_SCALE_Y       0.1   /* mm/pixel */
+#define PROBE_SCALE_Z       0.02  /* mm/pixel */
+#define ANGLE_SCALE         -1.0  /* Fudge scale factor */
+
+#define GUIDE 1
+#define DONT_GUIDE 0
+
+/* specify include files */
+
+#include <vxWorks.h>
+#include <taskLib.h>
+#include <semLib.h>
+#include <logLib.h>
+#include <stdioLib.h>
+#include <dbDefs.h>
+#include <wdLib.h>
+#include <msgQLib.h>
+#include <string.h>
+#include <logLib.h>
+#include <subRecord.h>
+#include <cadRecord.h>
+#include <recSup.h>
+#include <dbCommon.h>
+#include <genSubRecord.h>
+#include <time.h>
+#include <string.h>
+#include <math.h>
+#include <float.h>
+#include <gemTypes.h>
+
+#include "aoP2Lib.h"
+#include "synchroMap.h"
+
+typedef struct
+{
+   double  CRAngleSign; /* Sign of CR angle */
+   double  thetaCR;     /* CR Angle */
+   double  sinThetaCR;
+   double  cosThetaCR;
+   double  sin2ThetaCR;
+   double  cos2ThetaCR;
+   double  sin3ThetaCR;
+   double  cos3ThetaCR;
+   double  sin4ThetaCR;
+   double  cos4ThetaCR;
+   double  thetaPA;     /* PA Angle */
+   double  sinThetaPA;
+   double  cosThetaPA;
+   double  sin2ThetaPA;
+   double  cos2ThetaPA;
+   double  sin3ThetaPA;
+   double  cos3ThetaPA;
+   double  sin4ThetaPA;
+   double  cos4ThetaPA;
+   double  null[AO_ZERO_ARRAY_SIZE];
+   double  probe[PROBE_ARRAY_SIZE];
+   SEM_ID  access;
+}frame;
+
+typedef struct
+{
+   double   z2;
+   double   z3;
+   double   z4;
+   double   z5;
+   double   z6;
+   double   z7;
+   double   z8;
+   double   z9;
+   double   z10;
+   double   z11;
+   double   z12;
+   double   z13;
+   double   z14;
+   double   z15;
+   double   z16;
+   double   z17;
+   double   z18;
+   double   z19;
+   double   z20;
+}converted;
+
+/* declare global variables */
+
+frame   *ag2m2;
+frame   *ag2tcs;
+wfs     *ptrPwfs2;
+double  ttfData[AO_ARRAY_SIZE+2];
+double  aoData[AO_ARRAY_SIZE+2+2]; /* add 2 data for astig0 and astig45 */
+float   data[AO_ARRAY_SIZE+2];
+float   errors[AO_ARRAY_SIZE+2];
+SEM_ID  wfsLock;
+
+WFS_VECT localCentroidsVect;
+WFS_VECT localTotalCountsVect;
+WFS_VECT localFgCentroidsVect;
+WFS_VECT localFgTotalCountsVect;
+WFS_VECT localThresholdVect;
+SEM_ID   accessAoData=NULL;
+SEM_ID   accessFgData=NULL;
+
+AO_CCD_ID aoCcdIdP2;
+AO_CB_AO_CTRL_ID aoCbAoCtrlIdP2;
+AO_CB_FG_CTRL_ID aoCbFgCtrlIdP2;
+AO_CB_IM_ID aoCbImIdP2;
+AO_CTRL_ID aoCtrlIdP2;
+
+double sampleData[5][3];
+double coeffData[5];
+
+AST_ZP_MODEL_ID_STRUCT astigModel;
+SEM_ID  accessAstigModel=NULL;
+
+TREF_ZP_MODEL_ID_STRUCT trefoilModel;
+SEM_ID  accessTrefoilModel=NULL;
+
+COMA_ZP_MODEL_ID_STRUCT comaModel;
+SEM_ID  accessComaModel=NULL;
+
+FOCUS_ZP_MODEL_ID_STRUCT focusModel;
+SEM_ID  accessFocusModel=NULL;
+
+PO_SCALE_ID poScaleId;
+
+long   optsensorEnable;    /* 0: DONT_GUIDE|1: GUIDE */
+
+/* declare prototypes */
+
+long rmIntSend(int interrupt, int node);
+
+/* ===================================================================== */
+/*
+ *+
+ * FUNCTION NAME:
+ * dfilter
+ *
+ * INVOCATION:
+ * double newSample
+ * int Id
+ *
+ * double   dfilter(double newSample, int Id)
+ *
+ * PARAMETERS: (">" input, "!" modified, "<" output)
+ * > double newSample       - latest data sample
+ * > int    iD              - identification of filter bank. There are three 
+ *                            filters per wfs source hence
+ *
+ *                            source     xtilt       ytilt        focus
+ *                            -----------------------------------------
+ *                            HRWFS        0           1            2
+ *                            PWFS1        3           4            5
+ *                            PWFS2        6           7            8
+ *                            OIWFS        9           10           11
+ *                            AOWFS        12          13           14
+ *
+ * FUNCTION VALUE:
+ * double     returns current filtered value
+ *
+ * PURPOSE:
+ * Filter the data in accordance with the IIR filter coefficients specified
+ *
+ * DESCRIPTION:
+ * The function performs a two pole low pass butterworth filter on the supplied
+ * data. A history array is maintained for each bank identified by the index Id.
+ * The cutoff frequency is approximately 0.05*Fsample hence for a 200Hz update
+ * the spectral content above 10Hz is substantially attenuated suitable for
+ * sub-sampling at 20Hz.
+ *
+ * EXTERNAL VARIABLES:
+ * 
+ *
+ * PRIOR REQUIREMENTS:
+ * None
+ *
+ * DEFICIENCIES:
+ *
+ *
+ * HISTORY (optional):
+ * 28-Oct-1998  Original version - Sean Prior
+ *-
+ */
+
+double dfilter
+   (
+   double newSample, 
+   int Id
+   )
+{
+   int i = 0;
+   double sum = 0;
+   static double sample[6][MAX_FILTERS];
+
+   static double coeffs[] = {
+      1.0,
+      1.77863177782458,
+      -0.80080264666571,
+      0.00554271721028,
+      0.01108543442056,
+      0.00554271721028
+   };
+
+   /* put new sample into the array */
+
+   sample[3][Id] = newSample;
+
+   /* multiply samples by coefficients and accumulate */
+
+   for(i=1; i < 6; i++)
+      sum += sample[i][Id]*coeffs[i];
+
+   /* ripple samples ready for next call */
+
+   sample[5][Id] = sample[4][Id];
+   sample[4][Id] = sample[3][Id];
+   sample[2][Id] = sample[1][Id];
+   sample[1][Id] = sum;
+
+   return(sum);
+}
+
+/* ===================================================================== */
+/*
+ *+
+ * FUNCTION NAME:
+ * newDfilter
+ *
+ * INVOCATION:
+ * double newSample
+ * int Id
+ *
+ * double   newDfilter(double newSample, int Id)
+ *
+ * PARAMETERS: (">" input, "!" modified, "<" output)
+ * > double newSample       - latest data sample
+ * > int    iD              - identification of zernikes (0 = xtilt, 1 = ytilt,
+ *                            2 = focus)
+ *
+ * FUNCTION VALUE:
+ * double     returns current filtered value
+ *
+ * PURPOSE:
+ * Filter the data in accordance with the IIR filter coefficients specified
+ *
+ * DESCRIPTION:
+ * The function performs a low pass butterworth filter on the supplied
+ * data. A history array is maintained for each zernikes identified by the 
+ * index Id.
+ * The cutoff frequency is set in detControl.c (detSigInitGain CAD) and 
+ * coefficients of the filter are computed according the cutoof frequency and
+ * exposure time.
+ *
+ * EXTERNAL VARIABLES:
+ * 
+ *
+ * PRIOR REQUIREMENTS:
+ * None
+ *
+ * DEFICIENCIES:
+ *
+ *
+ * HISTORY (optional):
+ * 08-Dec-2000  Coeff are computing in detControl.c and the cutoffFreq set by
+ *              the user
+ * 28-Oct-1998  Original version - Sean Prior
+ *-
+ */
+
+double newDfilter
+   (
+   double newSample,
+   int Id
+   )
+{
+   int i = 0;
+   double sum = 0;
+
+   /* put new sample into the array */
+
+   sampleData[2][Id] = newSample;
+
+   /* multiply samples by coefficients and accumulate */
+
+   for(i=0; i < 5; i++)
+      sum += sampleData[i][Id]*coeffData[i];
+
+   /* ripple samples ready for next call */
+
+   sampleData[4][Id] = sampleData[3][Id];
+   sampleData[3][Id] = sampleData[2][Id];
+   sampleData[1][Id] = sampleData[0][Id];
+   sampleData[0][Id] = sum;
+
+   /*printf ( "sum[%d] = %f\n" , Id, sum );*/
+   return(sum);
+}
+
+/* ===================================================================== */
+/*
+ *+
+ * FUNCTION NAME:
+ * gensubToTcsInit
+ *
+ * INVOCATION:
+ * struct genSubRecord * pgsub
+ * long   status;
+ *
+ * long gensubToTcsInit(struct genSubRecord * pgsub)
+ *
+ * PARAMETERS: (">" input, "!" modified, "<" output)
+ * > genSubRecord (struct genSubRecord *)   pointer to record
+ *
+ * FUNCTION VALUE:
+ * long  Status value returned to calling routine, a non-zero value indicates
+ *       an error
+ *
+ * PURPOSE:
+ * Initialise structures and semaphores for wfs processing
+ *
+ * DESCRIPTION:
+ * Detects the presence of the synchro bus card at the expected address
+ * Create array of mutex semaphores corresponding to each of the wfs sources
+ * Create structures to hold coordinate conversion transformations
+ * Assign pointers to synchro bus pages for each wfs source
+ *
+ * EXTERNAL VARIABLES:
+ * wfsLock   - Global mutex semaphore
+ * ag2m2     - pointer to coord conversion structures
+ * ag2tcs    - pointer to coord conversion structures
+ *
+ * PRIOR REQUIREMENTS:
+ * None
+ *
+ * DEFICIENCIES:
+ * None known.
+ *
+ * HISTORY (optional):
+ * 28-Oct-1998: Original version (srp)
+ * 05-Jan-1999: Put all initialisation and semaphore creation in this section 
+ *              rather than creating as necessary during operation
+ * 22-Jan-1999: Initialise time values on synchro bus to 0.0
+ * 26-Apr-1999: Simplified version for split backplane PWFS1 (cb)
+ * 26-Nov-1999: Update interval as for PWFS2 (cb)
+ *-
+ */
+
+long gensubToTcsInit
+   (
+   struct genSubRecord * pgsub
+   )
+{
+   memMap   *basePtr = (memMap *)SYNCHROBASE;
+   static   int processedFlag = FALSE;
+   char     junk;
+
+   /* this initialisation routine only needs to be called once */
+
+   if(processedFlag != FALSE)
+      return(OK);
+   else
+      processedFlag = TRUE;
+
+
+   /* create semaphore to prevent multiple access to wfs data */
+
+   if(wfsLock == NULL)
+   {
+      if ((wfsLock = 
+          semMCreate (SEM_Q_PRIORITY | SEM_DELETE_SAFE | SEM_INVERSION_SAFE)) 
+          == NULL)
+      {
+             printf ("unable to create wfsLock sem\n");
+      }
+   }
+
+   /* create semaphore to prevent multiple access to ao data */
+
+   if(accessAoData == NULL)
+   {
+      if ((accessAoData = 
+          semMCreate (SEM_Q_PRIORITY | SEM_DELETE_SAFE | SEM_INVERSION_SAFE)) 
+          == NULL)
+      {
+             printf ("unable to create accessAoData sem\n");
+      }
+   }
+
+   /* create semaphore to prevent multiple access to FG data */
+
+   if(accessFgData == NULL)
+   {
+      if ((accessFgData = 
+          semMCreate (SEM_Q_PRIORITY | SEM_DELETE_SAFE | SEM_INVERSION_SAFE)) 
+          == NULL)
+      {
+             printf ("unable to create accessFgData sem\n");
+      }
+   }
+
+   /* create semaphore to prevent multiple access to astigModel data */
+
+   if(accessAstigModel == NULL)
+   {
+      if ((accessAstigModel = 
+          semMCreate (SEM_Q_PRIORITY | SEM_DELETE_SAFE | SEM_INVERSION_SAFE)) 
+          == NULL)
+      {
+             printf ("unable to create accessAstigModel sem\n");
+      }
+
+      /* init structure astigModel */
+
+      astigModel.a1 = 0.0;
+      astigModel.a2 = 0.0;
+      astigModel.a3 = 0.0;
+      astigModel.p1 = 0.0;
+      astigModel.p2 = 0.0;
+      astigModel.p3 = 0.0;
+      astigModel.c = 0.0;
+      astigModel.b1 = 0.0;
+      astigModel.b2 = 0.0;
+      astigModel.b3 = 0.0;
+      astigModel.pp1 = 0.0;
+      astigModel.pp2 = 0.0;
+      astigModel.pp3 = 0.0;
+      astigModel.d = 0.0;
+      astigModel.astig0 = 0.0;
+      astigModel.astig45 = 0.0;
+      astigModel.applyModel = 0.0;
+      astigModel.gain0 = 1.0;
+      astigModel.gain45 = 1.0;
+      astigModel.offsetAstig0 = 0.0;
+      astigModel.offsetAstig45 = 0.0;
+   }
+
+   /* create semaphore to prevent multiple access to trefoilModel data */
+
+   if(accessTrefoilModel == NULL)
+   {
+      if ((accessTrefoilModel = 
+          semMCreate (SEM_Q_PRIORITY | SEM_DELETE_SAFE | SEM_INVERSION_SAFE)) 
+          == NULL)
+      {
+             printf ("unable to create accessTrefoilModel sem\n");
+      }
+
+      /* init structure trefoilModel */
+
+      trefoilModel.a = 0.0;
+      trefoilModel.p = 0.0;
+      trefoilModel.c = 0.0;
+      trefoilModel.b = 0.0;
+      trefoilModel.pp = 0.0;
+      trefoilModel.d = 0.0;
+      trefoilModel.costref = 0.0;
+      trefoilModel.sintref = 0.0;
+      trefoilModel.applyModel = 0.0;
+   }
+
+   /* create semaphore to prevent multiple access to comaModel data */
+
+   if(accessComaModel == NULL)
+   {
+      if ((accessComaModel = 
+          semMCreate (SEM_Q_PRIORITY | SEM_DELETE_SAFE | SEM_INVERSION_SAFE)) 
+          == NULL)
+      {
+             printf ("unable to create accessComaModel sem\n");
+      }
+
+      /* init structure comaModel */
+
+      comaModel.a = 0.0;
+      comaModel.p = 0.0;
+      comaModel.c = 0.0;
+      comaModel.b = 0.0;
+      comaModel.pp = 0.0;
+      comaModel.d = 0.0;
+      comaModel.comaX = 0.0;
+      comaModel.comaY = 0.0;
+      comaModel.applyModel = 0.0;
+   }
+
+   /* create semaphore to prevent multiple access to focusModel data */
+
+   if(accessFocusModel == NULL)
+   {
+      if ((accessFocusModel = 
+          semMCreate (SEM_Q_PRIORITY | SEM_DELETE_SAFE | SEM_INVERSION_SAFE)) 
+          == NULL)
+      {
+             printf ("unable to create accessFocusModel sem\n");
+      }
+
+      /* init structure focusModel */
+
+      focusModel.a1 = 0.0;
+      focusModel.a2 = 0.0;
+      focusModel.p1 = 0.0;
+      focusModel.p2 = 0.0;
+      focusModel.c = 0.0;
+      focusModel.focus = 0.0;
+   }
+
+   /* create structure holding angle and null values for ao data */
+
+   if((ag2tcs = (frame *)calloc(1, sizeof(frame))) == NULL)
+   {
+      logMsg("Unable to calloc conversion frame \n", 0, 0, 0, 0, 0, 0);
+   }
+   else
+   {
+       if ((ag2tcs->access = 
+           semMCreate (SEM_Q_PRIORITY | SEM_DELETE_SAFE | SEM_INVERSION_SAFE)) 
+           == NULL)
+       {
+          logMsg("Unable to create mutex for conversion frame\n", 
+                 0, 0, 0, 0, 0 ,0);
+       }
+       else
+       {
+          /* initialise trig values */
+
+          ag2tcs->CRAngleSign = 1.0;
+          ag2tcs->thetaCR = 0.0;
+          ag2tcs->sinThetaCR = sin(0.0);
+          ag2tcs->cosThetaCR = cos(0.0);
+          ag2tcs->sin2ThetaCR = sin(0.0);
+          ag2tcs->cos2ThetaCR = cos(0.0);
+          ag2tcs->sin3ThetaCR = sin(0.0);
+          ag2tcs->cos3ThetaCR = cos(0.0);
+          ag2tcs->sin4ThetaCR = sin(0.0);
+          ag2tcs->cos4ThetaCR = cos(0.0);
+          ag2tcs->thetaPA = 0.0;
+          ag2tcs->sinThetaPA = sin(0.0);
+          ag2tcs->cosThetaPA = cos(0.0);
+          ag2tcs->sin2ThetaPA = sin(0.0);
+          ag2tcs->cos2ThetaPA = cos(0.0);
+          ag2tcs->sin3ThetaPA = sin(0.0);
+          ag2tcs->cos3ThetaPA = cos(0.0);
+          ag2tcs->sin4ThetaPA = sin(0.0);
+          ag2tcs->cos4ThetaPA = cos(0.0);
+       }
+   }
+
+   /* create structure holding angle and null values for ttf data */
+
+   if( (ag2m2 = (frame *)calloc(1, sizeof(frame))) == NULL)
+   {
+      logMsg("Unable to calloc conversion frame \n", 0, 0, 0, 0, 0, 0);
+   }
+   else
+   {
+       if ((ag2m2->access = 
+            semMCreate (SEM_Q_PRIORITY | SEM_DELETE_SAFE | SEM_INVERSION_SAFE)) 
+           == NULL)
+       {
+          logMsg("Unable to create mutex for conversion frame\n", 
+                 0, 0, 0, 0, 0 ,0);
+       }
+       else
+       {
+          /* initialise trig values */
+
+          ag2m2->CRAngleSign = 1.0;
+          ag2m2->thetaCR = 0.0;
+          ag2m2->sinThetaCR = sin(0.0);
+          ag2m2->cosThetaCR = cos(0.0);
+          ag2m2->sin2ThetaCR = sin(0.0);
+          ag2m2->cos2ThetaCR = cos(0.0);
+          ag2m2->sin3ThetaCR = sin(0.0);
+          ag2m2->cos3ThetaCR = cos(0.0);
+          ag2m2->sin4ThetaCR = sin(0.0);
+          ag2m2->cos4ThetaCR = cos(0.0);
+          ag2m2->thetaPA = 0.0;
+          ag2m2->sinThetaPA = sin(0.0);
+          ag2m2->cosThetaPA = cos(0.0);
+          ag2m2->sin2ThetaPA = sin(0.0);
+          ag2m2->cos2ThetaPA = cos(0.0);
+          ag2m2->sin3ThetaPA = sin(0.0);
+          ag2m2->cos3ThetaPA = cos(0.0);
+          ag2m2->sin4ThetaPA = sin(0.0);
+          ag2m2->cos4ThetaPA = cos(0.0);
+       }
+   }
+
+   /* verify presence of 5588 synchro card */
+
+   if (vxMemProbe ((void *)basePtr, VX_READ, 1, &junk) != OK)    
+   {
+      logMsg("synchro card not detected at address %p\n", 
+             (int)basePtr, 0, 0, 0, 0, 0);
+      basePtr = NULL;
+      return(ERROR);
+   }
+
+   /* if synchro card present, initialise structure pointers */
+
+   /* assign pointers and write ID strings for synchro bus */
+
+   if(ptrPwfs2 == NULL)
+   {
+      ptrPwfs2 = (wfs*)&basePtr->oiwfs;
+      strncpy(ptrPwfs2->name, "oiwfs", 15);
+      ptrPwfs2->time = 0.0;
+      ptrPwfs2->interval = 0.0;
+   }
+
+   return (OK);
+}
+
+/* ===================================================================== */
+/*
+ *+
+ * FUNCTION NAME:
+ * gensubToTcsTtf
+ *
+ * INVOCATION:
+ * struct genSubRecord * pgsub
+ * long   status;
+ *
+ * long gensubToTcsTtf(struct genSubRecord * pgsub)
+ *
+ * PARAMETERS: (">" input, "!" modified, "<" output)
+ * > genSubRecord (struct genSubRecord *)   pointer to record
+ *
+ * FUNCTION VALUE:
+ * long  Status value returned to calling routine, a non-zero value indicates
+ *       an error
+ *
+ * PURPOSE:
+ * Copy data from the global ao data arrays to the VALJ port for reading 
+ * by the TCS
+ *
+ * DESCRIPTION:
+ * Mutex access to the global ao data array is then attempted and data is 
+ * copied out to the VALJ port. Status return will be bad if there is a timeout 
+ * on mutex access.
+ *
+ * EXTERNAL VARIABLES:
+ * wfsLock       - mutex semaphore
+ * ttfData       - ttf data
+ *
+ * PRIOR REQUIREMENTS:
+ * None
+ *
+ * DEFICIENCIES:
+ * None known.
+ *
+ * HISTORY (optional):
+ * 28-Oct-1998  Original version - Sean Prior
+ * 13-Jan-1999: Write zernikes and errors to outputs for screen display (srp)
+ * 26-Apr-1999: Simplified version for split backplane PWFS1 (cb)
+ *-
+ */
+
+long gensubToTcsTtf 
+   (
+   struct genSubRecord * pgsub
+   )
+{
+   /* write array to TCS system */
+
+   if(semTake(wfsLock, WFS_TIMEOUT) != OK)
+   {
+      logMsg("timeout on mutex access wfsLock\n", 0, 0, 0, 0, 0, 0);
+      return(ERROR);
+   }
+   else
+   {
+      memcpy (pgsub->valj, ttfData, TTF_ARRAY_SIZE * sizeof (double));
+
+      /* also write values to gensub outputs for screen display */
+
+      *(double *)pgsub->vala = ttfData[8];   /* z2 */
+      *(double *)pgsub->valb = ttfData[9];   /* z3 */
+      *(double *)pgsub->valc = ttfData[10];  /* z4 */
+      *(double *)pgsub->vald = ttfData[5];   /* e2 */
+      *(double *)pgsub->vale = ttfData[6];   /* e3 */
+      *(double *)pgsub->valf = ttfData[7];   /* e4 */
+
+      semGive(wfsLock);
+   }
+
+   return (OK);
+}
+
+/* ===================================================================== */
+/*
+ *+
+ * FUNCTION NAME:
+ * gensubToTcsAo
+ *
+ * INVOCATION:
+ * struct genSubRecord * pgsub
+ * long   status;
+ *
+ * long gensubToTcsAo(struct genSubRecord * pgsub)
+ *
+ * PARAMETERS: (">" input, "!" modified, "<" output)
+ * > genSubRecord (struct genSubRecord *)   pointer to record
+ *
+ * FUNCTION VALUE:
+ * long  Status value returned to calling routine, a non-zero value indicates
+ *       an error
+ *
+ * PURPOSE:
+ * Copy data from the global ao data arrays to the VALJ port for reading by 
+ * the TCS
+ *
+ * DESCRIPTION:
+ * Mutex access to the global ao data is then attempted and data is copied 
+ * out to the VALJ port. Status return will be returned bad if there is a 
+ * timeout on mutex access.
+ *
+ * EXTERNAL VARIABLES:
+ * wfsLock       - mutex semaphores
+ * aoData        - ao data
+ *
+ * PRIOR REQUIREMENTS:
+ * None
+ *
+ * DEFICIENCIES:
+ * None known.
+ *
+ * HISTORY (optional):
+ * 28-Oct-1998  Original version Sean Prior
+ * 23-Jan-1999  Write arrays of zernikes and errors to vala and valb
+ *              to be picked up and displayed by other gensubs (srp)
+ * 26-Apr-1999  Simplified version for split backplane PWFS1 (cb)
+ *-
+ */
+
+long gensubToTcsAo 
+   (
+   struct genSubRecord * pgsub
+   )
+{
+   int index = 0;
+   double zernikes[19];
+   double errors[19];
+   double astig0;
+   double astig45;
+
+   /* write array to TCS system */
+
+   if(semTake(wfsLock, WFS_TIMEOUT) != OK)
+   {
+      logMsg("timeout on mutex access wfsLock\n", 0, 0, 0, 0, 0, 0);
+      return(ERROR);
+   }
+   else
+   {
+      for(index = 0; index < 19; index++)
+      {
+         zernikes[index] = aoData[index+2];
+         errors[index] = aoData[index+21];
+      }
+
+      astig0 = aoData[40];
+      astig45 = aoData[41];
+
+      /* write whole array to valj for the TCS to pick up */
+
+      memcpy (pgsub->valj, aoData, AO_ARRAY_SIZE * sizeof (double));
+
+      /* write Zernike values to vala for display */
+
+      memcpy (pgsub->vala, zernikes, 19 * sizeof (double));
+
+      /* write error values to valb for display */
+
+      memcpy (pgsub->valb, errors, 19 * sizeof (double));
+
+      /* write astig0 to valc for display */
+   
+      *(double *)pgsub->valc = astig0 ;
+
+      /* write astig45 to vald for display */
+
+      *(double *)pgsub->vald = astig45 ;
+
+      semGive(wfsLock);
+   }
+
+   return (OK);
+}
+
+/* ===================================================================== */
+/*
+ *+
+ * FUNCTION NAME:
+ * writeWfsToTcs
+ *
+ * INVOCATION:
+ * AO_CTRL_ID aoCtrlId
+ * double *pAoVect
+ * double *pAoErrorsVect
+ * double *pTime
+ * long   STATUS;
+ *
+ * STATUS writeWfsToTcs(AO_CTRL_ID aoCtrlId, double *pAoVect, 
+ *                      double *pAoVectAfterRot, double *pAoErrorsVect, 
+ *                      double *pTime
+ *
+ * PARAMETERS: (">" input, "!" modified, "<" output)
+ * > AO_CTRL_ID aoCtrlId      - Pointer to the AO control context structure
+ * > double * pAoVect         - Vector containing the zernike modes
+ * > double * pAoVectAfterRot - Vector containing the zernike modes after 
+ *                              rotation
+ * > double * pAoErrorsVect   - Vector containing the associated errors
+ * > double * pTime           - Pointer to the associated time stamp value
+ * > int    * pWfsStatus      - Pointer to the associated time stamp value
+ *
+ * FUNCTION VALUE:
+ * long  Status value returned to calling routine, a non-zero value indicates
+ *       an error
+ *
+ * PURPOSE:
+ * Convert values to the TCS required frame of reference and write to global
+ * arrays ready for the gensubs to pick up and transmit to the TCS.
+ *
+ * DESCRIPTION:
+ * First the zernikes are retrieved and rotated where necessary to the 
+ * TCS frame of reference.
+ *
+ * EXTERNAL VARIABLES:
+ * wfsLock       - Global mutex semaphores
+ *
+ * PRIOR REQUIREMENTS:
+ * None
+ *
+ * DEFICIENCIES:
+ * Pointer to the ao data are given.
+ * The contents of these vectors is not protected by mutex so there is a 
+ * requirement placed on the calling task that the contents of these vectors 
+ * do not change for the duration of this routine.
+ *
+ * HISTORY (optional):
+ * 28-Oct-1998  Original version (srp)
+ * 11-Nov-1998  Add frame of reference conversion
+ * 05-Jan-1999  Add null zernike calculation
+ * 23-Apr-1999  Simplified version for split backplane PWFS1 (cb)
+ * 29-Mar-2001   Fix rotation matrix (cb)
+ */
+
+STATUS writeWfsToTcs
+   (
+   AO_CTRL_ID aoCtrlId,
+   double     *pAoVect,
+   double     *pAoVectAfterRot,
+   double     *pAoErrorsVect,
+   double     *pTime,
+   int        *pWfsStatus
+   )
+{
+   int       i=0;
+   int       index;
+   frame     *f;
+   converted result;
+   double    *pz;
+   double    astig0=0.0;
+   double    astig45=0.0;
+   double    g0;
+   double    g45;
+   double    z2AfterPARot; 
+   double    z3AfterPARot;
+   double    z2AfterM1Rot;
+   double    z3AfterM1Rot;
+   double    z5AfterPARot;
+   double    z6AfterPARot;
+   double    z5AfterM1Rot;
+   double    z6AfterM1Rot;
+   double    z7AfterPARot;
+   double    z8AfterPARot;
+   double    z7AfterM1Rot;
+   double    z8AfterM1Rot;
+   double    z10AfterPARot;
+   double    z11AfterPARot;
+   double    z10AfterM1Rot;
+   double    z11AfterM1Rot;
+   double    z12AfterPARot;
+   double    z13AfterPARot;
+   double    z12AfterM1Rot;
+   double    z13AfterM1Rot;
+   double    z14AfterPARot;
+   double    z15AfterPARot;
+   double    z14AfterM1Rot;
+   double    z15AfterM1Rot;
+   double    z17AfterPARot;
+   double    z18AfterPARot;
+   double    z17AfterM1Rot;
+   double    z18AfterM1Rot;
+   double    z19AfterPARot;
+   double    z20AfterPARot;
+   double    z19AfterM1Rot;
+   double    z20AfterM1Rot;
+
+   /* check that array counts are within limits */
+
+   if(aoCtrlId->aoModeNb > AO_MODE_NB)
+   {
+       logMsg("zernike count np = %d out of limits\n", 
+              (int)aoCtrlId->aoModeNb, 0, 0, 0, 0, 0);
+       return(ERROR);
+   }
+
+   /* access frame */
+
+   pz = pAoVect;
+   f = ag2tcs;
+
+   if(semTake(f->access, WFS_TIMEOUT) == OK)
+   {
+      if ( *pWfsStatus != AO_SH_OFF )
+      {
+         /* first rotate the tip and tilt values to the tcs frame of reference*/
+         /* tip and tilt: r * cos(t) and r * sin(t) */
+
+         z2AfterPARot = (f->cosThetaPA * (*pz)) + (f->sinThetaPA * (*(pz+1)));
+         z3AfterPARot = (f->cosThetaPA * (*(pz+1))) - (f->sinThetaPA * (*pz));
+
+         z2AfterM1Rot = aoCtrlId->flipXWithM1 *
+                        ((aoCtrlId->cosAngleWithM1 * z2AfterPARot) + 
+                         (aoCtrlId->sinAngleWithM1 * z3AfterPARot));
+         z3AfterM1Rot = aoCtrlId->flipYWithM1 * 
+                        ((aoCtrlId->cosAngleWithM1 * z3AfterPARot) - 
+                         (aoCtrlId->sinAngleWithM1 * z2AfterPARot));
+
+         result.z2 = ((f->cosThetaCR * z2AfterM1Rot) + 
+                      (f->sinThetaCR * z3AfterM1Rot)) * 
+                     aoCtrlId->aoScaleFactorVect[0];
+         result.z3 = ((f->cosThetaCR * z3AfterM1Rot) - 
+                      (f->sinThetaCR * z2AfterM1Rot)) * 
+                     aoCtrlId->aoScaleFactorVect[1];
+
+         /* focus : 2*r^2 -1 */
+
+         result.z4 = (*(pz+2)) * aoCtrlId->aoScaleFactorVect[2];
+
+         /* astig0 and astig45: r^2 * cos(2t) and r^2 * sin(2t) */
+
+         astig0 = *(pz+3) - astigModel.offsetAstig0;
+         astig45 = *(pz+4) - astigModel.offsetAstig45;
+         g0 = astigModel.gain0;
+         g45 = astigModel.gain45;
+
+         z5AfterPARot = f->cos2ThetaPA*astig0 + f->sin2ThetaPA*astig45;
+         z6AfterPARot = f->cos2ThetaPA*astig45 - f->sin2ThetaPA*astig0;
+
+         z5AfterM1Rot = aoCtrlId->flipXWithM1 *
+                        ((aoCtrlId->cos2AngleWithM1 * z5AfterPARot) +
+                         (aoCtrlId->sin2AngleWithM1 * z6AfterPARot));
+         z6AfterM1Rot = aoCtrlId->flipYWithM1 * 
+                        ((aoCtrlId->cos2AngleWithM1 * z6AfterPARot) -
+                         (aoCtrlId->sin2AngleWithM1 * z5AfterPARot));
+
+         result.z5 = ( ((g0 * f->cos2ThetaCR * z5AfterM1Rot) + 
+                        (g0 * f->sin2ThetaCR * z6AfterM1Rot)) 
+                       - ((f->null[8])*1000.0)
+                       - (astigModel.astig0) ) 
+                     * (aoCtrlId->aoScaleFactorVect[3]);
+         result.z6 = ( ((g45 * f->cos2ThetaCR * z6AfterM1Rot) - 
+                        (g45 * f->sin2ThetaCR * z5AfterM1Rot)) 
+                       - ((f->null[9])*1000.0)
+                       - (astigModel.astig45) ) 
+                     * (aoCtrlId->aoScaleFactorVect[4]);
+
+         /* comaX and comaY: (3*r^2 - 2) * r * cos(t) and 
+         (3*r^2 - 2) * r * sin(t) */
+
+         z7AfterPARot = 
+         (f->cosThetaPA * (*(pz+5))) + (f->sinThetaPA * (*(pz+6)));
+         z8AfterPARot = 
+         (f->cosThetaPA * (*(pz+6))) - (f->sinThetaPA * (*(pz+5)));
+
+         z7AfterM1Rot = aoCtrlId->flipXWithM1 *
+                        ((aoCtrlId->cosAngleWithM1 * z7AfterPARot) + 
+                         (aoCtrlId->sinAngleWithM1 * z8AfterPARot));
+         z8AfterM1Rot = aoCtrlId->flipYWithM1 * 
+                        ((aoCtrlId->cosAngleWithM1 * z8AfterPARot) - 
+                         (aoCtrlId->sinAngleWithM1 * z7AfterPARot));
+ 
+         result.z7 = ( ((f->cosThetaCR * z7AfterM1Rot) + 
+                        (f->sinThetaCR * z8AfterM1Rot))
+                       - (comaModel.comaX) ) * (aoCtrlId->aoScaleFactorVect[5]);
+         result.z8 = ( ((f->cosThetaCR * z8AfterM1Rot) - 
+                        (f->sinThetaCR * z7AfterM1Rot))
+                       - (comaModel.comaY) ) * (aoCtrlId->aoScaleFactorVect[6]);
+
+         /* spherical: 6*r^4 - 6*r^2 + 1 */
+
+         result.z9 = (*(pz+7)) * (aoCtrlId->aoScaleFactorVect[7]);
+
+         /* trefoilX and trefoilY: r^3 * cos(3t) and r^3 * sin(3t) */
+
+         z10AfterPARot = (f->cos3ThetaPA * (*(pz+8))) + 
+                         (f->sin3ThetaPA * (*(pz+9)));
+         z11AfterPARot = (f->cos3ThetaPA * (*(pz+9))) - 
+                         (f->sin3ThetaPA * (*(pz+8)));
+
+         z10AfterM1Rot = aoCtrlId->flipXWithM1 *
+                         ((aoCtrlId->cos3AngleWithM1 * z10AfterPARot) +
+                          (aoCtrlId->sin3AngleWithM1 * z11AfterPARot));
+         z11AfterM1Rot = aoCtrlId->flipYWithM1 *
+                         ((aoCtrlId->cos3AngleWithM1 * z11AfterPARot) -
+                          (aoCtrlId->sin3AngleWithM1 * z10AfterPARot));
+
+         result.z10 = ( ((f->cos3ThetaCR * z10AfterM1Rot) + 
+                         (f->sin3ThetaCR * z11AfterM1Rot))
+                        - (trefoilModel.costref) ) * 
+                      (aoCtrlId->aoScaleFactorVect[8]);
+
+         result.z11 = ( ((f->cos3ThetaCR * z11AfterM1Rot) - 
+                         (f->sin3ThetaCR * z10AfterM1Rot))
+                        - (trefoilModel.sintref) ) * 
+                      (aoCtrlId->aoScaleFactorVect[9]);
+
+         /* (4*r^2-3) * r^2 * cos(2t) and (4*r^2-3) * r^2 * sin(2t) */
+
+         z12AfterPARot = (f->cos2ThetaPA * (*(pz+10))) +
+                         (f->sin2ThetaPA * (*(pz+11)));
+         z13AfterPARot = (f->cos2ThetaPA * (*(pz+11))) -
+                         (f->sin2ThetaPA * (*(pz+10)));
+
+         z12AfterM1Rot = aoCtrlId->flipXWithM1 *
+                         ((aoCtrlId->cos2AngleWithM1 * z12AfterPARot) +
+                          (aoCtrlId->sin2AngleWithM1 * z13AfterPARot));
+         z13AfterM1Rot = aoCtrlId->flipYWithM1 *
+                         ((aoCtrlId->cos2AngleWithM1 * z13AfterPARot) -
+                          (aoCtrlId->sin2AngleWithM1 * z12AfterPARot));
+
+         result.z12 = ( (f->cos2ThetaCR * z12AfterM1Rot) +
+                        (f->sin2ThetaCR * z13AfterM1Rot) ) *
+                      (aoCtrlId->aoScaleFactorVect[10]);
+
+         result.z13 = ( (f->cos2ThetaCR * z13AfterM1Rot) -
+                        (f->sin2ThetaCR * z12AfterM1Rot) ) *
+                      (aoCtrlId->aoScaleFactorVect[11]);
+
+         /* (10*r^4 -12*r^3 + 3) * r * cos(t) and 
+            (10*r^4 -12*r^3 + 3) * r * sin(t) */
+
+         z14AfterPARot = (f->cosThetaPA * (*(pz+12))) +
+                         (f->sinThetaPA * (*(pz+13)));
+         z15AfterPARot = (f->cosThetaPA * (*(pz+13))) -
+                         (f->sinThetaPA * (*(pz+12)));
+
+         z14AfterM1Rot = aoCtrlId->flipXWithM1 *
+                         ((aoCtrlId->cosAngleWithM1 * z14AfterPARot) +
+                          (aoCtrlId->sinAngleWithM1 * z15AfterPARot));
+         z15AfterM1Rot = aoCtrlId->flipYWithM1 *
+                         ((aoCtrlId->cosAngleWithM1 * z15AfterPARot) -
+                          (aoCtrlId->sinAngleWithM1 * z14AfterPARot));
+
+         result.z14 = ( (f->cosThetaCR * z14AfterM1Rot) +
+                        (f->sinThetaCR * z15AfterM1Rot) ) *
+                      (aoCtrlId->aoScaleFactorVect[12]);
+
+         result.z15 = ( (f->cosThetaCR * z15AfterM1Rot) -
+                        (f->sinThetaCR * z14AfterM1Rot) ) *
+                      (aoCtrlId->aoScaleFactorVect[13]);
+
+         /* 20*r^6 - 30*r^4 + 12*r^2 - 1 */
+
+         result.z16 = (*(pz+14)) * (aoCtrlId->aoScaleFactorVect[14]);
+
+         /* r^4 * cos(4t) and r^4 * sin(4t) */
+
+         z17AfterPARot = (f->cos4ThetaPA * (*(pz+15))) +
+                         (f->sin4ThetaPA * (*(pz+16)));
+         z18AfterPARot = (f->cos4ThetaPA * (*(pz+16))) -
+                         (f->sin4ThetaPA * (*(pz+15)));
+
+         z17AfterM1Rot = aoCtrlId->flipXWithM1 *
+                         ((aoCtrlId->cos4AngleWithM1 * z17AfterPARot) +
+                          (aoCtrlId->sin4AngleWithM1 * z18AfterPARot));
+         z18AfterM1Rot = aoCtrlId->flipYWithM1 *
+                         ((aoCtrlId->cos4AngleWithM1 * z18AfterPARot) -
+                          (aoCtrlId->sin4AngleWithM1 * z17AfterPARot));
+
+         result.z17 = ( (f->cos4ThetaCR * z17AfterM1Rot) +
+                        (f->sin4ThetaCR * z18AfterM1Rot) ) *
+                      (aoCtrlId->aoScaleFactorVect[15]);
+
+         result.z18 = ( (f->cos4ThetaCR * z18AfterM1Rot) -
+                        (f->sin4ThetaCR * z17AfterM1Rot) ) *
+                      (aoCtrlId->aoScaleFactorVect[16]);
+
+         /* (5*r^2 - 4) * r^3 * cos(3t) and (5*r^2 - 4) * r^3 * cos(3t) */
+
+         z19AfterPARot = (f->cos3ThetaPA * (*(pz+17))) +
+                         (f->sin3ThetaPA * (*(pz+18)));
+         z20AfterPARot = (f->cos3ThetaPA * (*(pz+18))) -
+                         (f->sin3ThetaPA * (*(pz+17)));
+
+         z19AfterM1Rot = aoCtrlId->flipXWithM1 *
+                         ((aoCtrlId->cos3AngleWithM1 * z19AfterPARot) +
+                          (aoCtrlId->sin3AngleWithM1 * z20AfterPARot));
+         z20AfterM1Rot = aoCtrlId->flipYWithM1 *
+                         ((aoCtrlId->cos3AngleWithM1 * z20AfterPARot) -
+                          (aoCtrlId->sin3AngleWithM1 * z19AfterPARot));
+
+         result.z19 = ( (f->cos3ThetaCR * z19AfterM1Rot) +
+                        (f->sin3ThetaCR * z20AfterM1Rot) ) *
+                      (aoCtrlId->aoScaleFactorVect[17]);
+
+         result.z20 = ( (f->cos3ThetaCR * z20AfterM1Rot) -
+                        (f->sin3ThetaCR * z19AfterM1Rot) ) *
+                      (aoCtrlId->aoScaleFactorVect[18]);
+      }
+      else
+      {
+         result.z2 = 0.0;
+         result.z3 = 0.0;
+         result.z4 = 0.0;
+         result.z5 = 0.0;
+         result.z6 = 0.0;
+         result.z7 = 0.0;
+         result.z8 = 0.0;
+         result.z9 = 0.0;
+         result.z10 = 0.0;
+         result.z11 = 0.0;
+         result.z12 = 0.0;
+         result.z13 = 0.0;
+         result.z14 = 0.0;
+         result.z15 = 0.0;
+         result.z16 = 0.0;
+         result.z17 = 0.0;
+         result.z18 = 0.0;
+         result.z19 = 0.0;
+         result.z20 = 0.0;
+      }
+
+      /* Store the result into pAoVectAfterRot */
+
+      *(pAoVectAfterRot) = result.z2;
+      *(pAoVectAfterRot+1) = result.z3;
+      *(pAoVectAfterRot+2) = result.z4;
+      *(pAoVectAfterRot+3) = result.z5;
+      *(pAoVectAfterRot+4) = result.z6;
+      *(pAoVectAfterRot+5) = result.z7;
+      *(pAoVectAfterRot+6) = result.z8;
+      *(pAoVectAfterRot+7) = result.z9;
+      *(pAoVectAfterRot+8) = result.z10;
+      *(pAoVectAfterRot+9) = result.z11;
+      *(pAoVectAfterRot+10) = result.z12;
+      *(pAoVectAfterRot+11) = result.z13;
+      *(pAoVectAfterRot+12) = result.z14;
+      *(pAoVectAfterRot+13) = result.z15;
+      *(pAoVectAfterRot+14) = result.z16;
+      *(pAoVectAfterRot+15) = result.z17;
+      *(pAoVectAfterRot+16) = result.z18;
+      *(pAoVectAfterRot+17) = result.z19;
+      *(pAoVectAfterRot+18) = result.z20;
+
+      semGive(f->access);
+   }
+   else
+   {
+      logMsg("writeWfsToTcs - unable to get mutex for conversion frame\n", 
+             0, 0, 0, 0 ,0 ,0);
+      return(ERROR);
+   }
+
+   /* take mutex semaphore to gain access to wfs arrays */
+
+   if(semTake(wfsLock, WFS_TIMEOUT) != OK)
+   {
+      logMsg("timeout on mutex access wfsLock\n", 0, 0, 0, 0, 0, 0);
+      return(ERROR);
+   }
+   else
+   {
+      /* fill ao data array */
+
+      aoData[0] = (double)(*pTime);               /* time */
+      aoData[1] = (double)(aoCtrlId->aoModeNb);   /* number of coefficients */
+
+      aoData[2] = result.z2;
+      aoData[3] = result.z3;
+      aoData[4] = result.z4;
+      aoData[5] = result.z5;
+      aoData[6] = result.z6;
+      aoData[7] = result.z7;
+      aoData[8] = result.z8;
+      aoData[9] = result.z9;
+      aoData[10] = result.z10;
+      aoData[11] = result.z11;
+      aoData[12] = result.z12;
+      aoData[13] = result.z13;
+      aoData[14] = result.z14;
+      aoData[15] = result.z15;
+      aoData[16] = result.z16;
+      aoData[17] = result.z17;
+      aoData[18] = result.z18;
+      aoData[19] = result.z19;
+      aoData[20] = result.z20;
+
+      /* copy across error terms */
+      for ( i = 0 ; i < aoCtrlId->aoModeNb ; i ++ )
+      {
+         aoData[21+i] = *(pAoErrorsVect +i);
+      }
+
+      /* Copy intermediate values astig0 and astig45 */
+
+      index = 2*(aoCtrlId->aoModeNb) + 2;
+      aoData[index] = astig0;
+      aoData[index+1] = astig45;
+
+      /* release mutex */
+
+      semGive(wfsLock);
+   }
+
+   return(OK);
+}
+
+/* ===================================================================== */
+/*
+ *+
+ * FUNCTION NAME:
+ * writeWfsToSynchro
+ *
+ * INVOCATION:
+ * AO_CTRL_ID aoCtrlId
+ * double     *pFgVect
+ * double     *pFgErrorsVect
+ * double     *pTime
+ * long       STATUS;
+ *
+ * STATUS writeWfsToSynchro(AO_CTRL_ID aoCtrlId, double *pFgVect,
+ *                          double *pFgVectAfterRot, double *pFgErrorsVect, 
+ *                          double *pTime)
+ *
+ * PARAMETERS: (">" input, "!" modified, "<" output)
+ * > AO_CTRL_ID aoCtrlId        - Pointer to the AO control context structure
+ * > double *   pFgVect         - Vector containing the zernike modes
+ * > double *   pFgVectAfterRot - Vector containing the zernikes modes after
+ * >                              rotation
+ * > double *   pFgErrorsVect   - Vector containing the associated errors
+ * > double *   pTime           - Pointer to the associated time stamp value
+ *
+ * FUNCTION VALUE:
+ * long  Status value returned to calling routine, a non-zero value indicates
+ *       an error
+ *
+ * PURPOSE:
+ * Write tilt and focus data to the synchro bus and make available to 
+ * the TCS via gensub records.
+ *
+ * DESCRIPTION:
+ * The tip and tilt values are rotated and scaled as appropriate before 
+ * being written to the synchro bus.
+ * In addition the rotated tip and tilt values are also low pass filtered 
+ * and written to an array ready for transmission to the TCS when required.
+ *
+ * EXTERNAL VARIABLES:
+ * wfsLock       - Global mutex semaphore
+ * ttfData       - ttf data
+ *
+ * PRIOR REQUIREMENTS:
+ * None
+ *
+ * DEFICIENCIES:
+ * Pointers to the ttf data are given.
+ * The contents of theses vectors is not protected by mutex so there is a
+ * requirement placed on the calling task that the contents of these vectors 
+ * do not change for the duration of this routine.
+ *
+ * HISTORY (optional):
+ * 28-Oct-1998  Original version (srp)
+ * 09-Nov-1998  Write fast tip/tilt to synchro bus (srp)
+ * 05-Jan-1999  Add null zernike calculation
+ * 23-Apr-1999  Simplified version for split backplane PWFS1 (cb)
+ * 26-Nov-1999  Update interval as for P2 (cb)
+ * 24-Apr-2000  Inputs now fit the new aoP1Lib (cb)
+ * 29-Mar-2001  Fix rotation matrix (cb)
+ *-
+ */
+
+STATUS writeWfsToSynchro 
+   (
+   AO_CTRL_ID aoCtrlId,
+   double     *pFgVect,
+   double     *pFgVectAfterRot,
+   double     *pFgErrorsVect,
+   double     *pTime
+   )
+{
+   converted  result;
+   frame      *f;
+   double     *pz;
+   double     averageFocus;
+   double     focus;
+   double     tip;
+   double     tilt;
+   double     tipAfterM2;
+   double     tiltAfterM2;
+
+   /* access frame */
+
+   f = ag2m2;
+
+   pz = pFgVect;
+
+   if(semTake(f->access, WFS_TIMEOUT) == OK)
+   {
+      if ( optsensorEnable == GUIDE )
+      {
+         /* first rotate the tip and tilt values to the m2 frame of reference */
+
+         tip = (f->cosThetaPA*(*pz) + f->sinThetaPA*(*(pz+1))) - f->probe[3];
+         tilt = (f->cosThetaPA*(*(pz+1)) - f->sinThetaPA*(*pz)) - f->probe[5];
+
+         tipAfterM2 = (aoCtrlId->flipXWithM2) *
+         (aoCtrlId->cosAngleWithM2 * tip + aoCtrlId->sinAngleWithM2 * tilt);
+         tiltAfterM2 = (aoCtrlId->flipYWithM2) *
+         (aoCtrlId->cosAngleWithM2 * tilt - aoCtrlId->sinAngleWithM2 * tip);
+
+         result.z2 =
+         (f->cosThetaCR * tipAfterM2 + f->sinThetaCR * tiltAfterM2) *
+         aoCtrlId->fgScaleFactorVect[0];
+
+         result.z3 =
+         (f->cosThetaCR * tiltAfterM2 - f->sinThetaCR * tipAfterM2) *
+         aoCtrlId->fgScaleFactorVect[1];
+
+         focus = *(pz+2) - focusModel.focus;
+
+         if ( aoCtrlId->focusCounter == 0 )
+         {
+            aoCtrlId->previousFocus = focus;
+            aoCtrlId->focusCounter ++;
+         }
+
+         averageFocus = 
+         (aoCtrlId->slidingFocusGain * focus) +
+         (aoCtrlId->one_slidingFocusGain * aoCtrlId->previousFocus) ;
+
+         result.z4 = (averageFocus - f->probe[7]) * 
+                     aoCtrlId->fgScaleFactorVect[2];
+
+         aoCtrlId->previousFocus = averageFocus;
+
+      }
+      else
+      {
+         result.z2 = 0.0;
+         result.z3 = 0.0;
+         result.z4 = 0.0;
+
+      }
+
+      /* store the vector after rotation into pFgVectAfterRot */
+
+      *pFgVectAfterRot = result.z2;
+      *(pFgVectAfterRot + 1) = result.z3;
+      *(pFgVectAfterRot + 2) = result.z4;
+
+      semGive(f->access);
+   }
+   else
+   {
+      logMsg("writeWfsToSynchro - unable to get mutex for conversion frame\n", 
+             0, 0, 0, 0 ,0 ,0);
+      return(ERROR);
+   }
+
+   /* scale data and write to the synchro bus, check that pointer has been 
+      initialised with null check */
+
+   if(ptrPwfs2 != NULL)
+   {
+     ptrPwfs2->z1 = (float)(result.z2);
+     ptrPwfs2->z2 = (float)(result.z3);
+     ptrPwfs2->z3 = (float)(result.z4);
+
+     ptrPwfs2->err1   = (float)(*(pFgErrorsVect));
+     ptrPwfs2->err2   = (float)(*(pFgErrorsVect + 1));
+     ptrPwfs2->err3   = (float)(*(pFgErrorsVect + 2));
+     ptrPwfs2->interval  += (float)(0.0001);
+
+     ptrPwfs2->time = (double)(*pTime);
+
+     /* raise interrupt on SCS */
+
+     rmIntSend (INT3, SCS_NODE);
+   }
+
+   /* filter the tilt values and make available to the TCS gensubs */
+
+   if(semTake(wfsLock, WFS_TIMEOUT) != OK)
+   {
+      logMsg("timeout on mutex access wfsLock\n", 0, 0, 0, 0, 0, 0);
+      return(ERROR);
+   }
+   else
+   {
+      ttfData[0] = (*pTime);
+      ttfData[1] = (double)(aoCtrlId->aoModeNb);
+/*
+      ttfData[2] = dfilter(result.z2, (3 + 0));
+      ttfData[3] = dfilter(result.z3, (3 + 1));
+      ttfData[4] = dfilter(result.z4, (3 + 2));
+*/
+      ttfData[2] = newDfilter(result.z2, 0);
+      ttfData[3] = newDfilter(result.z3, 1);
+      ttfData[4] = result.z4;               /* focus is already filtered */
+
+      ttfData[5] = (double)(*(pFgErrorsVect));
+      ttfData[6] = (double)(*(pFgErrorsVect+1));
+      ttfData[7] = (double)(*(pFgErrorsVect+2));
+
+      /* pop raw zernike values in for later display if desired */
+
+      ttfData[8] = (double)result.z2;
+      ttfData[9] = (double)result.z3;
+      ttfData[10] = (double)result.z4;
+
+      /* release mutex */
+
+      semGive(wfsLock);
+   }
+
+   return(OK);
+}
+
+/* ===================================================================== */
+/* INDENT OFF */
+/*
+ * Function name:
+ * ttfZero
+ * 
+ * Purpose:
+ * Receive ttfZero information from the TCS combined with probe angle
+ *
+ * Invocation:
+ * long ttfZero (struct genSubRecord * pgsub)
+ *
+ * Parameters in:
+ * > struct genSubRecord *pgsub pointer to gensub record
+ * > pgsub->a  string    guide probe angle
+ *
+ * Parameters out:
+ * None
+ * 
+ * Return value:
+ * < status   int      OK or ERROR
+ *
+ * Globals: 
+ * External functions:
+ * None
+ * 
+ * External variables:
+ * 
+ * Requirements:
+ * 
+ * 
+ * Author:
+ * Sean Prior  (srp@roe.ac.uk)
+ * 
+ * History:
+ * 20-Nov-1998: Original(srp)
+ * 21-Jan-1999: Read in probe angle on input A, add to tcs angle
+ * 22-Jan-1999: Problem workaround - if cannot connect to probeAngle record
+ *              then set probeAngle to 0.0 but do not logMsg
+ * 24-Jan-1999: read ports B and C for fudge factors - port B selects add or 
+ *              subtract of the Zeiss angle, port C provides an additional 
+ *              rotation angle rotationAngle = tcsAngle + (polarityFudge * 
+ *              (zeiss angle + rotationFudge))
+ * 23-Apr-1999  Simplified version for split backplane PWFS1 (cb)
+ * 11-Dec-2000  CompositeAngle = RT - CR + PA (cb)
+ * 29-Mar-2001: Composite angle now * (-1) in ttfZero (cb)
+ *
+ */
+
+/* INDENT ON */
+
+/* ===================================================================== */
+
+long ttfZero 
+   (
+   struct genSubRecord * pgsub
+   )
+{
+   int     index = 0;
+   frame   *f;
+   double  *ptr;
+   double  fudgeAngle = 0.0; 
+   double  compositeAngle = 0.0;
+
+   ptr = (double *) pgsub->j;
+
+   /* Read fudge factor if necessary */
+
+   if (sscanf(pgsub->b, "%lf", &fudgeAngle) != 1)
+   {
+      fudgeAngle = 0.0;
+   }
+
+   f = ag2m2;
+
+   /* access frame */
+
+   if(semTake(f->access, WFS_TIMEOUT) == OK)
+   {
+      /* read in the array */
+
+      for (index = 0; index < TTF_ZERO_ARRAY_SIZE; index++)
+      {
+          f->null[index] = *(ptr++);
+      }
+
+      /* calculate composite correction angle */
+      /* null[3] corresponds to the cass rotator angle */
+
+      compositeAngle = ((f->CRAngleSign * (f->null[3])) - fudgeAngle)
+                       *DEGS2RADS;
+
+      f->thetaCR = compositeAngle;
+      f->sinThetaCR = sin(f->thetaCR);
+      f->cosThetaCR = cos(f->thetaCR);
+      f->sin2ThetaCR = sin(2*f->thetaCR);
+      f->cos2ThetaCR = cos(2*f->thetaCR);
+      f->sin3ThetaCR = sin(3*f->thetaCR);
+      f->cos3ThetaCR = cos(3*f->thetaCR);
+      f->sin4ThetaCR = sin(4*f->thetaCR);
+      f->cos4ThetaCR = cos(4*f->thetaCR);
+
+      f->thetaPA = f->probe[2];
+      f->sinThetaPA = sin(f->thetaPA);
+      f->cosThetaPA = cos(f->thetaPA);
+      f->sin2ThetaPA = sin(2*f->thetaPA);
+      f->cos2ThetaPA = cos(2*f->thetaPA);
+      f->sin3ThetaPA = sin(3*f->thetaPA);
+      f->cos3ThetaPA = cos(3*f->thetaPA);
+      f->sin4ThetaPA = sin(4*f->thetaPA);
+      f->cos4ThetaPA = cos(4*f->thetaPA);
+
+      semGive(f->access);
+   }
+   else
+   {
+      logMsg("Modify frame - unable to get mutex for conversion frame\n", 
+             0, 0, 0, 0 ,0 ,0);
+      return(ERROR);
+   }
+
+   /* Compute focus zero point model */
+
+   if(semTake(accessFocusModel, ZP_MODEL_SEM_TIMEOUT) == OK)
+   {
+     if (focusModel.applyModel == 0 )
+     {
+        focusModel.focus = 0.0;
+     }
+     else
+     {
+        /* For now theta of the focus = 0 */
+
+        focusModel.focus =
+        focusModel.a1*cos(0.0 + focusModel.p1*DEGS2RADS) +
+        focusModel.a2*cos(2*0.0 + focusModel.p2*DEGS2RADS) +
+        focusModel.c;
+     }
+
+     semGive (accessFocusModel);
+   }
+   else
+   {
+      logMsg("Modify frame - unable to get mutex for focusModel \n",
+             0, 0, 0, 0 ,0 ,0);
+      return(ERROR);
+   }
+
+   /* write sample values to genSub ouputs */
+
+   *(double *) pgsub->vala = f->null[0];         /* tSent */ 
+   *(double *) pgsub->valb = f->null[1];         /* tAppl */
+   *(double *) pgsub->valc = f->null[2];         /* trackId */
+   *(double *) pgsub->vald = f->null[3];         /* tcsAngle (degrees) */
+   *(double *) pgsub->vale = 0.0;                /* nothing */
+   *(double *) pgsub->valf = compositeAngle/DEGS2RADS;   
+                                                 /* composite angle (degrees) */
+   *(double *) pgsub->valg = f->null[5];         /* z2 */
+   *(double *) pgsub->valh = f->null[6];         /* z3 */
+   *(double *) pgsub->vali = f->null[7];         /* z4 */
+
+   *(double *) pgsub->valj = focusModel.focus;
+
+   return (OK);
+}
+
+/* ===================================================================== */
+/* INDENT OFF */
+/*
+ * Function name:
+ * aoZero
+ * 
+ * Purpose:
+ * Receive aoZero information from the TCS
+ *
+ * Invocation:
+ * long aoZero (struct genSubRecord * pgsub)
+ *
+ * Parameters in:
+ * > struct genSubRecord *pgsub pointer to gensub record
+ *
+ * Parameters out:
+ * None
+ * 
+ * Return value:
+ * < status   int      OK or ERROR
+ *
+ * Globals: 
+ * External functions:
+ * None
+ * 
+ * External variables:
+ * 
+ * Requirements:
+ * 
+ * 
+ * Author:
+ * Sean Prior  (srp@roe.ac.uk)
+ * 
+ * History:
+ * 20-Nov-1998: Original(srp)
+ * 21-Jan-1999: Read in probe angle on input A, add to tcs angle
+ * 22-Jan-1999: Problem workaround - if cannot connect to probeAngle record
+ *              then set probeAngle to 0.0 but do not logMsg
+ * 24-Jan-1999: read ports B and C for fudge factors - port B selects add or 
+ *              subtract of the Zeiss angle, port C provides an additional 
+ *              rotation angle
+ * rotationAngle = tcsAngle + (polarityFudge * (zeiss angle + rotationFudge))
+ * 23-Apr-1999  Simplified version for split backplane PWFS1 (cb)
+ * 21-June-1999 Modified to read tableAngle and the armAngle from a&g (cb)
+ * 18-Nov-1999  Modified to add also cass rotator angle (cb)
+ * 24-Nov-1999  Modified to add a fudge angle to the table angle (cb)
+ * 26-Nov-1999  Change sign in the magic formula for the composite angle(cb)
+ * 13-Dec-1999  Remove limit checks for the cass rotator angle (cb)
+ * 12-jan-2000  Change sign in the magic formula +arm now (cb)
+ * 29-Mar-2001: Composite angle now * (-1) in aoZero (cb)
+ *
+ */
+
+/* INDENT ON */
+
+/* ===================================================================== */
+
+long aoZero 
+   (
+   struct genSubRecord * pgsub
+   )
+{
+   int     index = 0;
+   frame   *f;
+   double  *ptr;
+   double  fudgeAngle = 0.0;
+   double  compositeAngle = 0.0;
+   double  applyAstig = 1.0;
+
+   ptr = (double *) pgsub->j;
+
+   /* Read fudge factor and apply astig if necessary */
+
+   if (sscanf(pgsub->b, "%lf", &fudgeAngle) != 1)
+   {
+      fudgeAngle = 0.0;
+   }
+
+   if (sscanf(pgsub->d, "%lf", &applyAstig) != 1)
+   {
+      applyAstig = 1.0;
+   }
+
+   f = ag2tcs;
+
+   /* access frame */
+
+   if(semTake(f->access, WFS_TIMEOUT) == OK)
+   {
+      /* read in the array */
+
+      for (index = 0; index < AO_ZERO_ARRAY_SIZE; index++)
+      {
+          f->null[index] = *(ptr++);
+      }
+
+      if ( applyAstig == 0.0 ) 
+      {
+         f->null[8] = 0.0 ;
+         f->null[9] = 0.0 ;
+      }
+      else
+      {
+         f->null[8] = applyAstig * f->null[8];
+         f->null[9] = applyAstig * f->null[9];
+      }
+
+      /* calculate composite correction angle */
+
+      compositeAngle = ((f->CRAngleSign * (f->null[3])) - fudgeAngle)
+                       *DEGS2RADS;
+
+      f->thetaCR = compositeAngle;
+      f->sinThetaCR = sin(f->thetaCR);
+      f->cosThetaCR = cos(f->thetaCR);
+      f->sin2ThetaCR = sin(2*f->thetaCR);
+      f->cos2ThetaCR = cos(2*f->thetaCR);
+      f->sin3ThetaCR = sin(3*f->thetaCR);
+      f->cos3ThetaCR = cos(3*f->thetaCR);
+      f->sin4ThetaCR = sin(4*f->thetaCR);
+      f->cos4ThetaCR = cos(4*f->thetaCR);
+
+      f->thetaPA = f->probe[2];
+      f->sinThetaPA = sin(f->thetaPA);
+      f->cosThetaPA = cos(f->thetaPA);
+      f->sin2ThetaPA = sin(2*f->thetaPA);
+      f->cos2ThetaPA = cos(2*f->thetaPA);
+      f->sin3ThetaPA = sin(3*f->thetaPA);
+      f->cos3ThetaPA = cos(3*f->thetaPA);
+      f->sin4ThetaPA = sin(4*f->thetaPA);
+      f->cos4ThetaPA = cos(4*f->thetaPA);
+
+      semGive(f->access);
+   }
+   else
+   {
+      logMsg("Modify frame - unable to get mutex for conversion frame\n", 
+             0, 0, 0, 0 ,0 ,0);
+      return(ERROR);
+   }
+
+   /* compute astigmatism zero point model */
+
+   if(semTake(accessAstigModel, ZP_MODEL_SEM_TIMEOUT) == OK)
+   {
+     if (astigModel.applyModel == 0 )
+     {
+        astigModel.astig0 = 0.0;
+        astigModel.astig45 = 0.0;
+     }
+     else
+     {
+        /* For now theta = 0.0 */
+        astigModel.astig0 = 
+        astigModel.a1*cos(0.0 + astigModel.p1*DEGS2RADS) +
+        astigModel.a2*cos(2*0.0 + astigModel.p2*DEGS2RADS) +
+        astigModel.a3*cos(4*0.0 + astigModel.p3*DEGS2RADS) +
+        astigModel.c;
+
+        astigModel.astig45 = 
+        astigModel.b1*sin(0.0 + astigModel.pp1*DEGS2RADS) +
+        astigModel.b2*sin(2*0.0 + astigModel.pp2*DEGS2RADS) +
+        astigModel.b3*sin(4*0.0 + astigModel.pp3*DEGS2RADS) +
+        astigModel.d;
+     }
+
+     semGive (accessAstigModel);
+   }
+   else
+   {
+      logMsg("Modify frame - unable to get mutex for astigModel \n", 
+             0, 0, 0, 0 ,0 ,0);
+      return(ERROR);
+   }
+
+   /* compute trefoil zero point model */
+
+   if(semTake(accessTrefoilModel, ZP_MODEL_SEM_TIMEOUT) == OK)
+   {
+     if (trefoilModel.applyModel == 0 )
+     {
+        trefoilModel.costref = 0.0;
+        trefoilModel.sintref = 0.0;
+     }
+     else
+     {
+        /* For now theta = 0.0 */
+
+        trefoilModel.costref = 
+        trefoilModel.a*cos(3*0.0 + trefoilModel.p*DEGS2RADS) +
+        trefoilModel.c;
+
+        trefoilModel.sintref = 
+        trefoilModel.b*sin(3*0.0 + trefoilModel.pp*DEGS2RADS) +
+        trefoilModel.d;
+     }
+
+     semGive (accessTrefoilModel);
+   }
+   else
+   {
+      logMsg("Modify frame - unable to get mutex for trefoilModel \n", 
+             0, 0, 0, 0 ,0 ,0);
+      return(ERROR);
+   }
+
+   /* compute coma zero point model */
+
+   if(semTake(accessComaModel, ZP_MODEL_SEM_TIMEOUT) == OK)
+   {
+     if (comaModel.applyModel == 0 )
+     {
+        comaModel.comaX = 0.0;
+        comaModel.comaY = 0.0;
+     }
+     else
+     {
+        /* For now theta = 0.0 */
+
+        comaModel.comaX = 
+        comaModel.a*cos(0.0 + comaModel.p*DEGS2RADS) +
+        comaModel.c;
+
+        comaModel.comaY = 
+        comaModel.b*sin(0.0 + comaModel.pp*DEGS2RADS) +
+        comaModel.d;
+     }
+
+     semGive (accessComaModel);
+   }
+   else
+   {
+      logMsg("Modify frame - unable to get mutex for comaModel \n", 
+             0, 0, 0, 0 ,0 ,0);
+      return(ERROR);
+   }
+
+
+   /* write sample values to genSub ouputs */
+
+   *(double *) pgsub->vala = f->null[0];         /* tSent */ 
+   *(double *) pgsub->valb = f->null[1];         /* tAppl */
+   *(double *) pgsub->valc = f->null[2];         /* trackId */
+   *(double *) pgsub->vald = f->null[3];         /* tcsAngle (degrees) */
+   *(double *) pgsub->vale = 0.0;                /* nothing */
+   *(double *) pgsub->valf = compositeAngle/DEGS2RADS;   
+                                                 /* composite angle (degrees) */
+   /* *(double *) pgsub->valg = f->null[5]; */        /* z2 */
+   /* *(double *) pgsub->valh = f->null[6]; */        /* z3 */
+   /* *(double *) pgsub->vali = f->null[7]; */        /* z4 */
+   *(double *) pgsub->valg = astigModel.astig0;
+   *(double *) pgsub->valh = astigModel.astig45;
+   *(double *) pgsub->vali = trefoilModel.costref;
+   *(double *) pgsub->valj = trefoilModel.sintref;
+   *(double *) pgsub->valk = comaModel.comaX;
+   *(double *) pgsub->vall = comaModel.comaY;
+
+   return (OK);
+}
+
+/* ===================================================================== */
+/*
+ *+
+ * FUNCTION NAME:
+ * showAoDiagP2
+ *
+ * INVOCATION:
+ * struct genSubRecord * pgsub
+ * long   status;
+ *
+ * long showAoDiagP2 (struct genSubRecord * pgsub)
+ *
+ * PARAMETERS: (">" input, "!" modified, "<" output)
+ * > genSubRecord (struct genSubRecord *)   pointer to record
+ *
+ * FUNCTION VALUE:
+ * long  Status value returned to calling routine, a non-zero value indicates
+ *       an error
+ *
+ * PURPOSE:
+ * Copy diagnostic data from ao circular buffer of pwfs2 to gensub outputs for 
+ * display
+ *
+ * DESCRIPTION:
+ *
+ * EXTERNAL VARIABLES:
+ *
+ * PRIOR REQUIREMENTS:
+ * None
+ *
+ * DEFICIENCIES:
+ * None known.
+ *
+ * HISTORY (optional):
+ * 12-Jan-1999  Original version   Sean Prior
+ * 26-Apr-1999  Modified to display 6x6 centroids data
+ * 22-Aug-2001  Modified to display 2x2 centroids data
+ *-
+ */
+
+STATUS showAoDiagP2
+   (
+   struct genSubRecord * pgsub
+   )
+{
+   int i = 0;
+   int j = 0;
+   int indexCb;
+   int wfsStatus;
+   double   *pCentroids;
+   double   *pTotal;
+   double   time;
+
+   if (aoCbAoCtrlIdP2 == NULL)
+   {
+      /* context structure not yet initialised */
+      return(OK);
+   }
+
+   if(semTake(accessAoData, WFS_TIMEOUT) != OK)
+   {
+      logMsg("timeout on mutex access accessAoData\n", 0, 0, 0, 0, 0, 0);
+      return(ERROR);
+   }
+   else
+   {
+      /* grab data from the circular buffer */
+
+      indexCb = aoCbAoCtrlIdP2->position;
+
+      if (( indexCb == 0 ) && ( aoCbAoCtrlIdP2->counter == 0))
+         return (OK);
+
+      if ( (indexCb < 0) && (indexCb > (CB_AO_CTRL_RECORD_NB - 1)) )
+      {
+         printf ( "showAoDiag1(): position in CB out of range\n" ) ;
+         return (OK);
+      }
+
+      if ( indexCb != 0 )
+         indexCb -= 1;
+      else
+         indexCb = CB_AO_CTRL_RECORD_NB - 1;
+
+      pCentroids = aoCbAoCtrlIdP2->cbAoCtrlRecord[indexCb].centroidsVect;
+      pTotal = aoCbAoCtrlIdP2->cbAoCtrlRecord[indexCb].totalCountsVect;
+      wfsStatus = aoCbAoCtrlIdP2->cbAoCtrlRecord[indexCb].wfsStatus;
+      time = aoCbAoCtrlIdP2->cbAoCtrlRecord[indexCb].time;
+
+      j = 0;
+      for ( i = 0 ; i < aoCcdIdP2->subapNb ; i ++ )
+      {
+          if ( aoCcdIdP2->subapUsedVect[i] == TRUE )
+          {
+             *(localCentroidsVect + 2*i) = *(pCentroids + 2*j);
+             *(localCentroidsVect + 2*i+1) = *(pCentroids + 2*j+1);
+             *(localTotalCountsVect + i) = *(pTotal + j);
+             j ++ ;
+          }
+          else
+          {
+             *(localCentroidsVect + 2*i) = -99.99;
+             *(localCentroidsVect + 2*i+1) = -99.99;
+             *(localTotalCountsVect + i) = -99.99;
+          }
+      }
+
+      *(localTotalCountsVect + i) = *(pTotal + j);
+
+      /* data intact, write to genSub outputs */
+
+      *(int *)pgsub->vala = indexCb;
+      *(int *)pgsub->valb = wfsStatus;
+      *(double *)pgsub->valc = *(localCentroidsVect+0); /* subap 1 */
+      *(double *)pgsub->vald = *(localCentroidsVect+1); 
+      *(double *)pgsub->vale = *(localCentroidsVect+2); /* subap 2 */
+      *(double *)pgsub->valf = *(localCentroidsVect+3); 
+      *(double *)pgsub->valg = *(localCentroidsVect+4); /* subap 3 */
+      *(double *)pgsub->valh = *(localCentroidsVect+5); 
+      *(double *)pgsub->vali = *(localCentroidsVect+6); /* subap 4 */
+      *(double *)pgsub->valj = *(localCentroidsVect+7); 
+      *(double *)pgsub->valk = *(localTotalCountsVect + 0); /* total subap 1 */
+      *(double *)pgsub->vall = *(localTotalCountsVect + 1); /* total subap 2 */
+      *(double *)pgsub->valm = *(localTotalCountsVect + 2); /* total subap 3 */
+      *(double *)pgsub->valn = *(localTotalCountsVect + 3); /* total subap 4 */
+      *(double *)pgsub->valo = *(localTotalCountsVect + 4); /* whole total */
+      *(double *)pgsub->valp = time;
+
+      semGive (accessAoData);
+   }
+
+   return (OK);
+}
+
+/* ===================================================================== */
+/*
+ *+
+ * FUNCTION NAME:
+ * showFgDiagP2
+ *
+ * INVOCATION:
+ * struct genSubRecord * pgsub
+ * long   status;
+ *
+ * long    showFgDiagP2(struct genSubRecord * pgsub)
+ *
+ * PARAMETERS: (">" input, "!" modified, "<" output)
+ * > genSubRecord (struct genSubRecord *)   pointer to record
+ *
+ * FUNCTION VALUE:
+ * long  Status value returned to calling routine, a non-zero value indicates
+ *       an error
+ *
+ * PURPOSE:
+ * Copy diagnostic data from fg circular buffer of pwfs2 to gensub outputs for 
+ * display
+ *
+ * DESCRIPTION:
+ *
+ * EXTERNAL VARIABLES:
+ *
+ * PRIOR REQUIREMENTS:
+ * None
+ *
+ * DEFICIENCIES:
+ * None known.
+ *
+ * HISTORY (optional):
+ * 12-Jan-1999  Original version   Sean Prior
+ * 26-Apr-1999  Modified for split backplane version...
+ * 22-Aug-2001  Modified to display 2x2 centroids data
+ *-
+ */
+
+STATUS showFgDiagP2(struct genSubRecord * pgsub)
+{
+   int i=0;
+   int j=0;
+   int indexCb;
+   int wfsStatus;
+   double *pGuide;
+   double *pTotal;
+   double *pCentroids;
+   double time;
+
+   if (aoCbFgCtrlIdP2 == NULL )
+   {
+       /* context structure not yet initialised */
+       return(OK);
+   }
+
+   if(semTake(accessFgData, WFS_TIMEOUT) != OK)
+   {
+      logMsg("timeout on mutex access accessFgData\n", 0, 0, 0, 0, 0, 0);
+      return(ERROR);
+   }
+   else
+   {
+      
+      /* grab data from the circular buffer */
+
+      indexCb = aoCbFgCtrlIdP2->position;
+
+      if (( indexCb == 0 ) && ( aoCbFgCtrlIdP2->counter == 0))
+         return (OK);
+
+      if ( (indexCb < 0) && (indexCb > (CB_FG_CTRL_RECORD_NB - 1)) )
+      {
+         printf ( "showFgDiag1(): position in CB out of range\n" ) ;
+         return (ERROR);
+      }
+
+      if ( indexCb != 0 )
+         indexCb -= 1;
+      else
+         indexCb = CB_FG_CTRL_RECORD_NB - 1;
+
+      wfsStatus = aoCbFgCtrlIdP2->cbFgCtrlRecord[indexCb].wfsStatus;
+      time = aoCbFgCtrlIdP2->cbFgCtrlRecord[indexCb].time;
+      pGuide = aoCbFgCtrlIdP2->cbFgCtrlRecord[indexCb].guidesVect;
+      pTotal = aoCbFgCtrlIdP2->cbFgCtrlRecord[indexCb].totalCountsVect;
+      pCentroids = aoCbFgCtrlIdP2->cbFgCtrlRecord[indexCb].centroidsVect;
+
+      j = 0;
+      for ( i = 0 ; i < aoCcdIdP2->subapNb ; i ++ )
+      {
+          if ( aoCcdIdP2->subapUsedVect[i] == TRUE )
+          {
+             *(localFgCentroidsVect + 2*i) = *(pCentroids + 2*j);
+             *(localFgCentroidsVect + 2*i+1) = *(pCentroids + 2*j+1);
+             *(localFgTotalCountsVect + i) = *(pTotal + j);
+             j ++ ;
+          }
+          else
+          {
+             *(localFgCentroidsVect + 2*i) = -99.99;
+             *(localFgCentroidsVect + 2*i+1) = -99.99;
+             *(localFgTotalCountsVect + i) = -99.99;
+          }
+      }
+
+      *(localFgTotalCountsVect + i) = *(pTotal + j);
+
+      /* data intact, write to genSub outputs */
+
+      *(int *)pgsub->vala = indexCb;
+      *(int *)pgsub->valb = wfsStatus;
+      *(double *)pgsub->valc = *(pGuide);
+      *(double *)pgsub->vald = *(pGuide + 1);
+      *(double *)pgsub->vale = *(localFgCentroidsVect + 0); /* subap 1 */
+      *(double *)pgsub->valf = *(localFgCentroidsVect + 1);
+      *(double *)pgsub->valg = *(localFgCentroidsVect + 2); /* subap 2 */
+      *(double *)pgsub->valh = *(localFgCentroidsVect + 3);
+      *(double *)pgsub->vali = *(localFgCentroidsVect + 4); /* subap 3 */
+      *(double *)pgsub->valj = *(localFgCentroidsVect + 5);
+      *(double *)pgsub->valk = *(localFgCentroidsVect + 6); /* subap 4 */
+      *(double *)pgsub->vall = *(localFgCentroidsVect + 7);
+      *(double *)pgsub->valm = *(localFgTotalCountsVect+0); /* total subap 1 */
+      *(double *)pgsub->valn = *(localFgTotalCountsVect+1); /* total subap 2 */
+      *(double *)pgsub->valo = *(localFgTotalCountsVect+2); /* total subap 3 */
+      *(double *)pgsub->valp = *(localFgTotalCountsVect+3); /* total subap 4 */
+      *(double *)pgsub->valq = *(localFgTotalCountsVect+4); /* whole total */
+      *(double *)pgsub->valr = time;
+
+
+      semGive (accessFgData);
+   }
+
+   return (OK);
+}
+
+/* ===================================================================== */
+/*
+ *+
+ * FUNCTION NAME:
+ * showCbDiag
+ *
+ * INVOCATION:
+ * struct genSubRecord * pgsub
+ * long   status;
+ *
+ * long showCbDiag(struct genSubRecord * pgsub)
+ *
+ * PARAMETERS: (">" input, "!" modified, "<" output)
+ * > genSubRecord (struct genSubRecord *)   pointer to record
+ *
+ * FUNCTION VALUE:
+ * long  Status value returned to calling routine, a non-zero value indicates
+ *       an error
+ *
+ * PURPOSE:
+ * Copy diagnostic data from circular buffers of to gensub outputs for 
+ * display
+ *
+ * DESCRIPTION:
+ *
+ * EXTERNAL VARIABLES:
+ *
+ * PRIOR REQUIREMENTS:
+ * None
+ *
+ * DEFICIENCIES:
+ * None known.
+ *
+ * HISTORY (optional):
+ * 24-Apr-2000 Original version - cb
+ *-
+ */
+
+STATUS showCbDiag(struct genSubRecord * pgsub)
+{
+   int           indexCbIm;
+   int           indexCbAoCtrl;
+   int           indexCbFgCtrl;
+   int           counterCbIm;
+   int           counterCbAoCtrl;
+   int           counterCbFgCtrl;
+
+   /* Check the circular buffer structures are initialised */
+
+   if (aoCbAoCtrlIdP2 == NULL )
+   {
+       /* context structure not yet initialised */
+       return(OK);
+   }
+
+   if (aoCbFgCtrlIdP2 == NULL )
+   {
+       /* context structure not yet initialised */
+       return(OK);
+   }
+
+   if (aoCbImIdP2 == NULL )
+   {
+       /* context structure not yet initialised */
+       return(OK);
+   }
+
+   /* Grab data from the circular buffers */
+
+   indexCbAoCtrl = aoCbAoCtrlIdP2->position;
+   counterCbAoCtrl = aoCbAoCtrlIdP2->counter;
+
+   indexCbFgCtrl = aoCbFgCtrlIdP2->position;
+   counterCbFgCtrl = aoCbFgCtrlIdP2->counter;
+
+   indexCbIm = aoCbImIdP2->position;
+   counterCbIm = aoCbImIdP2->counter;
+
+   *(int *)pgsub->vala = indexCbIm;
+   *(int *)pgsub->valb = counterCbIm;
+   *(int *)pgsub->valc = indexCbAoCtrl;
+   *(int *)pgsub->vald = counterCbAoCtrl;
+   *(int *)pgsub->vale = indexCbFgCtrl;
+   *(int *)pgsub->valf = counterCbFgCtrl;
+
+   return (OK);
+}
+
+
+/* ===================================================================== */
+/*
+ *+
+ * FUNCTION NAME:
+ * gensubFanDoubles
+ *
+ * INVOCATION:
+ * struct genSubRecord * pgsub
+ * long   status;
+ *
+ * long gensubFanDoubles(struct genSubRecord * pgsub)
+ *
+ * PARAMETERS: (">" input, "!" modified, "<" output)
+ * > genSubRecord (struct genSubRecord *)   pointer to record
+ *
+ * FUNCTION VALUE:
+ * long  Status value returned to calling routine, a non-zero value indicates
+ *       an error
+ *
+ * PURPOSE:
+ * Receive array of double on port A, copy individual elements to output
+ * ports. Primarily intended for display to dm screens.
+ *
+ * DESCRIPTION:
+ *
+ * EXTERNAL VARIABLES:
+ *
+ * PRIOR REQUIREMENTS:
+ * None
+ *
+ * DEFICIENCIES:
+ * None known.
+ *
+ * HISTORY (optional):
+ * 23-Jan-1999  Original version   Sean Prior
+ *-
+ */
+
+long gensubFanDoubles 
+   (
+   struct genSubRecord * pgsub
+   )
+{
+   int index = 0;
+   double     localArray[19];
+   double     *ptr = NULL;
+
+   ptr = (double *) pgsub->a;
+
+   /* read in the array from port A */
+
+   for (index = 0; index < 19; index++)
+   {
+       localArray[index] = *(ptr++);
+   }
+
+   /* write values to gensub outputs for screen display */
+
+   *(double *)pgsub->vala = localArray[0];        /* Z2 or E2 */
+   *(double *)pgsub->valb = localArray[1];
+   *(double *)pgsub->valc = localArray[2];
+   *(double *)pgsub->vald = localArray[3];
+   *(double *)pgsub->vale = localArray[4];
+   *(double *)pgsub->valf = localArray[5];
+   *(double *)pgsub->valg = localArray[6];
+   *(double *)pgsub->valh = localArray[7];
+   *(double *)pgsub->vali = localArray[8];
+   *(double *)pgsub->valj = localArray[9];
+   *(double *)pgsub->valk = localArray[10];
+   *(double *)pgsub->vall = localArray[11];
+   *(double *)pgsub->valm = localArray[12];
+   *(double *)pgsub->valn = localArray[13];
+   *(double *)pgsub->valo = localArray[14];
+   *(double *)pgsub->valp = localArray[15];
+   *(double *)pgsub->valq = localArray[16];
+   *(double *)pgsub->valr = localArray[17];
+   *(double *)pgsub->vals = localArray[18];   /* Z20 or E20 */
+
+   return (OK);
+}
+
+/* ===================================================================== */
+/*
+ *+
+ * FUNCTION NAME:
+ * showThreshDiagP2
+ *
+ * INVOCATION:
+ * struct genSubRecord * pgsub
+ * long   status;
+ *
+ * long showThreshDiagP2 (struct genSubRecord * pgsub)
+ *
+ * PARAMETERS: (">" input, "!" modified, "<" output)
+ * > genSubRecord (struct genSubRecord *)   pointer to record
+ *
+ * FUNCTION VALUE:
+ * long  Status value returned to calling routine, a non-zero value indicates
+ *       an error
+ *
+ * PURPOSE:
+ * Copy diagnostic data from aoCtrlId structure to gensub outputs for display
+ *
+ * DESCRIPTION:
+ *
+ * EXTERNAL VARIABLES:
+ *
+ * PRIOR REQUIREMENTS:
+ * None
+ *
+ * DEFICIENCIES:
+ * None known.
+ *
+ * HISTORY (optional):
+ * 14-Sep-2001  Original creation
+ *-
+ */
+
+STATUS showThreshDiagP2
+   (
+   struct genSubRecord * pgsub
+   )
+{
+   int i = 0;
+   int j = 0;
+   double   *pThreshold;
+
+   if (aoCtrlIdP2 == NULL)
+   {
+      /* context structure not yet initialised */
+      return(OK);
+   }
+
+   /* grab data from the ao control structure */
+
+   pThreshold = aoCtrlIdP2->thresholdVect;
+
+   j = 0;
+   for ( i = 0 ; i < aoCcdIdP2->subapNb ; i ++ )
+   {
+       if ( aoCcdIdP2->subapUsedVect[i] == TRUE )
+       {
+          *(localThresholdVect + i) = *(pThreshold + j);
+          j ++ ;
+       }
+       else
+       {
+          *(localThresholdVect + i) = -99.99;
+       }
+   }
+
+   /* write to genSub outputs */
+
+   *(double *)pgsub->vala = *(localThresholdVect+0);
+   *(double *)pgsub->valb = *(localThresholdVect+1);
+   *(double *)pgsub->valc = *(localThresholdVect+2);
+   *(double *)pgsub->vald = *(localThresholdVect+3);
+
+   return (OK);
+}
+
+/* ===================================================================== */
+/* INDENT OFF */
+/*
+ * Function name:
+ * probeOffset
+ *
+ * Purpose:
+ * Read probe offset information from the agSeq combined with probe angle
+ *
+ * Invocation:
+ * long probeOffset (struct genSubRecord * pgsub)
+ *
+ * Parameters:
+ * > struct genSubRecord *pgsub pointer to gensub record
+ *
+ * Return value:
+ * < status   int      OK or ERROR
+ *
+ * Globals:
+ * None
+ *
+ * External variables:
+ *
+ * Requirements:
+ *
+ * Author:
+ * Corinne Boyer
+ *
+ * History:
+ * 07-May-2001: original creation
+ *
+ */
+
+/* INDENT ON */
+
+/* ===================================================================== */
+
+long probeOffset 
+   (
+   struct genSubRecord * pgsub
+   )
+{
+   int    index;
+   frame  *fTtf;
+   frame  *fAo;
+   double *ptr;
+   double *ptr1;
+   double PAangle;
+   double CRangle;
+   double scaleX;
+   double scaleY;
+   double scaleZ;
+
+   fTtf = ag2m2;
+   fAo = ag2tcs;
+ 
+   /* Check if the poScaleId is already initialized */
+
+   if ( poScaleId == NULL )
+   {
+      return ( ERROR );
+   } 
+
+   /* Read the gensub fields */
+
+   ptr = (double *) pgsub->j;
+   ptr1 = ptr;
+
+   if ( semTake(poScaleId->accessPoScale, PO_SCALE_TIMEOUT) == OK)
+   {
+      scaleX = poScaleId->probeScaleX;
+      scaleY = poScaleId->probeScaleY;
+      scaleZ = poScaleId->probeScaleZ;
+      PAangle = poScaleId->probeAngleScale;
+      CRangle = poScaleId->CRAngleScale;
+      semGive (poScaleId->accessPoScale);
+   }
+   else
+   {
+      logMsg("Modify frame - unable to get mutex for poScaleId frame\n",
+             0, 0, 0, 0 ,0 ,0);
+      return(ERROR);
+   }
+
+   /* read in the array */
+
+   if(semTake(fTtf->access, WFS_TIMEOUT) == OK)
+   {
+      for (index = 0; index < PROBE_ARRAY_SIZE; index++)
+      {
+          fTtf->probe[index] = *(ptr++);
+      }
+
+      fTtf->probe[2] *= PAangle;
+      fTtf->probe[3] *= scaleX;
+      fTtf->probe[5] *= scaleY;
+      fTtf->probe[7] *= scaleZ;
+      fTtf->CRAngleSign = CRangle;
+      
+      semGive(fTtf->access);
+   }
+   else
+   {
+      logMsg("Modify frame - unable to get mutex for conversion frame\n", 
+             0, 0, 0, 0 ,0 ,0);
+      return(ERROR);
+   }
+
+   if(semTake(fAo->access, WFS_TIMEOUT) == OK)
+   {
+      for (index = 0; index < PROBE_ARRAY_SIZE; index++)
+      {
+          fAo->probe[index] = *(ptr1++);
+      }
+
+      fAo->probe[2] *= PAangle;
+      fAo->probe[3] *= scaleX;
+      fAo->probe[5] *= scaleY;
+      fAo->probe[7] *= scaleZ;
+      fAo->CRAngleSign = CRangle;
+      
+      semGive(fAo->access);
+   }
+   else
+   {
+      logMsg("Modify frame - unable to get mutex for conversion frame\n", 
+             0, 0, 0, 0 ,0 ,0);
+      return(ERROR);
+   }
+
+   /* write sample values to genSub ouputs only for TTF structure*/
+
+   *(double *) pgsub->vala = fTtf->probe[0];         /* tSent */ 
+   *(double *) pgsub->valb = fTtf->probe[1];         /* trackId */
+   *(double *) pgsub->valc = fTtf->probe[2]/DEGS2RADS;
+                                                  /* PA angle */
+   *(double *) pgsub->vald = fTtf->probe[3];         /* X (mm) */
+   *(double *) pgsub->vale = fTtf->probe[4];         /* Err X */
+   *(double *) pgsub->valf = fTtf->probe[5];         /* Y (mm) */
+   *(double *) pgsub->valg = fTtf->probe[6];         /* Err Y */
+   *(double *) pgsub->valh = fTtf->probe[7];         /* Z (mm) */
+   *(double *) pgsub->vali = fTtf->probe[8];         /* Err Z */
+
+   return (OK);
+}
+
+/* ===================================================================== */
+/* INDENT OFF */
+/*
+ * Function name:
+ * getOptsensorState
+ * 
+ * Purpose:
+ * Read optsensor state information from the GMOS CC
+ *
+ * Invocation:
+ * long getOptsensorState (struct genSubRecord * pgsub)
+ *
+ * Parameters:
+ * > struct genSubRecord *pgsub pointer to gensub record
+ * 
+ * Return value:
+ * < status   int      OK or ERROR
+ *
+ * Globals: 
+ * None
+ * 
+ * External variables:
+ * 
+ * Requirements:
+ * 
+ * Author:
+ * Corinne Boyer
+ * 
+ * History:
+ * 07-May-2001: original creation
+ *
+ */
+
+/* INDENT ON */
+
+/* ===================================================================== */
+
+long getOptsensorState 
+   (
+   struct genSubRecord * pgsub
+   )
+{
+   char state[40];
+
+   /* Check wether or not the GMOS CC database is connected */
+
+   if ( pgsub->sevr == INVALID_ALARM )
+   {
+      /* If the database is not connected, always guide */
+
+      optsensorEnable = GUIDE ;
+   }
+   else
+   {
+      /* Read the gensub field */
+
+      strcpy(state, (char *)pgsub->a);
+
+      if ( strcmp(state, "OFF") == 0 ) 
+      {
+         optsensorEnable = GUIDE;
+      }
+      else if ( strcmp(state, "ON") == 0 )
+      {
+         optsensorEnable = DONT_GUIDE;
+      }
+      else
+      {
+         optsensorEnable = GUIDE;
+      }
+   }
+
+   /* write sample value to genSub ouputs */
+
+   *(long *) pgsub->vala = optsensorEnable;
+
+   return (OK);
+}

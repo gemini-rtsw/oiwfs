@@ -1,0 +1,28 @@
+#pvload parameter definition file for PWFS2
+
+#
+# Set up name of PWFS2 subsystem
+#
+string $(sadtop)name = "OIWFS GMOS DC";
+
+#
+# Set up version of the software 
+#
+string $(sadtop)version = "gmos-astig";
+
+#
+#set default value for inPosition SIR record
+#
+
+int $(sadtop)inPosition = "1";
+
+#
+# Set default values for some SIR records
+#
+string $(sadtop)$(wfs)dataLabel = "NONE";
+
+int $(sadtop)$(wfs)nreads = "1";
+
+int $(sadtop)$(wfs)nresets = "0";
+
+string $(sadtop)$(wfs)headTemp = "NA";
