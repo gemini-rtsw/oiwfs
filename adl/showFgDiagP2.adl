@@ -6,9 +6,9 @@ display {
 	majv="2"
 	mnrv="4"
 	ndyng="3"
-	npc="30"
-	nstr="59"
-	ndynamic="27"
+	npc="31"
+	nstr="64"
+	ndynamic="28"
 	nplot="0"
 	nrd="0"
 	nes="0"
@@ -19,27 +19,27 @@ display {
 		x="328"
 		y="298"
 		width="639"
-		height="715"
+		height="755"
 	}
 	clr="1"
 	bclr="13"
-	nwords_dspy="4870"
-	nwords_sta="884"
+	nwords_dspy="5054"
+	nwords_sta="908"
 	nwords_cmap="120"
 	nwords_crules="922"
-	odyng="2916"
-	osta="2032"
-	odynamic="3076"
-	oplot="4858"
-	ord="4858"
-	oes="4858"
-	okd="4858"
-	opd="4870"
-	opo="4870"
+	odyng="3034"
+	osta="2126"
+	odynamic="3194"
+	oplot="5042"
+	ord="5042"
+	oes="5042"
+	okd="5042"
+	opd="5054"
+	opo="5054"
 	opc="68"
-	ostr="488"
-	ocmap="990"
-	ocrules="1110"
+	ostr="502"
+	ocmap="1084"
+	ocrules="1204"
 	style="solid"
 	fill="outline"
 	width="0"
@@ -52,7 +52,7 @@ display {
 	pixwid="1280"
 	pixht="1024"
 	mmwid="361"
-	mmht="289"
+	mmht="288"
 }
 "<<color map>>" {
 	ncolors="29"
@@ -1369,7 +1369,7 @@ display {
 		x="9"
 		y="46"
 		width="620"
-		height="661"
+		height="698"
 		groupid="0"
 	}
 }
@@ -1534,7 +1534,7 @@ display {
 "text" {
 	object {
 		x="16"
-		y="534"
+		y="566"
 		width="237"
 		height="20"
 		groupid="0"
@@ -1544,8 +1544,8 @@ display {
 }
 "text" {
 	object {
-		x="379"
-		y="534"
+		x="380"
+		y="566"
 		width="37"
 		height="20"
 		groupid="0"
@@ -1714,7 +1714,7 @@ display {
 "text" {
 	object {
 		x="16"
-		y="563"
+		y="596"
 		width="231"
 		height="20"
 		groupid="0"
@@ -1724,8 +1724,8 @@ display {
 }
 "text" {
 	object {
-		x="379"
-		y="562"
+		x="380"
+		y="596"
 		width="37"
 		height="20"
 		groupid="0"
@@ -1736,7 +1736,7 @@ display {
 "text" {
 	object {
 		x="16"
-		y="592"
+		y="626"
 		width="233"
 		height="20"
 		groupid="0"
@@ -1747,7 +1747,7 @@ display {
 "text" {
 	object {
 		x="16"
-		y="621"
+		y="656"
 		width="231"
 		height="20"
 		groupid="0"
@@ -1758,7 +1758,7 @@ display {
 "text" {
 	object {
 		x="16"
-		y="651"
+		y="686"
 		width="234"
 		height="20"
 		groupid="0"
@@ -1768,8 +1768,8 @@ display {
 }
 "text" {
 	object {
-		x="15"
-		y="682"
+		x="16"
+		y="716"
 		width="207"
 		height="20"
 		groupid="0"
@@ -1819,6 +1819,28 @@ display {
 		groupid="0"
 	}
 	textix="Thresh"
+	align="horiz. left"
+}
+"text" {
+	object {
+		x="16"
+		y="536"
+		width="237"
+		height="20"
+		groupid="0"
+	}
+	textix="Composite angle ... :"
+	align="horiz. left"
+}
+"text" {
+	object {
+		x="380"
+		y="536"
+		width="37"
+		height="20"
+		groupid="0"
+	}
+	textix="deg"
 	align="horiz. left"
 }
 "<<basic attribute>>" {
@@ -1942,8 +1964,8 @@ display {
 }
 "oval" {
 	object {
-		x="222"
-		y="681"
+		x="223"
+		y="715"
 		width="20"
 		height="21"
 		groupid="0"
@@ -2687,14 +2709,14 @@ display {
 }
 "text update" {
 	object {
-		x="249"
-		y="533"
+		x="250"
+		y="564"
 		width="127"
 		height="23"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)ttfZero.VALF"
+		chan="$(top)ttfZero.VALE"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -2825,8 +2847,8 @@ display {
 }
 "text update" {
 	object {
-		x="249"
-		y="562"
+		x="250"
+		y="594"
 		width="127"
 		height="23"
 		groupid="0"
@@ -2871,8 +2893,8 @@ display {
 }
 "text update" {
 	object {
-		x="249"
-		y="591"
+		x="250"
+		y="624"
 		width="127"
 		height="23"
 		groupid="0"
@@ -2917,8 +2939,8 @@ display {
 }
 "text update" {
 	object {
-		x="249"
-		y="620"
+		x="250"
+		y="654"
 		width="127"
 		height="23"
 		groupid="0"
@@ -2963,8 +2985,8 @@ display {
 }
 "text update" {
 	object {
-		x="249"
-		y="650"
+		x="250"
+		y="684"
 		width="127"
 		height="23"
 		groupid="0"
@@ -3182,6 +3204,52 @@ display {
 		hdl="0"
 		ldl="0"
 		prec="4"
+		newunits=""
+		units="none"
+		decorate="none"
+		convertFunc=""
+		convertParams=""
+	}
+	align="horiz. left"
+	format="decimal"
+}
+"text update" {
+	object {
+		x="250"
+		y="535"
+		width="127"
+		height="23"
+		groupid="0"
+	}
+	monitor {
+		chan="$(top)ttfZero.VALF"
+		clr="0"
+		bclr="7"
+		label="none"
+		clrmod="static"
+		rulechan[0] = ""
+		rulechan[1] = ""
+		rulechan[2] = ""
+		rulechan[3] = ""
+		rulechan[4] = ""
+		rulechan[5] = ""
+		rulechan[6] = ""
+		rulechan[7] = ""
+		rulechan[8] = ""
+		rulechan[9] = ""
+		rulechan[10] = ""
+		rulechan[11] = ""
+		rulechan[12] = ""
+		rulechan[13] = ""
+		rulechan[14] = ""
+		rulechan[15] = ""
+		clrrule=""
+		clrargs=""
+		rulecolorbg="1"
+		rulecolorfg="1"
+		hdl="0"
+		ldl="0"
+		prec="-1"
 		newunits=""
 		units="none"
 		decorate="none"

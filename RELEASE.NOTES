@@ -94,3 +94,13 @@ V2-3 25 November 2002 CB:
   - back to old version vmeboot code ... because niri is not working with new 
     version and it makes the switch impossible ...
   - modify startup*vws to contain GEM8.4
+
+V2-4 04 February 2003 CB:
+-------------------------
+  - fix the astigmatism zero point model after rotation
+    if (FX=FY) CompositeAngle = CR + M1 + PA
+    else
+               CompositeAngle = M1 + PA - CR
+  - implement the new law for aO
+  - handle headTemp SIR record according to the site
+  - modify local.vws to handle the new server tyl in Gemini North

@@ -1,5 +1,5 @@
 static struct {void *v; char *c;} rcsid = {&rcsid,
- "$Id: wfsDb.c,v 1.7 2002-11-25 22:44:11 cboyer Exp $"};
+ "$Id: wfsDb.c,v 1.8 2003-02-04 20:12:28 cboyer Exp $"};
 
 /*+
  * MODULE NAME:
@@ -61,6 +61,7 @@ static struct {void *v; char *c;} rcsid = {&rcsid,
  * Steven Beard
  *
  * HISTORY MODIFICATIONS
+ * 31 Jan 2003 - cb Add aoThreshold detSigInitAoGain
  * 19 Nov 2002 - cb Implement seeing computation according FR's method
  * 14 Oct 2002 - cb Add detPowerOff
  * 17 Sep 2002 - cb Add detSigOutput CAD and outGuide SIR
@@ -479,7 +480,8 @@ CAD_RECORD pWfsDbCadList [] =
   CAD_ATTRIB_P, EPICS_DATA_TYPE_DOUBLE, "0.0", {NO_ATTRIBUTE_LIMITS},
   CAD_ATTRIB_Q, EPICS_DATA_TYPE_DOUBLE, "0.0", {NO_ATTRIBUTE_LIMITS},
   CAD_ATTRIB_R, EPICS_DATA_TYPE_DOUBLE, "0.0", {NO_ATTRIBUTE_LIMITS},
-  CAD_ATTRIB_S, EPICS_DATA_TYPE_DOUBLE, "0.0", {NO_ATTRIBUTE_LIMITS}
+  CAD_ATTRIB_S, EPICS_DATA_TYPE_DOUBLE, "0.0", {NO_ATTRIBUTE_LIMITS},
+  CAD_ATTRIB_T, EPICS_DATA_TYPE_DOUBLE, "0.5", {NO_ATTRIBUTE_LIMITS}
  },
  {
   RECORD_NAME ("dc:detSigInitFgGain"),

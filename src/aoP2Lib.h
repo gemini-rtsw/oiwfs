@@ -17,6 +17,7 @@
  * Corinne Boyer
  *
  * HISTORY MODIFICATION:
+ * 31 Jan 2003: CB - Add aoThreshold to aoCtrlId
  * 18 Nov 2002: CB - Implement seeing computation according to FR's method
  * 16 Sep 2002: CB - Implement seeing computation according to BE's method
  * 07 Feb 2002: CB - Add flip in header of fg and ao circular buffers 
@@ -417,12 +418,12 @@ typedef struct
                                           seeing computation
 */
 
-   SEEING_VECT   seeingCoeffVect;      /* Seeing Coefficient vector           */
+   SEEING_VECT  seeingCoeffVect;       /* Seeing Coefficient vector           */
 
-   SEEING_VECT   averageSeeingVect;    /* Average seeing vector used for      */
+   SEEING_VECT  averageSeeingVect;     /* Average seeing vector used for      */
                                        /* seeing computation                  */
 
-   SEEING_VECT   varianceSeeingVect;   /* Variance seeing vector used for     */
+   SEEING_VECT  varianceSeeingVect;    /* Variance seeing vector used for     */
                                        /* seeing computation                  */
 
    AO_VECT      aoScaleFactorVect;     /* Vector containing the scale factor  */
@@ -524,15 +525,17 @@ typedef struct
 
    double       previousFocus;         /* Previous focus mode value           */
 
-   double        r0;                   /* r0                                  */
+   double       r0;                    /* r0                                  */
 
    double       seeing;                /* Seeing                              */
 
-   double        jitter;               /* X/Y average residual jitter         */
+   double       jitter;                /* X/Y average residual jitter         */
 
    double       seeingScaleFactor;     /* Scale factor used to compute the    */
                                        /* seeing                              */
 
+   double       aoThreshold;           /* aO threshold above which the aO     */
+                                       /* gains are increased                 */
 } AO_CTRL_ID_STRUCT, * AO_CTRL_ID;
 
 /********************************** Definition of the image circular buffer ***/
@@ -959,7 +962,7 @@ STATUS aoCtrlContextUpdate (char * pDarkFileName, char * pFlatFileName,
                             double flipXWithM2, double flipYWithM2, 
                             double angleWithM1, double flipXWithM1,
                             double flipYWithM1, double seeingScaleFactor,
-                            AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId);
+                            double aoThreshold, AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId);
 STATUS aoCtrlContextShow (AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId, int verbose);
 STATUS aoDarkSubtract (float * pImage, float * pDark, int xPixels,
                        int yPixels);
@@ -1021,7 +1024,7 @@ STATUS aoCtrlFileRead (char * pInitFileName, char * pPath, char * pDarkFileName,
                        double * pRms, double * pThresh, double * pTotalThresh,
                        int currentPort, double * pAngleM2, double * pFlipXM2, 
                        double * pFlipYM2, double * pAngleM1, double * pFlipXM1,
-                       double * pFlipYM1, double * pSeeingGain);
+                       double * pFlipYM1, double * pSeeingGain, double * pAoThreshold);
 STATUS aoModInit (char * pInitFileName, AST_ZP_MODEL_ID astModelId,
                   TREF_ZP_MODEL_ID trefModelId, COMA_ZP_MODEL_ID comaModelId,
                   FOCUS_ZP_MODEL_ID focModelId);
