@@ -93,3 +93,4 @@ V2-3 25 November 2002 CB:
   - startupCP.vws: change IP address for reggie
   - back to old version vmeboot code ... because niri is not working with new 
     version and it makes the switch impossible ...
+  - modify startup*vws to contain GEM8.4
