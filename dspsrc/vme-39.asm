@@ -1,7 +1,7 @@
        COMMENT *
 Gemini WFS VME Interface Board Application Code
 Controller: SDSU2 
-Revision: 0.30  (must agree with status word V_SW_ID in Y: memory)
+Revision: 0.34  (must agree with status word V_SW_ID in Y: memory)
 (This code is adapted from vme1.asm written by Dr. Bob Leach at SDSU)
 
 
@@ -108,6 +108,31 @@ Revision: 0.30  (must agree with status word V_SW_ID in Y: memory)
          - removed TIM reply from command parsing
 	 - removed carry bit setting from CHK_FO routine
 
+13/10/99 - added code to wait for interrupt cycle to finish after requesting
+		an interrupt so that the ID doesn't get changed before the 
+		host has accepted it. (requires hardware modification)
+	 - added check of FIFO full flag (requires hardware modification)
+	 - added save of buffer pointer in timeout case of command received
+		during readout
+	 - fixed bug in command parsing during readout (was reusing XO
+		after it had been altered)
+	 - added clear of frame status at beginning of readout
+
+14/12/99 - added sanity check of pixel count to make sure the data will not
+		overflow the frame buffer. Uses new parameter V_MAX_PX.
+	 - fixed some problems with the handling of pixel count mismatches.
+	 - moved the RD_FIFO section to ensure that all VME transfers were
+		in internal memory.
+
+2001-11-19 - added changes from v0.30b for NIRI WFS:
+           - fixed problem of infinite looping when extra data after the end of
+             the last frame is received
+           - removed clear of new FBA flag to disable requirement for a new
+             FBA for each frame
+           - added FIFO reset at end of readout
+           - changed ABT timeout delay to accomodate NIRI WFS
+
+2003-09-08 - fixed possible problem in overflow clear (CLR_OF)
 
 
 Assembler directives:
@@ -200,7 +225,7 @@ CHK_BUS	JSET	#HASBUS,X:PBD,XFR_PKT	; Transfer packet if VMEbus master
 CHK_EF	JSET	#EF,X:PCD,READ_FO	; Read the FO receiver data, if any
 
 ; Check if there is a packet in the buffer to send to the host
-	JCLR	#REQBUS,X:PBD,CHK_BUS	; Skip check if already waiting for bus
+CHK_PKT	JCLR	#REQBUS,X:PBD,CHK_BUS	; Skip check if already waiting for bus
 	MOVE	R7,A		; Get buffer content
 	MOVE	Y:<PSIZE,Y0
 	CMP	Y0,A		; Compare content to packet size
@@ -212,66 +237,6 @@ CHK_VME	JSR	<VME_TST	; Test for incoming VMEbus commands (boot code)
 	JNE	<CMD_RCV	; A VMEbus command was received, so parse it
 
 	JMP	<CHK_BUS	; Loop around again
-
-
-; *****  Read data from fibre optic receiver  *****
-; Read header or image data from the fibre optic receiver, first ensuring
-; that there is enough room in the internal buffer. Data is read a packet
-; at a time, unless there is less than a packet reamining in the frame.
-
-READ_FO	JSET	#HD_WAIT,Y:<FLAGS,FRM_HDR	; Check if waiting for header
-
-; Check if there is room for another packet in the buffer
-	MOVE	R7,X1			; Get content of buffer
-	MOVE	#IB_SIZE,A		; Get buffer size
-	SUB	X1,A Y:<PSIZE,Y0	; Compute buffer space
-	CMP	Y0,A			; Compare space to packet size
-	JLT	<BUF_OF			; Buffer overflow if less
-
-; Check number of pixels remaining in frame
-	MOVE	Y:<PIXELC,A	; Get number of remaining pixels
-	SUB	Y0,A		; Subtract packet size
-	JLE	RD_EOF		; Jump if less than a packet remains
-	MOVE	A,Y:<PIXELC	; Save decremented pixel counter
-
-; Read a packet of data from FIFO
-	DO	Y0,L_RDPKT
-	JCLR	#EF,X:PCD,Q_MT1		; Exit packet loop if FIFO empty
-	MOVE	X:RDFIFO,Y0		; Get pixel datum from the FIFO
-	MOVE	X:(R7)+,X0 Y0,Y:(R1)+	; Increment buffer content (dummy move)
-					; and put pixel in internal image buffer
-	JCLR	#SYNC_B,Y0,NO_SB1		; Check for sync bit
-	JCLR	#SYNC_MD,Y:<FLAGS,NO_SB1	; Skip if not in sync mode
-	ENDDO
-	JMP	<SB_RCV			; Go handle premature sync bit
-Q_MT1	MOVEC	LC,Y0			; Get loop counter
-	ADD	Y0,A			; Add to pixel counter
-	MOVE	A,Y:<PIXELC		; Save pixel counter
-	ENDDO
-	JMP	<CHK_BUS
-NO_SB1	ADD	Y0,B			; Accumulate checksum
-L_RDPKT
-	JMP	<PKT_RDY
-
-; Read end of frame from FIFO
-RD_EOF	DO	Y:<PIXELC,L_RDEOF
-	JCLR	#EF,X:PCD,Q_MT2		; Exit loop if FIFO empty
-	MOVE	X:RDFIFO,Y0		; Get pixel datum from the FIFO
-	JSET	#DSC_PXL,Y:<FLAGS,CHK_SB	; Don't buffer data if flag set
-	MOVE	X:(R7)+,X0 Y0,Y:(R1)+	; Increment buffer content (dummy move)
-					; and put pixel in internal image buffer
-CHK_SB	JCLR	#SYNC_B,Y0,NO_SB2		; Check for sync bit
-	JCLR	#SYNC_MD,Y:<FLAGS,NO_SB2	; Skip if not in sync mode
-	ENDDO
-	JMP	<SB_RCV			; Go handle premature sync bit
-Q_MT2	MOVEC	LC,Y:<PIXELC		; Save loop counter as pixel counter
-	ENDDO
-	JMP	<CHK_BUS
-NO_SB2	ADD	Y0,B			; Accumulate checksum
-L_RDEOF
-	CLR	A
-	MOVE	A,Y:<PIXELC		; Clear pixel counter
-	JMP	<EOF_RCV
 
 
 ; *****  Transfer packet  *****
@@ -303,7 +268,7 @@ L_BURST
 	MOVE	Y:<PCHIADD,A
 	MOVE	A,X:WRHADR	; Set HADDR to packet counter value
 	MOVE	Y:<PCLOADD,R0	; Set R0 to low word of packet counter address
-	MOVE	X:<ONE,X0 
+	MOVE	X:<ONE,X0
 	MOVE	Y:<PKTC,A
 	ADD	X0,A		; Increment packet counter
 	MOVE	A,Y:<PKTC	; Save packet counter
@@ -387,8 +352,8 @@ L_XFSW
         WARN    'VME bus write operations will not work at > P:$1FD'	
 	ENDIF	
 
-CLR_OF	MOVE	#NUM_FSW,A 	; get number of frame status words
-	MOVE	R0,Y0		; get frame buffer pointer
+CLR_OF	CLR	A R0,Y0		; get frame buffer pointer
+	MOVE	#NUM_FSW,A1 	; get number of frame status words
 	ADD	Y0,A
 	MOVE	A,R0		; skip over status words in frame buffer
 	JSCLR	#15,R0,CHG_HI		; If 64k boundary increment HIADDR
@@ -411,6 +376,71 @@ CMP_HI	ADD	Y0,A		; Compute high address
 
 	JMP	<CHK_EF
 
+
+; *****  Read data from fibre optic receiver  *****
+; Read header or image data from the fibre optic receiver, first ensuring
+; that there is enough room in the internal buffer. Data is read a packet
+; at a time, unless there is less than a packet reamining in the frame.
+
+READ_FO	JSET	#FF,X:PBD,HDR_WT		; Check for FIFO overflow
+	BSET	#FF_ERR,Y:<FSTAT		; Set error flag
+	JSET	#LST_FRM,Y:<FLAGS,CHK_PKT	; Ignore data if last frame rxd
+HDR_WT	JSET	#HD_WAIT,Y:<FLAGS,FRM_HDR	; Check if waiting for header
+
+; Check if there is room for another packet in the buffer
+	MOVE	R7,X1			; Get content of buffer
+	MOVE	#IB_SIZE,A		; Get buffer size
+	SUB	X1,A Y:<PSIZE,Y0	; Compute buffer space
+	CMP	Y0,A			; Compare space to packet size
+	JLT	<BUF_OF			; Buffer overflow if less
+
+; Check number of pixels remaining in frame
+	MOVE	Y:<PIXELC,A	; Get number of remaining pixels
+	SUB	Y0,A		; Subtract packet size
+	JLE	RD_EOF		; Jump if less than a packet remains
+	MOVE	A,Y:<PIXELC	; Save decremented pixel counter
+
+; Read a packet of data from FIFO
+	DO	Y0,L_RDPKT
+	JCLR	#EF,X:PCD,Q_MT1		; Exit packet loop if FIFO empty
+	MOVE	X:RDFIFO,Y0		; Get pixel datum from the FIFO
+	MOVE	X:(R7)+,X0 Y0,Y:(R1)+	; Increment buffer content (dummy move)
+					; and put pixel in internal image buffer
+	JCLR	#SYNC_B,Y0,NO_SB1		; Check for sync bit
+	JCLR	#SYNC_MD,Y:<FLAGS,NO_SB1	; Skip if not in sync mode
+	ENDDO
+	JMP	<SB_RCV			; Go handle premature sync bit
+Q_MT1	MOVEC	LC,Y0			; Get loop counter
+	ADD	Y0,A			; Add to pixel counter
+	MOVE	A,Y:<PIXELC		; Save pixel counter
+	ENDDO
+	JMP	<CHK_BUS
+NO_SB1	ADD	Y0,B			; Accumulate checksum
+L_RDPKT
+	JMP	<PKT_RDY
+
+; Read end of frame from FIFO
+RD_EOF	DO	Y:<PIXELC,L_RDEOF
+	JCLR	#EF,X:PCD,Q_MT2		; Exit loop if FIFO empty
+	MOVE	X:RDFIFO,Y0		; Get pixel datum from the FIFO
+	JSET	#DSC_PXL,Y:<FLAGS,CHK_SB	; Don't buffer data if flag set
+	JSET	#LST_FRM,Y:<FLAGS,CHK_SB	; Don't buffer data if flag set
+	MOVE	X:(R7)+,X0 Y0,Y:(R1)+	; Increment buffer content (dummy move)
+					; and put pixel in internal image buffer
+CHK_SB	JCLR	#SYNC_B,Y0,NO_SB2		; Check for sync bit
+	JCLR	#SYNC_MD,Y:<FLAGS,NO_SB2	; Skip if not in sync mode
+	ENDDO
+	JMP	<SB_RCV			; Go handle premature sync bit
+Q_MT2	JSET	#DSC_PXL,Y:<FLAGS,Q_MT3	; Skip if flag set
+	JSET	#LST_FRM,Y:<FLAGS,Q_MT3	; Skip if flag set
+	MOVEC	LC,Y:<PIXELC		; Save loop counter as pixel counter
+Q_MT3	ENDDO
+	JMP	<CHK_BUS
+NO_SB2	ADD	Y0,B			; Accumulate checksum
+L_RDEOF
+	CLR	A
+	MOVE	A,Y:<PIXELC		; Clear pixel counter
+	JMP	<EOF_RCV
 
 
 ; *****  Packet ready  *****
@@ -438,13 +468,17 @@ CHG_HI	MOVE	Y:<FBAHISV,A	; Get high word of address
 
 ; ***** Generate VME Interrupt *****
 ; Generate an interrupt on the VME IRQ (level determined by jumpers) with
-; the ID given in accumulator A
+; the ID given in accumulator A. Wait for interrupt cycle to finish 
+; (as indicated by IRQ going high again) so that the ID is not corrupted
+; before the host has accepted it.
 
 GEN_INT	JCLR	#DONEVME,X:PBD,* ; Make sure the last VME operation has finished
 	MOVE	Y:<AM_16B,Y0
 	OR	Y0,A
-	MOVE	A,X:WRAM	; Set interrupt ID
-	MOVE	A,X:RQINTR	; Request interrupt
+	MOVE	A,X:WRAM		; Set interrupt ID
+	MOVE	A,X:RQINTR		; Request interrupt
+	JSET	#IRQ_TST,X:PBD,*	; wait for IRQ line to go low
+	JCLR	#IRQ_TST,X:PBD,*	; wait for IRQ line to go high again
 	RTS
 
 
@@ -515,8 +549,12 @@ GET_FC	JSCLR	#EF,X:PCD,CHK_FO		; Wait for datum
 	MOVE	X:RDFIFO,A	; Get pixel count low word from the FIFO
 	AND	Y1,A		; Mask off lower 16 bits
 	ADD	A,B		; Accumulate checksum
-	OR	X0,A1		; Insert high byte
-	MOVE	A1,Y:<PIXELC 	; Initialize pixel counter
+	OR	X0,A1 Y:<V_MAX_PX,Y0	; Insert high byte, get max # pixels
+	CMP	Y0,A		; Sanity check of number of pixels
+	JLE	<INI_PXC	; Skip if less than maximum
+	MOVE	Y0,A			; Set pixel counter to maximum
+	BSET	#PC_ERR,Y:<FSTAT	; Flag error
+INI_PXC	MOVE	A,Y:<PIXELC 	; Initialize pixel counter
 
 ; Words 6 -> (3*NOUTS)+6 = pipeline garbage values
 	MOVE	X:<THREE,X0	; Get number of garbage pixels per output
@@ -612,6 +650,7 @@ REC_FS	BCLR	#DSC_PXL,Y:<FLAGS	; Clear discard pixels flag
 	JNE	<NEW_HD			; Check if last frame (counter = 1)
 	JSET	#RD_SYNC,Y:<FLAGS,NEW_RDC	; Keep reading if synced RDC
 	BSET	#LST_FRM,Y:<FLAGS	; Set flag that last frame received
+	MOVE	A,X:RSTFIFO		; Reset FIFO
 	JMP	<PKT_RDY
 
 NEW_HD	BSET	#HD_WAIT,Y:<FLAGS	; Set flag to wait for new frame header
@@ -637,12 +676,13 @@ RDCCD	BCLR	#MODE,X:PBD	; Fiber optic shift register set for 16-bit
 	JSET	#RD,X:<STATUS,RDC_SNC	; Check if already reading out
 	BSET    #RD,X:<STATUS		; Set status to reading out
 
-; Clear checksum accumulator, flags, pixel, packet and frame counters
-	CLR	B
-	MOVE	B,Y:<FLAGS
-	MOVE	B,Y:<PIXELC
-	MOVE	B,Y:<PKTC
-	MOVE	B,Y:<FRAMEC
+; Clear/reset variables
+	CLR	B			; checksum accumulator
+	MOVE	B,Y:<FLAGS		; status flags
+	MOVE	B,Y:<FSTAT		; frame status
+	MOVE	B,Y:<PIXELC		; pixel counter
+	MOVE	B,Y:<PKTC		; packet counter
+	MOVE	B,Y:<FRAMEC		; frame counter
 
 ; Initialize internal image buffer
 	MOVE	#IB_MOD,M1		; Set pointer moduli
@@ -677,6 +717,7 @@ CLR_LF	BCLR	#LST_FRM,Y:<FLAGS	; Clear flag that last frame received
 
 RD_DONE	BCLR    #RD,X:<STATUS   ; Clear status to not reading out
 	BSET	#MODE,X:PBD	; Fiber optic shift register set for 24-bit 
+	MOVE	A,X:RSTFIFO		; Reset FIFO
 	BCLR	#LST_FRM,Y:<FLAGS	; Clear flag that last frame received
 
 ; Restore R1 for use as FIFO command buffer
@@ -701,8 +742,8 @@ RD_DONE	BCLR    #RD,X:<STATUS   ; Clear status to not reading out
 
 CMD_RCV	MOVE	B,Y:CS_SAVE	; Save checksum
 	JCLR	#DONEVME,X:PBD,* ; Make sure the last VME operation has finished
-	MOVE	X:<AM_REG,X0	; Restore normal 32-bit transfers to VMEbus 
-	MOVE	X0,X:WRAM   
+	MOVE	X:<AM_REG,A	; Restore normal 32-bit transfers to VMEbus 
+	MOVE	A,X:WRAM   
 	MOVE	X:HRPLADR,A
 	MOVE	A,X:WRHADR	; Set HADDR to reply value
 
@@ -726,8 +767,8 @@ HDR_ERR	MOVE	#VME_BUF,R2	; Starting address of VMEbus buffer
 GET_CMD	MOVE	A,Y0		; Number of words in command header
 	DO	X:<TIMEOUT,L_TO
 	MOVE	R2,A			
-	SUB	X0,A		; X0 = R#PROC from VME_TST or FO_TST
-        JGE     <CMP_NW		; X1 = Destination mask $00FF00
+	SUB	X0,A		; X0 = R#PROC from VME_TST
+        JGE     <CMP_NW
         MOVE    X:<C32,X1	; Correct for circular buffer
         ADD     X1,A		; No MOVE here - it isn't always executed
 CMP_NW	CMP	Y0,A  Y0,X:<NWORDS ; Y0 = NWORDS from above
@@ -737,6 +778,7 @@ CMP_NW	CMP	Y0,A  Y0,X:<NWORDS ; Y0 = NWORDS from above
 NOT_ALL	NOP
 L_TO
 	MOVE	(R5)+		; Increment R5 past header
+	MOVE	R5,X:<R2PROC	; Save pointer
 SND_TIM	JMP	<START		; Timeout - ignore command
 
 
@@ -846,6 +888,7 @@ L_GBGDSC
 ; Cleanup and return
 ABT_DON	BCLR    #RD,X:<STATUS   ; Clear status to not reading out
 	BSET	#MODE,X:PBD	; Fiber optic shift register set for 24-bit 
+	MOVE	A,X:RSTFIFO		; Reset FIFO
 	BCLR	#FBA_VLD,Y:<FLAGS	; Clear flag: FBA is no longer valid
 	BCLR	#LST_FRM,Y:<FLAGS	; Clear flag that last frame received
 
@@ -878,7 +921,7 @@ CHK_FO	DO	Y:FO_TO,L_FTO	; Check FO_TO times for data
 	JCLR	#EF,X:PCD,FO_MT	; Wait for the datum to be ready
 	ENDDO			; Abort loop
 	RTS
-FO_MT	DO	#250,DLY	 ; Wait 20 usec
+FO_MT	DO	#2500,DLY	 ; Wait 200 usec
 	NOP
 	NOP
 DLY	NOP
@@ -890,7 +933,9 @@ L_FTO
 ; *****  Debug routines  *****
 ; Use IDL command to execute various debugging routines
 
-IDLE	JMP	<FINISH		; send DON
+IDLE	MOVE	Y:<V_FIID,A	; Get frame interrupt ID
+	JSR	<GEN_INT	; Generate interrupt
+	JMP	<FINISH		; send DON
 
 
 ;  **********************    End of application    ************************
@@ -936,12 +981,12 @@ IDLE	JMP	<FINISH		; send DON
 
 ; *****  Status values  *****
 
-V_SW_ID	DC	$003000	; Software version number (00.30)
+V_SW_ID		DC	$003400	; Software version number (00.34)
 
 
 ; *****  Readout parameters  *****
 
-V_PSIZE	DC	$20	; packet size
+V_PSIZE		DC	$20	; packet size
 
 V_INT_EN	DC	$000000	; Interrupt enable flags
 PI_EN		EQU	0	; Packet interrupt enable
@@ -950,8 +995,9 @@ FI_EN		EQU	1	; Frame interrupt enable
 V_PIID		DC	$F10000	; Packet interrupt ID
 V_FIID		DC	$F20000	; Frame interrupt ID
 
-V_FBAHI	DC	0	; Frame Buffer address high word
-V_FBALO	DC	0	; Frame Buffer address low word
+V_FBAHI		DC	0	; Frame Buffer address high word
+V_FBALO		DC	0	; Frame Buffer address low word
+V_MAX_PX	DC	1048576	; Maximum number of pixels 
 
 
 
@@ -986,6 +1032,8 @@ FSTAT	DC	0	; Frame status word
 OF_ERR	EQU	0	; Internal buffer overflow error
 CS_ERR	EQU	1	; Checksum error
 SYN_ERR	EQU	2	; Frame sync error
+FF_ERR	EQU	3	; FIFO full error
+PC_ERR	EQU	4	; Pixel count error (greater than maximum)
 
 ; Other bit definitions
 SYNC_B	EQU	15	; Sync bit in image data (b15)
@@ -1006,7 +1054,7 @@ CS_SAVE	DC	0	; Temporary storage of checksum
 
 HDR_MSK	DC	$FFFCF8	; Mask to check command header
 
-FO_TO	DC	$2710	; Timeout: number of times to look for data in FIFO
+FO_TO	DC	50000	; Timeout: number of times to look for data in FIFO
 
 MAX_LP	DC	$FFFE	; Maximum loop counter value
 

@@ -1,5 +1,5 @@
 static struct {void *v; char *c;} rcsid = {&rcsid,
-   "$Id: detControl.c,v 1.10 2003-02-04 20:12:27 cboyer Exp $"};
+   "$Id: detControl.c,v 1.11 2004-01-23 00:21:07 cboyer Exp $"};
 
 /*+
  *   MODULE NAME:
@@ -2933,6 +2933,7 @@ STATUS detReadDefaultDspCcdGeometry
       sdsuClear1RepBuf (sdsuId);
       sdsuPrintRepBuf (sdsuId);
 
+/*
       if ( (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_XSIZE", &xSdsuChip) ==
             ERROR) ||
            (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_YSIZE", &ySdsuChip) ==
@@ -2970,7 +2971,121 @@ STATUS detReadDefaultDspCcdGeometry
          ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
          return (ERROR);
       }
+*/
 
+      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_XSIZE", &xSdsuChip) ==
+          ERROR) 
+      {
+         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
+         return (ERROR);
+      }
+      sdsuPrintRepBuf (sdsuId);
+      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_YSIZE", &ySdsuChip) ==
+          ERROR)
+      {
+         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
+         return (ERROR);
+      }
+      sdsuPrintRepBuf (sdsuId);
+      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_XSUBAP", &xSdsuSubap) ==
+          ERROR) 
+      {
+         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
+         return (ERROR);
+      }
+      sdsuPrintRepBuf (sdsuId);
+      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_YSUBAP", &ySdsuSubap) ==
+          ERROR) 
+      {
+         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
+         return (ERROR);
+      }
+      sdsuPrintRepBuf (sdsuId);
+      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_XRAS", &xSdsuRas) == 
+          ERROR) 
+      {
+         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
+         return (ERROR);
+      }
+      sdsuPrintRepBuf (sdsuId);
+      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_YRAS", &ySdsuRas) == 
+          ERROR) 
+      {
+         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
+         return (ERROR);
+      }
+      sdsuPrintRepBuf (sdsuId);
+      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_OUTPUTS", &sdsuOutputs) ==
+          ERROR) 
+      {
+         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
+         return (ERROR);
+      }
+      sdsuPrintRepBuf (sdsuId);
+      if (sdsuParamRead (sdsuId, SDSU_IDENT_VME, "V_PSIZE", &pSizeSdsu) ==
+         ERROR) 
+      {
+         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
+         return (ERROR);
+      }
+      sdsuPrintRepBuf (sdsuId);
+      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_USCAN", &uscanSdsu) == 
+          ERROR) 
+      {
+         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
+         return (ERROR);
+      }
+      sdsuPrintRepBuf (sdsuId);
+      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_XSTART", &xSdsuStart) ==
+          ERROR) 
+      {
+         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
+         return (ERROR);
+      }
+      sdsuPrintRepBuf (sdsuId);
+      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_YSTART", &ySdsuStart) ==
+          ERROR)
+      {
+         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
+         return (ERROR);
+      }
+      sdsuPrintRepBuf (sdsuId);
+      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_XBIN", &xSdsuBin) == 
+          ERROR) 
+      {
+         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
+         return (ERROR);
+      }
+      sdsuPrintRepBuf (sdsuId);
+      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_YBIN", &ySdsuBin) == 
+          ERROR) 
+      {
+         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
+         return (ERROR);
+      }
+      sdsuPrintRepBuf (sdsuId);
+      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_XSPACE", &xSdsuSpace) ==
+          ERROR)
+      {
+         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
+         return (ERROR);
+      }
+      sdsuPrintRepBuf (sdsuId);
+      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_YSPACE", &ySdsuSpace) ==
+          ERROR) 
+      {
+         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
+         return (ERROR);
+      }
+      sdsuPrintRepBuf (sdsuId);
+      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_XTAIL", &xSdsuTail) ==
+          ERROR)
+      {
+         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
+         return (ERROR);
+      }
+      sdsuPrintRepBuf (sdsuId);
+         
       aoCcdId->xSize = xSdsuChip;
       aoCcdId->ySize = ySdsuChip;
       aoCcdId->outputsNb = sdsuOutputs;
@@ -11442,27 +11557,27 @@ void detObserveEnd
    {
       if ((pRawFrame->header.status & SDSU_FSTAT_TIMEOUT) != 0)
       {
-         MESSAGE_LOG1 (MSG_WARNING, 
+         MESSAGE_LOG1 (MSG_MINDEBUG, 
                        "Timeout in frame %lu - frame ignored", frameCount);
       }
       else if ((pRawFrame->header.status & SDSU_FSTAT_OVERRUN) != 0)
       {
-         MESSAGE_LOG1 (MSG_WARNING, 
+         MESSAGE_LOG1 (MSG_MINDEBUG, 
                        "Data overrun in frame %lu - frame ignored", frameCount);
       }
       else if ((pRawFrame->header.status & SDSU_FSTAT_FRAMESYNC) != 0)
       {
-         MESSAGE_LOG1 (MSG_WARNING, 
+         MESSAGE_LOG1 (MSG_MINDEBUG, 
                        "Sync error in frame %lu - ignored", frameCount);
       }
       else if ((pRawFrame->header.status & SDSU_FSTAT_CHECKSUM) != 0)
       {
-         MESSAGE_LOG1 (MSG_WARNING, 
+         MESSAGE_LOG1 (MSG_MINDEBUG, 
                        "Checksum error in frame %lu - ignored", frameCount);
       }
       else if ((pRawFrame->header.status & SDSU_FSTAT_NOK) != 0)
       {
-         MESSAGE_LOG1 (MSG_WARNING, 
+         MESSAGE_LOG1 (MSG_MINDEBUG, 
                        "Overwritten error in frame %lu - ignored", frameCount);
       }
    }

@@ -104,3 +104,11 @@ V2-4 04 February 2003 CB:
   - implement the new law for aO
   - handle headTemp SIR record according to the site
   - modify local.vws to handle the new server tyl in Gemini North
+ 
+V2-5 22 January 2004 CB:
+------------------------
+  - modify local.vws to handle the new server for astrodata
+  - update vme-39.asm code to version 0.33 and the boot code to version V3-09
+    (now SDSU VME board hardware identical to OIWFS NIRI SDSU VME board)
+    and also comment out in detObserveEnd error messages when frame status is
+    faulty
