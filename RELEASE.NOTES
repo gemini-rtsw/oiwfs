@@ -86,3 +86,10 @@ V2-2 18 November 2002 CB:
     structure, butterworth filters and zero point models
   - writeZernikes.c: writeWfsToSynchro() do not apply butterworth filter 
     for focus when output TTF to AO system
+
+V2-3 25 November 2002 CB:
+-------------------------
+  - implement seeing computation according to FR's method
+  - startupCP.vws: change IP address for reggie
+  - back to old version vmeboot code ... because niri is not working with new 
+    version and it makes the switch impossible ...

@@ -43,5 +43,7 @@ data/defFgContMatOiGmosMK.dat
   5    1.5708       1.0       -1.0      1.5708       1.0       -1.0
 # Name of seeing coefficient matrix file
 data/defSeeingCoeffMatOiGmosMK.dat
+# Name of seeing coefficient vector file
+data/defSeeingCoeffVectOiGmosMK.dat
 # Scale factor for seeing computation (double)
-0.00103
+1.02

@@ -1,5 +1,5 @@
 static struct {void *v; char *c;} rcsid = {&rcsid,
- "$Id: wfsDb.c,v 1.6 2002-11-19 07:57:20 cboyer Exp $"};
+ "$Id: wfsDb.c,v 1.7 2002-11-25 22:44:11 cboyer Exp $"};
 
 /*+
  * MODULE NAME:
@@ -61,6 +61,7 @@ static struct {void *v; char *c;} rcsid = {&rcsid,
  * Steven Beard
  *
  * HISTORY MODIFICATIONS
+ * 19 Nov 2002 - cb Implement seeing computation according FR's method
  * 14 Oct 2002 - cb Add detPowerOff
  * 17 Sep 2002 - cb Add detSigOutput CAD and outGuide SIR
  * 16 Sep 2002 - cb Implement seeing computation (seeing SIR record, detSigInit
@@ -422,7 +423,8 @@ CAD_RECORD pWfsDbCadList [] =
   CAD_ATTRIB_N, EPICS_DATA_TYPE_DOUBLE,  "1.0",  {"-1.0", "1.0"},
   CAD_ATTRIB_O, EPICS_DATA_TYPE_DOUBLE,  "1.0",  {"-1.0", "1.0"},
   CAD_ATTRIB_P, EPICS_DATA_TYPE_DOUBLE,  "1.0", {NO_ATTRIBUTE_LIMITS},
-  CAD_ATTRIB_Q, EPICS_DATA_TYPE_STRING, "defSeeingCoeffMatOiGmosMK.dat", {NO_ATTRIBUTE_LIMITS}
+  CAD_ATTRIB_Q, EPICS_DATA_TYPE_STRING, "defSeeingCoeffMatOiGmosMK.dat", {NO_ATTRIBUTE_LIMITS},
+  CAD_ATTRIB_R, EPICS_DATA_TYPE_STRING, "defSeeingCoeffVectOiGmosMK.dat", {NO_ATTRIBUTE_LIMITS}
  },
 #else
  {
@@ -448,7 +450,8 @@ CAD_RECORD pWfsDbCadList [] =
   CAD_ATTRIB_N, EPICS_DATA_TYPE_DOUBLE,  "1.0",  {"-1.0", "1.0"},
   CAD_ATTRIB_O, EPICS_DATA_TYPE_DOUBLE,  "1.0",  {"-1.0", "1.0"},
   CAD_ATTRIB_P, EPICS_DATA_TYPE_DOUBLE,  "1.0", {NO_ATTRIBUTE_LIMITS},
-  CAD_ATTRIB_Q, EPICS_DATA_TYPE_STRING, "defSeeingCoeffMatOiGmosMK.dat", {NO_ATTRIBUTE_LIMITS}
+  CAD_ATTRIB_Q, EPICS_DATA_TYPE_STRING, "defSeeingCoeffMatOiGmosCP.dat", {NO_ATTRIBUTE_LIMITS},
+  CAD_ATTRIB_R, EPICS_DATA_TYPE_STRING, "defSeeingCoeffVectOiGmosCP.dat", {NO_ATTRIBUTE_LIMITS}
  },
 #endif
  {
@@ -1092,11 +1095,23 @@ SIR_RECORD pWfsDbSirList [] =
   EPICS_DATA_TYPE_DOUBLE
  },
  {
+  RECORD_NAME ("dc:r0"),
+  EPICS_DATA_TYPE_DOUBLE
+ },
+ {
+  RECORD_NAME ("dc:jitter"),
+  EPICS_DATA_TYPE_DOUBLE
+ },
+ {
   RECORD_NAME ("dc:seeingGain"),
   EPICS_DATA_TYPE_DOUBLE
  },
  {
   RECORD_NAME ("dc:seeingCoeffMatInit"),
+  EPICS_DATA_TYPE_STRING
+ },
+ {
+  RECORD_NAME ("dc:seeingCoeffVectInit"),
   EPICS_DATA_TYPE_STRING
  },
  {

@@ -13,6 +13,7 @@
  *   *** THE SDSU CONTROLLERS AT YOUR SITE. SEE DEFINITIONS BELOW.
  *
  *INDENT-OFF*
+ *   19 Nov 2002: CB - Implement seeing computation according to FR's method
  *   14 Oct 2002: CB - Add detPowerOff
  *   16 Sep 2002: CB - Add fgFocusGain100, fgTipGain, fgTiltGain, fgFocusGain, 
  *                     cfFocusBw, cfTipTiltBw sir records 
@@ -188,6 +189,14 @@
                                     /* Name of SIR record containing the      */
                                     /* current seeing                         */
 
+#define   DET_CONTROL_R0_SIR_NAME             "r0"
+                                    /* Name of SIR record containing the      */
+                                    /* current r0                             */
+
+#define   DET_CONTROL_JITTER_SIR_NAME         "jitter"
+                                    /* Name of SIR record containing the      */
+                                    /* current jitter                         */
+
 #define   DET_CONTROL_SEEING_GAIN_SIR_NAME    "seeingGain"
                                     /* Name of SIR record containing the      */
                                     /* seeing scale factor                    */
@@ -195,6 +204,10 @@
 #define   DET_CONTROL_SEEING_COEFF_MAT_INIT_SIR_NAME    "seeingCoeffMatInit"
                                     /* Name of SIR record containing the      */
                                     /* init state of the seeing coeff matrix  */
+
+#define   DET_CONTROL_SEEING_COEFF_VECT_INIT_SIR_NAME   "seeingCoeffVectInit"
+                                    /* Name of SIR record containing the      */
+                                    /* init state of the seeing coeff vector  */
 
 #define   DET_CONTROL_OUT_GUIDE_SIR_NAME      "outGuide"
                                     /* Name of SIR record indicating the      */
@@ -774,11 +787,17 @@ typedef   struct      /* Context structure used to describe an observation.   */
                                       /* record.                              */
    DATREC_CONTEXT pSeeingContext;     /* Context structure for seeing SIR     */
                                       /* record.                              */
+   DATREC_CONTEXT pR0Context;         /* Context structure for r0 SIR record  */
+   DATREC_CONTEXT pJitterContext;     /* Context structure for jitter SIR     */
+                                      /* record.                              */
    DATREC_CONTEXT pSeeingGainContext; /* Context structure for seeingGain SIR */
                                       /* record.                              */
    DATREC_CONTEXT pSeeingCoeffMatInitContext;
                                       /* Context structure for                */
                                       /* seeingCoeffMatInit SIR record.       */
+   DATREC_CONTEXT pSeeingCoeffVectInitContext;
+                                      /* Context structure for                */
+                                      /* seeingCoeffVectInit SIR record.      */
    DATREC_CONTEXT pOutGuideContext;   /* Context structure for outGuide SIR   */
                                       /* record.                              */
    DATREC_CONTEXT pDetTypeContext;    /* Context structure for detector       */
