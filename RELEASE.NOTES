@@ -7,3 +7,18 @@ V1-0 18 Janv 2002 CB:
    - add detPowerOn
    - Port to epics3.13.4
    - detDhsInit is now started from detControl.c
+
+dev-oiwfs-gmos equivalent to V1-0
+
+V1-1 08 Feb 2002 CB:
+--------------------
+   - add threshold in real time
+   - add writeToRm flag when doing guiding
+   - cicular buffer sizes increased
+   - aO: replace imageNb parameter with a time parameter, them imageNb is
+     computed from this time and current exposure time
+   - detInit and detReset: reset to FALSE signal processing and reject command
+     detObserveStart if signal processing not initialized
+   - Add flip in header of fg and ao circular buffers 
+
+dev-oiwfs-gmos-threshRT equivalent to V1-1

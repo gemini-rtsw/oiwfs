@@ -6,9 +6,9 @@ display {
 	majv="2"
 	mnrv="4"
 	ndyng="3"
-	npc="26"
+	npc="30"
 	nstr="59"
-	ndynamic="23"
+	ndynamic="27"
 	nplot="0"
 	nrd="0"
 	nes="0"
@@ -19,27 +19,27 @@ display {
 		x="328"
 		y="298"
 		width="639"
-		height="693"
+		height="715"
 	}
 	clr="1"
 	bclr="13"
-	nwords_dspy="4502"
-	nwords_sta="836"
+	nwords_dspy="4870"
+	nwords_sta="884"
 	nwords_cmap="120"
 	nwords_crules="922"
-	odyng="2812"
-	osta="1976"
-	odynamic="2972"
-	oplot="4490"
-	ord="4490"
-	oes="4490"
-	okd="4490"
-	opd="4502"
-	opo="4502"
+	odyng="2916"
+	osta="2032"
+	odynamic="3076"
+	oplot="4858"
+	ord="4858"
+	oes="4858"
+	okd="4858"
+	opd="4870"
+	opo="4870"
 	opc="68"
-	ostr="432"
-	ocmap="934"
-	ocrules="1054"
+	ostr="488"
+	ocmap="990"
+	ocrules="1110"
 	style="solid"
 	fill="outline"
 	width="0"
@@ -1369,7 +1369,7 @@ display {
 		x="9"
 		y="46"
 		width="620"
-		height="639"
+		height="661"
 		groupid="0"
 	}
 }
@@ -1386,8 +1386,8 @@ display {
 }
 "text" {
 	object {
-		x="58"
-		y="216"
+		x="57"
+		y="234"
 		width="37"
 		height="20"
 		groupid="0"
@@ -1408,8 +1408,8 @@ display {
 }
 "text" {
 	object {
-		x="383"
-		y="217"
+		x="382"
+		y="235"
 		width="37"
 		height="20"
 		groupid="0"
@@ -1420,7 +1420,7 @@ display {
 "text" {
 	object {
 		x="16"
-		y="442"
+		y="466"
 		width="93"
 		height="20"
 		groupid="0"
@@ -1453,7 +1453,7 @@ display {
 "text" {
 	object {
 		x="124"
-		y="443"
+		y="467"
 		width="17"
 		height="20"
 		groupid="0"
@@ -1464,7 +1464,7 @@ display {
 "text" {
 	object {
 		x="124"
-		y="467"
+		y="491"
 		width="15"
 		height="20"
 		groupid="0"
@@ -1475,7 +1475,7 @@ display {
 "text" {
 	object {
 		x="16"
-		y="319"
+		y="343"
 		width="179"
 		height="20"
 		groupid="0"
@@ -1497,7 +1497,7 @@ display {
 "line" {
 	object {
 		x="9"
-		y="425"
+		y="449"
 		width="620"
 		height="1"
 		groupid="0"
@@ -1505,11 +1505,11 @@ display {
 	npoints="2"
 	point[0] {
 		x="9"
-		y="426"
+		y="450"
 	}
 	point[1] {
 		x="628"
-		y="426"
+		y="450"
 	}
 	orgpoint[0] {
 		x="0"
@@ -1523,7 +1523,7 @@ display {
 "text" {
 	object {
 		x="375"
-		y="443"
+		y="467"
 		width="92"
 		height="20"
 		groupid="0"
@@ -1534,7 +1534,7 @@ display {
 "text" {
 	object {
 		x="16"
-		y="510"
+		y="534"
 		width="237"
 		height="20"
 		groupid="0"
@@ -1545,7 +1545,7 @@ display {
 "text" {
 	object {
 		x="379"
-		y="510"
+		y="534"
 		width="37"
 		height="20"
 		groupid="0"
@@ -1567,7 +1567,7 @@ display {
 "text" {
 	object {
 		x="17"
-		y="396"
+		y="420"
 		width="303"
 		height="20"
 		groupid="0"
@@ -1610,8 +1610,8 @@ display {
 }
 "text" {
 	object {
-		x="411"
-		y="218"
+		x="410"
+		y="236"
 		width="17"
 		height="20"
 		groupid="0"
@@ -1621,8 +1621,8 @@ display {
 }
 "text" {
 	object {
-		x="411"
-		y="243"
+		x="410"
+		y="261"
 		width="15"
 		height="20"
 		groupid="0"
@@ -1632,8 +1632,8 @@ display {
 }
 "text" {
 	object {
-		x="411"
-		y="271"
+		x="410"
+		y="289"
 		width="20"
 		height="14"
 		groupid="0"
@@ -1643,8 +1643,8 @@ display {
 }
 "text" {
 	object {
-		x="87"
-		y="217"
+		x="86"
+		y="235"
 		width="17"
 		height="20"
 		groupid="0"
@@ -1654,8 +1654,8 @@ display {
 }
 "text" {
 	object {
-		x="87"
-		y="242"
+		x="86"
+		y="260"
 		width="15"
 		height="20"
 		groupid="0"
@@ -1665,8 +1665,8 @@ display {
 }
 "text" {
 	object {
-		x="87"
-		y="270"
+		x="86"
+		y="288"
 		width="20"
 		height="14"
 		groupid="0"
@@ -1677,7 +1677,7 @@ display {
 "text" {
 	object {
 		x="16"
-		y="359"
+		y="383"
 		width="62"
 		height="20"
 		groupid="0"
@@ -1688,7 +1688,7 @@ display {
 "line" {
 	object {
 		x="10"
-		y="497"
+		y="521"
 		width="620"
 		height="1"
 		groupid="0"
@@ -1696,11 +1696,11 @@ display {
 	npoints="2"
 	point[0] {
 		x="10"
-		y="498"
+		y="522"
 	}
 	point[1] {
 		x="629"
-		y="498"
+		y="522"
 	}
 	orgpoint[0] {
 		x="0"
@@ -1714,7 +1714,7 @@ display {
 "text" {
 	object {
 		x="16"
-		y="539"
+		y="563"
 		width="231"
 		height="20"
 		groupid="0"
@@ -1725,7 +1725,7 @@ display {
 "text" {
 	object {
 		x="379"
-		y="538"
+		y="562"
 		width="37"
 		height="20"
 		groupid="0"
@@ -1736,7 +1736,7 @@ display {
 "text" {
 	object {
 		x="16"
-		y="568"
+		y="592"
 		width="233"
 		height="20"
 		groupid="0"
@@ -1747,7 +1747,7 @@ display {
 "text" {
 	object {
 		x="16"
-		y="597"
+		y="621"
 		width="231"
 		height="20"
 		groupid="0"
@@ -1758,7 +1758,7 @@ display {
 "text" {
 	object {
 		x="16"
-		y="627"
+		y="651"
 		width="234"
 		height="20"
 		groupid="0"
@@ -1769,12 +1769,56 @@ display {
 "text" {
 	object {
 		x="15"
-		y="658"
+		y="682"
 		width="207"
 		height="20"
 		groupid="0"
 	}
 	textix="GMOS CC optsensor:"
+	align="horiz. left"
+}
+"text" {
+	object {
+		x="44"
+		y="187"
+		width="57"
+		height="14"
+		groupid="0"
+	}
+	textix="Thresh"
+	align="horiz. left"
+}
+"text" {
+	object {
+		x="370"
+		y="187"
+		width="57"
+		height="14"
+		groupid="0"
+	}
+	textix="Thresh"
+	align="horiz. left"
+}
+"text" {
+	object {
+		x="44"
+		y="310"
+		width="57"
+		height="14"
+		groupid="0"
+	}
+	textix="Thresh"
+	align="horiz. left"
+}
+"text" {
+	object {
+		x="368"
+		y="314"
+		width="57"
+		height="14"
+		groupid="0"
+	}
+	textix="Thresh"
 	align="horiz. left"
 }
 "<<basic attribute>>" {
@@ -1795,9 +1839,9 @@ display {
 			rulecolorfg="1"
 			rulecolorbg="1"
 			chan=""
-			rulechan[0] = "$(top)fgDiagP2.VALB"
-			rulechan[1] = "$(top)fgDiagP2.VALB"
-			rulechan[2] = "$(top)fgDiagP2.VALB"
+			rulechan[0] = "$(top)fgDiag1P2.VALB"
+			rulechan[1] = "$(top)fgDiag1P2.VALB"
+			rulechan[2] = "$(top)fgDiag1P2.VALB"
 			rulechan[3] = ""
 			rulechan[4] = ""
 			rulechan[5] = ""
@@ -1812,14 +1856,14 @@ display {
 			rulechan[14] = ""
 			rulechan[15] = ""
 			clrrule="wfs"
-			clrargs="C=$(top)fgDiagP2.VALB"
+			clrargs="C=$(top)fgDiag1P2.VALB"
 		}
 	}
 }
 "oval" {
 	object {
 		x="200"
-		y="319"
+		y="343"
 		width="20"
 		height="21"
 		groupid="0"
@@ -1835,7 +1879,7 @@ display {
 			rulecolorfg="1"
 			rulecolorbg="1"
 			chan=""
-			rulechan[0] = "$(top)fgDiagP2.VALR"
+			rulechan[0] = "$(top)fgDiag1P2.VALR"
 			rulechan[1] = ""
 			rulechan[2] = ""
 			rulechan[3] = ""
@@ -1852,14 +1896,14 @@ display {
 			rulechan[14] = ""
 			rulechan[15] = ""
 			clrrule="time"
-			clrargs="C=$(top)fgDiagP2.VALR"
+			clrargs="C=$(top)fgDiag1P2.VALR"
 		}
 	}
 }
 "oval" {
 	object {
 		x="74"
-		y="357"
+		y="381"
 		width="20"
 		height="21"
 		groupid="0"
@@ -1899,7 +1943,7 @@ display {
 "oval" {
 	object {
 		x="222"
-		y="657"
+		y="681"
 		width="20"
 		height="21"
 		groupid="0"
@@ -1907,14 +1951,14 @@ display {
 }
 "text update" {
 	object {
-		x="103"
-		y="212"
+		x="102"
+		y="230"
 		width="160"
 		height="21"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiagP2.VALE"
+		chan="$(top)fgDiag1P2.VALE"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -1953,14 +1997,14 @@ display {
 }
 "text update" {
 	object {
-		x="103"
-		y="237"
+		x="102"
+		y="255"
 		width="160"
 		height="21"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiagP2.VALF"
+		chan="$(top)fgDiag1P2.VALF"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -1999,14 +2043,14 @@ display {
 }
 "text update" {
 	object {
-		x="428"
-		y="214"
+		x="427"
+		y="232"
 		width="160"
 		height="21"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiagP2.VALG"
+		chan="$(top)fgDiag1P2.VALG"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -2045,14 +2089,14 @@ display {
 }
 "text update" {
 	object {
-		x="428"
-		y="240"
+		x="427"
+		y="258"
 		width="160"
 		height="21"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiagP2.VALH"
+		chan="$(top)fgDiag1P2.VALH"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -2098,7 +2142,7 @@ display {
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiagP2.VALI"
+		chan="$(top)fgDiag1P2.VALI"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -2144,7 +2188,7 @@ display {
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiagP2.VALJ"
+		chan="$(top)fgDiag1P2.VALJ"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -2190,7 +2234,7 @@ display {
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiagP2.VALK"
+		chan="$(top)fgDiag1P2.VALK"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -2236,7 +2280,7 @@ display {
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiagP2.VALL"
+		chan="$(top)fgDiag1P2.VALL"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -2276,13 +2320,13 @@ display {
 "text update" {
 	object {
 		x="144"
-		y="440"
+		y="464"
 		width="160"
 		height="21"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiagP2.VALC"
+		chan="$(top)fgDiag1P2.VALC"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -2322,13 +2366,13 @@ display {
 "text update" {
 	object {
 		x="145"
-		y="466"
+		y="490"
 		width="159"
 		height="21"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiagP2.VALD"
+		chan="$(top)fgDiag1P2.VALD"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -2374,7 +2418,7 @@ display {
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiagP2.VALA"
+		chan="$(top)fgDiag1P2.VALA"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -2413,14 +2457,14 @@ display {
 }
 "text update" {
 	object {
-		x="103"
-		y="262"
+		x="102"
+		y="280"
 		width="160"
 		height="21"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiagP2.VALM"
+		chan="$(top)fgDiag1P2.VALM"
 		clr="11"
 		bclr="7"
 		label="none"
@@ -2459,14 +2503,14 @@ display {
 }
 "text update" {
 	object {
-		x="428"
-		y="266"
+		x="427"
+		y="284"
 		width="160"
 		height="21"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiagP2.VALN"
+		chan="$(top)fgDiag1P2.VALN"
 		clr="11"
 		bclr="7"
 		label="none"
@@ -2512,7 +2556,7 @@ display {
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiagP2.VALO"
+		chan="$(top)fgDiag1P2.VALO"
 		clr="11"
 		bclr="7"
 		label="none"
@@ -2558,7 +2602,7 @@ display {
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiagP2.VALP"
+		chan="$(top)fgDiag1P2.VALP"
 		clr="11"
 		bclr="7"
 		label="none"
@@ -2598,13 +2642,13 @@ display {
 "text update" {
 	object {
 		x="450"
-		y="443"
+		y="467"
 		width="160"
 		height="21"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiagP2.VALQ"
+		chan="$(top)fgDiag1P2.VALQ"
 		clr="11"
 		bclr="7"
 		label="none"
@@ -2644,7 +2688,7 @@ display {
 "text update" {
 	object {
 		x="249"
-		y="509"
+		y="533"
 		width="127"
 		height="23"
 		groupid="0"
@@ -2690,7 +2734,7 @@ display {
 "text update" {
 	object {
 		x="271"
-		y="393"
+		y="417"
 		width="127"
 		height="23"
 		groupid="0"
@@ -2736,13 +2780,13 @@ display {
 "text update" {
 	object {
 		x="103"
-		y="359"
+		y="383"
 		width="439"
 		height="21"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiagP2.VALR"
+		chan="$(top)fgDiag1P2.VALR"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -2782,7 +2826,7 @@ display {
 "text update" {
 	object {
 		x="249"
-		y="538"
+		y="562"
 		width="127"
 		height="23"
 		groupid="0"
@@ -2828,7 +2872,7 @@ display {
 "text update" {
 	object {
 		x="249"
-		y="567"
+		y="591"
 		width="127"
 		height="23"
 		groupid="0"
@@ -2874,7 +2918,7 @@ display {
 "text update" {
 	object {
 		x="249"
-		y="596"
+		y="620"
 		width="127"
 		height="23"
 		groupid="0"
@@ -2920,7 +2964,7 @@ display {
 "text update" {
 	object {
 		x="249"
-		y="626"
+		y="650"
 		width="127"
 		height="23"
 		groupid="0"
@@ -2954,6 +2998,190 @@ display {
 		hdl="0"
 		ldl="0"
 		prec="-1"
+		newunits=""
+		units="none"
+		decorate="none"
+		convertFunc=""
+		convertParams=""
+	}
+	align="horiz. left"
+	format="decimal"
+}
+"text update" {
+	object {
+		x="102"
+		y="183"
+		width="160"
+		height="22"
+		groupid="0"
+	}
+	monitor {
+		chan="$(top)fgDiag2P2.VALC"
+		clr="17"
+		bclr="7"
+		label="none"
+		clrmod="static"
+		rulechan[0] = ""
+		rulechan[1] = ""
+		rulechan[2] = ""
+		rulechan[3] = ""
+		rulechan[4] = ""
+		rulechan[5] = ""
+		rulechan[6] = ""
+		rulechan[7] = ""
+		rulechan[8] = ""
+		rulechan[9] = ""
+		rulechan[10] = ""
+		rulechan[11] = ""
+		rulechan[12] = ""
+		rulechan[13] = ""
+		rulechan[14] = ""
+		rulechan[15] = ""
+		clrrule=""
+		clrargs=""
+		rulecolorbg="1"
+		rulecolorfg="1"
+		hdl="0"
+		ldl="0"
+		prec="4"
+		newunits=""
+		units="none"
+		decorate="none"
+		convertFunc=""
+		convertParams=""
+	}
+	align="horiz. left"
+	format="decimal"
+}
+"text update" {
+	object {
+		x="427"
+		y="184"
+		width="160"
+		height="21"
+		groupid="0"
+	}
+	monitor {
+		chan="$(top)fgDiag2P2.VALD"
+		clr="17"
+		bclr="7"
+		label="none"
+		clrmod="static"
+		rulechan[0] = ""
+		rulechan[1] = ""
+		rulechan[2] = ""
+		rulechan[3] = ""
+		rulechan[4] = ""
+		rulechan[5] = ""
+		rulechan[6] = ""
+		rulechan[7] = ""
+		rulechan[8] = ""
+		rulechan[9] = ""
+		rulechan[10] = ""
+		rulechan[11] = ""
+		rulechan[12] = ""
+		rulechan[13] = ""
+		rulechan[14] = ""
+		rulechan[15] = ""
+		clrrule=""
+		clrargs=""
+		rulecolorbg="1"
+		rulecolorfg="1"
+		hdl="0"
+		ldl="0"
+		prec="4"
+		newunits=""
+		units="none"
+		decorate="none"
+		convertFunc=""
+		convertParams=""
+	}
+	align="horiz. left"
+	format="decimal"
+}
+"text update" {
+	object {
+		x="102"
+		y="307"
+		width="160"
+		height="21"
+		groupid="0"
+	}
+	monitor {
+		chan="$(top)fgDiag2P2.VALA"
+		clr="17"
+		bclr="7"
+		label="none"
+		clrmod="static"
+		rulechan[0] = ""
+		rulechan[1] = ""
+		rulechan[2] = ""
+		rulechan[3] = ""
+		rulechan[4] = ""
+		rulechan[5] = ""
+		rulechan[6] = ""
+		rulechan[7] = ""
+		rulechan[8] = ""
+		rulechan[9] = ""
+		rulechan[10] = ""
+		rulechan[11] = ""
+		rulechan[12] = ""
+		rulechan[13] = ""
+		rulechan[14] = ""
+		rulechan[15] = ""
+		clrrule=""
+		clrargs=""
+		rulecolorbg="1"
+		rulecolorfg="1"
+		hdl="0"
+		ldl="0"
+		prec="4"
+		newunits=""
+		units="none"
+		decorate="none"
+		convertFunc=""
+		convertParams=""
+	}
+	align="horiz. left"
+	format="decimal"
+}
+"text update" {
+	object {
+		x="427"
+		y="311"
+		width="160"
+		height="21"
+		groupid="0"
+	}
+	monitor {
+		chan="$(top)fgDiag2P2.VALB"
+		clr="17"
+		bclr="7"
+		label="none"
+		clrmod="static"
+		rulechan[0] = ""
+		rulechan[1] = ""
+		rulechan[2] = ""
+		rulechan[3] = ""
+		rulechan[4] = ""
+		rulechan[5] = ""
+		rulechan[6] = ""
+		rulechan[7] = ""
+		rulechan[8] = ""
+		rulechan[9] = ""
+		rulechan[10] = ""
+		rulechan[11] = ""
+		rulechan[12] = ""
+		rulechan[13] = ""
+		rulechan[14] = ""
+		rulechan[15] = ""
+		clrrule=""
+		clrargs=""
+		rulecolorbg="1"
+		rulecolorfg="1"
+		hdl="0"
+		ldl="0"
+		prec="4"
 		newunits=""
 		units="none"
 		decorate="none"

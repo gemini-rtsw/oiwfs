@@ -1,5 +1,5 @@
 static struct {void *v; char *c;} rcsid = {&rcsid,
-   "$Id: detControl.c,v 1.1.1.1 2002-01-29 01:53:30 cboyer Exp $"};
+   "$Id: detControl.c,v 1.2 2002-02-08 20:30:09 cboyer Exp $"};
 
 /*+
  *   MODULE NAME:
@@ -31,6 +31,9 @@ static struct {void *v; char *c;} rcsid = {&rcsid,
  *   Steven Beard
  *
  *INDENT-OFF*
+ *   07 Feb 2002: CB - Reset signal processing when detInit and detReset and
+ *                     reject observe command if signal processing not
+ *                     initialized
  *   10 Oct 2001: CB - Modifications for OIWFS GMOS
  *   21 Aug 2001: CB - Major modifications to have aO correction with P2 also
  *                     In fact detControl.c is now a copy of pwfs1
@@ -755,6 +758,7 @@ STATUS   detControl
    obsId->saveCbFgCtrl = FALSE;
    obsId->sigMode = AO_MODE_NONE;
    obsId->dhsQlRate = 100;
+   obsId->writeToRm = 1;
 
    /*
     * Get the context structures for the SIR records. 
@@ -1347,6 +1351,28 @@ STATUS   detControl
 
    wfsGetPort (&aoCtrlId->port);
 
+
+/*
+   if ( issPortSem == NULL )
+   {
+      ERROR_LOG ("issPortSem not initialized");
+      aoCtrlId->port = 0;
+   }
+   else
+   {
+      if (semTake (issPortSem,100) != OK )
+      {
+         ERROR_LOG ("Timeout to get the issPortSem during startup");
+         aoCtrlId->port = 0;
+      }
+      else
+      {
+         MESSAGE_LOG ( MSG_LOG, "Get the issPort semaphore" );
+         wfsUpdatePort (&aoCtrlId->port);
+      }
+   }
+*/
+
 #if (MK)
    strcpy ( defFileName, DET_CONTROL_PWFS2_AO_FULL_CTRL_MK_INIT_FILE);
 #else
@@ -1431,6 +1457,13 @@ STATUS   detControl
             ERROR_LOG (
             "Failed to init DET_CONTROL_FG_CONT_MAT_INIT_SIR_NAME record");
          }
+      }
+
+      if (epToVxPipeWrite (NULL, (char *)(int)& (aoCtrlId->rms),
+                           obsId->pAoRmsContext) == ERROR)
+      {
+         ERROR_LOG (
+         "Failed to init DET_CONTROL_AO_RMS_SIR_NAME record");
       }
 
       if (epToVxPipeWrite (NULL, (char *)(int)& (aoCtrlId->threshold),
@@ -5060,6 +5093,7 @@ uint32 detObserveStart
       obsId->saveAoCbCounter = 0;
       obsId->saveFgCbCounter = 0;
       obsId->averageRms = 0.0;
+      obsId->averageMean = 0.0;
       obsId->averageFlux = 0.0;
       obsId->updateFgScale = FALSE;
       obsId->updateAoScale = FALSE;
@@ -5163,9 +5197,35 @@ uint32 detObserveStart
          ERROR_LOG ("Failed to set integration time SIR record");
       }
 
-      /* 
-       * Init some parameters in the case of the sequence closed loop
+      /*
+       * Reject the command, if signal processing is not initialized and
+       * sigMode is not set to one of the following mode: AO_MODE_NONE
        */
+
+      if ( ( obsId->aoCtrlId->initFlag == FALSE ) &&
+           (obsId->sigMode != AO_MODE_NONE) )
+      {
+         ERROR_SET (S_detControl_BAD_ATTRIBUTE,
+         "Signal processing not init, use the init command for the signal processing first",
+         ERROR_LOG_NOW);
+         errorNumber = S_detControl_BAD_ATTRIBUTE;
+         return (errorNumber);
+      }
+
+      /* 
+       * Init some parameters according to the signal processing mode
+       */
+
+      if ( (obsId->sigMode == AO_MODE_AO) ||
+           (obsId->sigMode == AO_MODE_GG_AO ) ||
+           (obsId->sigMode == AO_MODE_FG_FOCUS_AO ) ||
+           (obsId->sigMode == AO_MODE_CLOSED_LOOP ) )
+      {
+         obsId->nCoaddFrames = (int)ceil(obsId->aoTime/exposure);
+         MESSAGE_LOG1 ( MSG_LOG,
+                        "For aO: nCoaddFrames=%d",
+                        (int)(obsId->nCoaddFrames));
+      }
 
       if ( obsId->sigMode == AO_MODE_TOTAL )
       {
@@ -5180,48 +5240,119 @@ uint32 detObserveStart
 
       if ( obsId->sigMode == AO_MODE_CLOSED_LOOP )
       {
-         if ( obsId->averageFluxFlag == TRUE )
-         {
-            obsId->aoCtrlId->totalThreshold = 0.0;
-            if (epToVxPipeWrite (NULL, 
-                              (char *)(int)& (obsId->aoCtrlId->totalThreshold), 
-                              obsId->pAoTotalContext) == ERROR)
-            {
-               ERROR_LOG (
-               "Failed to init DET_CONTROL_AO_TOTAL_SIR_NAME record");
-            }
-         }
-
-         if ( obsId->threshFlag == FALSE )
-            obsId->nAverageDataThreshComp = 0;
+         if ( obsId->ggTime == 0.0 )
+            obsId->ggFrame = 0;
          else
+            obsId->ggFrame = (int)ceil(obsId->ggTime/exposure);
+
+#ifdef DEBUG
+         printf ( "MODE CLOSED LOOP: FG during %d frames\n" , 
+                  (int)obsId->ggFrame);
+#endif
+      }
+
+      if ( ( obsId->sigMode == AO_MODE_FG_FOCUS ) ||
+           ( obsId->sigMode == AO_MODE_FG_FOCUS_AO ) ||
+           ( obsId->sigMode == AO_MODE_FG_FOCUS_COADD ) ||
+           ( obsId->sigMode == AO_MODE_CLOSED_LOOP ) )
+      {
+         if ( obsId->threshRealTimeFlag == TRUE )
          {
+            /* Init first threshold vector */
+
             if ( obsId->aoCcdId->binningFlag == FALSE )
-               obsId->aoCtrlId->threshold = obsId->aoCtrlId->thresholdDarkFull;
+               obsId->aoCtrlId->threshold =
+               obsId->aoCtrlId->thresholdDarkFull;
             else
-               obsId->aoCtrlId->threshold = obsId->aoCtrlId->thresholdDarkBin;
+               obsId->aoCtrlId->threshold =
+               obsId->aoCtrlId->thresholdDarkBin;
 
             for ( k = 0 ; k < obsId->aoCcdId->subapUsedNb ; k ++ )
-                obsId->aoCtrlId->thresholdVect[k] = obsId->aoCtrlId->threshold;
+                obsId->aoCtrlId->thresholdVect[k] =
+                obsId->aoCtrlId->threshold;
 
-            if (epToVxPipeWrite (NULL, 
-                (char *)(int)& (obsId->aoCtrlId->threshold), 
+            if (epToVxPipeWrite (NULL,
+                (char *)(int)& (obsId->aoCtrlId->threshold),
                 obsId->pAoThreshContext) == ERROR)
             {
                ERROR_LOG (
                "Failed to init DET_CONTROL_AO_THRESH_SIR_NAME record");
             }
+
+            if ( obsId->sigMode != AO_MODE_CLOSED_LOOP )
+            {
+               for ( k = 0 ; k < obsId->aoCcdId->subapUsedNb ; k ++ )
+                   obsId->aoCbFgCtrlId->cbFgCtrlRecord[0].thresholdVect[k] =
+                   obsId->aoCtrlId->threshold;
+            }
+            else
+            {
+               if ( obsId->ggFrame != 0 )
+               {
+                  for ( k = 0 ; k < obsId->aoCcdId->subapUsedNb ; k ++ )
+                      obsId->aoCbFgCtrlId->cbFgCtrlRecord[obsId->ggFrame-1].thresholdVect[k] =
+                      obsId->aoCtrlId->threshold;
+               }
+            }
+
+            /* Compute the total */
+
+            obsId->aoCtrlId->totalThreshold =
+            aoTotalThresholdCompute ( obsId->aoCcdId, obsId->aoCtrlId);
+
+            obsId->methodFluxComp = AO_TOTAL_FORMULA;
+            obsId->aoCtrlId->totalMethod = AO_TOTAL_FORMULA;
+
+            if (epToVxPipeWrite (NULL,
+                    (char *)(int)& (obsId->aoCtrlId->totalThreshold),
+                    obsId->pAoTotalContext) == ERROR)
+            {
+               ERROR_LOG (
+                     "Failed to init DET_CONTROL_AO_TOTAL_SIR_NAME record");
+            }
          }
+      }
 
-         if ( obsId->fgTime == 0.0 )
-            obsId->fgFrame = 0;
-         else
-            obsId->fgFrame = (int)ceil(obsId->fgTime/exposure);
+      if ( obsId->sigMode == AO_MODE_CLOSED_LOOP )
+      {
+         if ( obsId->threshRealTimeFlag == FALSE )
+         {
+            if ( obsId->averageFluxFlag == TRUE )
+            {
+               obsId->aoCtrlId->totalThreshold = 0.0;
+               if (epToVxPipeWrite (NULL, 
+                             (char *)(int)& (obsId->aoCtrlId->totalThreshold), 
+                             obsId->pAoTotalContext) == ERROR)
+               {
+                  ERROR_LOG (
+                  "Failed to init DET_CONTROL_AO_TOTAL_SIR_NAME record");
+               }
+            }
 
-#ifdef DEBUG
-         printf ( "MODE CLOSED LOOP: FG during %d frames\n" , 
-                  (int)obsId->fgFrame);
-#endif
+            if ( obsId->threshFlag == FALSE )
+               obsId->nAverageDataThreshComp = 0;
+            else
+            {
+               if ( obsId->aoCcdId->binningFlag == FALSE )
+                  obsId->aoCtrlId->threshold 
+                  = obsId->aoCtrlId->thresholdDarkFull;
+               else
+                  obsId->aoCtrlId->threshold = 
+                  obsId->aoCtrlId->thresholdDarkBin;
+
+               for ( k = 0 ; k < obsId->aoCcdId->subapUsedNb ; k ++ )
+                   obsId->aoCtrlId->thresholdVect[k] = 
+                   obsId->aoCtrlId->threshold;
+
+               if (epToVxPipeWrite (NULL, 
+                   (char *)(int)& (obsId->aoCtrlId->threshold), 
+                   obsId->pAoThreshContext) == ERROR)
+               {
+                  ERROR_LOG (
+                  "Failed to init DET_CONTROL_AO_THRESH_SIR_NAME record");
+               }
+            }
+         }
 
          if ( obsId->saveCbFgCtrlClosedLoopTime == 0.0 )
             obsId->saveCbFgCtrlClosedLoop = FALSE;
@@ -6962,6 +7093,53 @@ uint32 detInit
    }
 
    /*
+    * Reset the signal processing
+    */
+
+   obsId->aoCtrlId->initFlag = FALSE;
+   if (epToVxPipeWrite (NULL, "Not initialized", obsId->pAoCtrlInitContext)
+       == ERROR)
+   {
+      ERROR_LOG (
+      "Failed to init DET_CONTROL_AO_CTRL_INIT_SIR_NAME record");
+   }
+   obsId->aoCtrlId->darkInitFlag = FALSE;
+   if (epToVxPipeWrite (NULL, "Not initialized", obsId->pAoDarkInitContext)
+       == ERROR)
+   {
+      ERROR_LOG (
+      "Failed to init DET_CONTROL_AO_DARK_INIT_SIR_NAME record");
+   }
+   obsId->aoCtrlId->flatInitFlag = FALSE;
+   if (epToVxPipeWrite (NULL, "Not initialized", obsId->pAoFlatInitContext)
+       == ERROR)
+   {
+      ERROR_LOG (
+      "Failed to init DET_CONTROL_AO_FLAT_INIT_SIR_NAME record");
+   }
+   obsId->aoCtrlId->aoIntMatInitFlag = FALSE;
+   if (epToVxPipeWrite (NULL, "Not initialized", obsId->pAoIntMatInitContext)
+       == ERROR)
+   {
+      ERROR_LOG (
+      "Failed to init DET_CONTROL_AO_INT_MAT_INIT_SIR_NAME record");
+   }
+   obsId->aoCtrlId->aoContMatInitFlag = FALSE;
+   if (epToVxPipeWrite (NULL, "Not initialized",
+                        obsId->pAoContMatInitContext) == ERROR)
+   {
+      ERROR_LOG (
+      "Failed to init DET_CONTROL_AO_CONT_MAT_INIT_SIR_NAME record");
+   }
+   obsId->aoCtrlId->fgContMatInitFlag = FALSE;
+   if (epToVxPipeWrite (NULL, "Not initialized",
+                        obsId->pFgContMatInitContext) == ERROR)
+   {
+      ERROR_LOG (
+      "Failed to init DET_CONTROL_FG_CONT_MAT_INIT_SIR_NAME record");
+   }
+
+   /*
     * If an SDSU context structure already exists, delete it.
     */
 
@@ -7626,6 +7804,53 @@ uint32 detReset
    /* Set to FLASE the temperature Flag */
 
    readTempReadyFlag = FALSE ;
+
+   /*
+    * Reset the signal processing
+    */
+
+   obsId->aoCtrlId->initFlag = FALSE;
+   if (epToVxPipeWrite (NULL, "Not initialized", obsId->pAoCtrlInitContext)
+       == ERROR)
+   {
+      ERROR_LOG (
+      "Failed to init DET_CONTROL_AO_CTRL_INIT_SIR_NAME record");
+   }
+   obsId->aoCtrlId->darkInitFlag = FALSE;
+   if (epToVxPipeWrite (NULL, "Not initialized", obsId->pAoDarkInitContext)
+       == ERROR)
+   {
+      ERROR_LOG (
+      "Failed to init DET_CONTROL_AO_DARK_INIT_SIR_NAME record");
+   }
+   obsId->aoCtrlId->flatInitFlag = FALSE;
+   if (epToVxPipeWrite (NULL, "Not initialized", obsId->pAoFlatInitContext)
+       == ERROR)
+   {
+      ERROR_LOG (
+      "Failed to init DET_CONTROL_AO_FLAT_INIT_SIR_NAME record");
+   }
+   obsId->aoCtrlId->aoIntMatInitFlag = FALSE;
+   if (epToVxPipeWrite (NULL, "Not initialized", obsId->pAoIntMatInitContext)
+       == ERROR)
+   {
+      ERROR_LOG (
+      "Failed to init DET_CONTROL_AO_INT_MAT_INIT_SIR_NAME record");
+   }
+   obsId->aoCtrlId->aoContMatInitFlag = FALSE;
+   if (epToVxPipeWrite (NULL, "Not initialized",
+                        obsId->pAoContMatInitContext) == ERROR)
+   {
+      ERROR_LOG (
+      "Failed to init DET_CONTROL_AO_CONT_MAT_INIT_SIR_NAME record");
+   }
+   obsId->aoCtrlId->fgContMatInitFlag = FALSE;
+   if (epToVxPipeWrite (NULL, "Not initialized",
+                        obsId->pFgContMatInitContext) == ERROR)
+   {
+      ERROR_LOG (
+      "Failed to init DET_CONTROL_FG_CONT_MAT_INIT_SIR_NAME record");
+   }
 
    /*
     * Reset the SDSU hardware.
@@ -10020,6 +10245,7 @@ void detObserveEnd
 
    /* Signal processing variable. */
    
+   int            nCoadds=1;        /* Number of frames per coadd.            */
    int            i;
    int            j;
    int            k;
@@ -10039,12 +10265,15 @@ void detObserveEnd
    double *       pAoCentroids;
    double *       pCentroids;
    double *       pErrorCentroids;
+   double *       pPrevThresh;
+   double *       pThresh;
    double *       pFg;
    double *       pFgAfterRot;
    double *       pErrorsFg;
    double *       pTime;
    double         elapsed;
-   double         t1, t2;
+   double         rms;
+   double         mean;
 
    /* File names. */
 
@@ -10061,13 +10290,6 @@ void detObserveEnd
    double       readoutTimeout;    /* Readout timeout in seconds.             */
    double       waitTimeSecs;      /* Wait time in seconds.                   */
 
-   /*
-    * Signal processing parameters.
-    */
-
-   int           nCoadds=1;        /* Number of frames per coadd.             */
- 
-   double        rms;
    /* 
     * Variables associated with "observe" command.
     * (Label, datapath and filename use general filename parameters)
@@ -10322,11 +10544,31 @@ void detObserveEnd
 
       pFlux = pTotal + obsId->aoCcdId->subapUsedNb;
 
+      if ( obsId->threshRealTimeFlag == FALSE )
+      {
+         pPrevThresh = obsId->aoCtrlId->thresholdVect;
+         pThresh = obsId->aoCtrlId->thresholdVect;
+      }
+      else
+      {
+         pThresh =
+         obsId->aoCbFgCtrlId->cbFgCtrlRecord[indexFgCtrl].thresholdVect;
+
+         if ( ( indexFgCtrl == 0 ) && ( obsId->aoCbFgCtrlId->counter == 0 ) )
+            pPrevThresh = pThresh;
+         else
+         {
+            if ( indexFgCtrl != 0 )
+               pPrevThresh =
+               obsId->aoCbFgCtrlId->cbFgCtrlRecord[indexFgCtrl-1].thresholdVect;
+            else
+               pPrevThresh =
+               obsId->aoCbFgCtrlId->cbFgCtrlRecord[CB_FG_CTRL_RECORD_NB-1].thresholdVect;
+         }
+      }
+
       obsId->aoCbImId->cbImRecord[indexIm].imageStatus = 
       (int)(pRawFrame->header.status) ;
-
-      /*printf ( "index image CB =%d\n", indexIm) ;
-      printf ( "index control CB =%d\n", indexCtrl) ;*/
 
       /*
        * Unscramble the data. The algorithm used depends on the number of 
@@ -10378,7 +10620,7 @@ void detObserveEnd
          {
             case (AO_MODE_DARK):
 
-               /*
+              /*
                * Subtract Dark mode.
                */
 #ifdef DEBUG
@@ -10402,9 +10644,10 @@ void detObserveEnd
                 */
 #ifdef DEBUG
                printf (
-                 "aoGlobalGuide (%p, %p, %p, %p, %p, %p, %p, %p, %p, %p)\n",
+                 "aoGlobalGuide (%p, %p, %p, %p, %p, %p, %p, %p, %p, %p, %d)\n",
                  pImage, obsId->aoCcdId, obsId->aoCtrlId, pTotal, 
-                 pGuides, pFg, pFgAfterRot, pErrorsFg, pTime, pWfsStatus);
+                 pGuides, pFg, pFgAfterRot, pErrorsFg, pTime, pWfsStatus,
+                 (int)obsId->writeToRm);
 #endif
                if ( obsId->updateFgScale == TRUE )
                {
@@ -10421,7 +10664,8 @@ void detObserveEnd
 
                if ( aoGlobalGuide (pImage, obsId->aoCcdId, obsId->aoCtrlId, 
                                    pTotal, pGuides, pFg, pFgAfterRot, pErrorsFg,
-                                   pTime, pWfsStatus) == ERROR )
+                                   pTime, pWfsStatus, (int)obsId->writeToRm) 
+                    == ERROR )
                {
                   ERROR_LOG ("Failed to run fast guide correction");
                };
@@ -10437,9 +10681,10 @@ void detObserveEnd
                nCoadds = (int) obsId->nCoaddFrames;
 #ifdef DEBUG
                printf (
-                 "aoGlobalGuide (%p, %p, %p, %p, %p, %p, %p, %p, %p, %p)\n",
+                 "aoGlobalGuide (%p, %p, %p, %p, %p, %p, %p, %p, %p, %p, %d)\n",
                  pImage, obsId->aoCcdId, obsId->aoCtrlId, pTotal, 
-                 pGuides, pFg, pFgAfterRot, pErrorsFg, pTime, pWfsStatus);
+                 pGuides, pFg, pFgAfterRot, pErrorsFg, pTime, pWfsStatus, 
+                 (int)obsId->writeToRm);
 #endif
                if ( obsId->updateFgScale == TRUE )
                {
@@ -10456,7 +10701,8 @@ void detObserveEnd
 
                if ( aoGlobalGuide (pImage, obsId->aoCcdId, obsId->aoCtrlId,
                                    pTotal, pGuides, pFg, pFgAfterRot, 
-                                   pErrorsFg, pTime, pWfsStatus) == ERROR )
+                                   pErrorsFg, pTime, pWfsStatus, 
+                                   (int)obsId->writeToRm) == ERROR )
                {
                   ERROR_LOG ("Failed to run fast guide correction");
                }
@@ -10589,10 +10835,10 @@ void detObserveEnd
                   nCoadds = (int) obsId->nAverageDataThreshComp;
 #ifdef DEBUG
                   printf (
-                  "aoGuideAndFocus (%p, %p, %p, %p, %p, %p, %p, %p, %p, %p, %p)\n",
-                  pImage, obsId->aoCcdId, obsId->aoCtrlId, pTotal,
+                  "aoGuideAndFocus (%p, %p, %p, %p, %p, %p, %p, %p, %p, %p, %p, %p, %d)\n",
+                  pImage, obsId->aoCcdId, obsId->aoCtrlId, pPrevThresh, pTotal,
                   pCentroids, pErrorCentroids, pFg, pFgAfterRot, pErrorsFg, 
-                  pTime, pWfsStatus);
+                  pTime, pWfsStatus, (int)obsId->writeToRm);
 #endif
                   if ( obsId->updateFgScale == TRUE )
                   {
@@ -10608,20 +10854,14 @@ void detObserveEnd
                   };
 
                   if ( aoGuideAndFocus (pImage, obsId->aoCcdId, obsId->aoCtrlId,
-                                        pTotal, pCentroids, pErrorCentroids,
-                                        pFg, pFgAfterRot, pErrorsFg, pTime, 
-                                        pWfsStatus) == ERROR )
+                                        pPrevThresh, pTotal, pCentroids, 
+                                        pErrorCentroids, pFg, pFgAfterRot, 
+                                        pErrorsFg, pTime, pWfsStatus,
+                                        (int)obsId->writeToRm) == ERROR )
                   {
                      ERROR_LOG (
                            "Failed to run fast guide and focus correction");
                   };
-
-                  /*if ( aoDarkSubtract (pImage, obsId->aoCtrlId->darkVect,
-                                       obsId->aoCcdId->xPixels, 
-                                       obsId->aoCcdId->yPixels) == ERROR )
-                  {
-                     ERROR_LOG ("Failed to subtract DARK from current frame");
-                  }*/
 
 #ifdef DEBUG
                   printf ("aoImageFloatAverage: %p %p %p %d\n", pImage,
@@ -10646,31 +10886,14 @@ void detObserveEnd
 #endif
                   if ( obsId->coaddCounter == nCoadds )
                   {
-                     if ( timeNow (&t1) != OK )
-                     {
-#ifdef DEBUG
-                        ERROR_SET (0, "Failed to get time stamp",
-                                   ERROR_LOG_NOW);
-#endif
-                        t1 = (double)AO_TIME_NOW_ERROR ;
-                     }
                      if ( aoThresholdPerSubapCompute (obsId->aoCtrlId->sumVect,
-                                              obsId->aoCcdId, 
+                                              obsId->aoCcdId, obsId->aoCtrlId,
                                               obsId->rateBrightPixThreshComp,
                                               obsId->aoCtrlId->thresholdVect) 
                                               == ERROR )
                      {
                        ERROR_LOG ("Failed to subtract DARK from current frame");
                      }
-                     if ( timeNow (&t2) != OK )
-                     {
-#ifdef DEBUG
-                        ERROR_SET (0, "Failed to get time stamp",
-                                   ERROR_LOG_NOW);
-#endif
-                        t2 = (double)AO_TIME_NOW_ERROR ;
-                     }
-                     printf ( "t1=%f, t2=%f\n", t1, t2 );
                      if (epToVxPipeWrite (NULL, 
                            (char *)(int)& (obsId->aoCtrlId->threshold), 
                            obsId->pAoThreshContext) == ERROR)
@@ -10696,31 +10919,52 @@ void detObserveEnd
                   }
 
                   if ( aoRmsNoiseImageCompute (pImage,
-                                               obsId->aoCcdId, &rms) == ERROR )
+                                               obsId->aoCcdId, &rms, &mean) 
+                       == ERROR )
                   {
                      ERROR_LOG ("Failed to compute rms of current frame");
                   }
 
                   obsId->averageRms += rms;
+                  obsId->averageMean += mean;
                   obsId->coaddCounter ++;
                   
                   if ( obsId->coaddCounter == nCoadds )
                   {
                      obsId->averageRms /= nCoadds;
+                     obsId->averageMean /= nCoadds;
 
-                     obsId->aoCtrlId->threshold = 
+                     obsId->aoCtrlId->rms = obsId->averageRms;
+
+                     obsId->aoCtrlId->threshold = obsId->averageMean +
                      obsId->multCoeffRmsThreshComp * obsId->averageRms ;
 
                      if ( obsId->aoCcdId->binningFlag == FALSE )
+                     {
+                        obsId->aoCtrlId->rmsDarkFull =
+                        obsId->aoCtrlId->rms ;
                         obsId->aoCtrlId->thresholdDarkFull =
                         obsId->aoCtrlId->threshold ;
+                     }
                      else
+                     {
+                        obsId->aoCtrlId->rmsDarkBin =
+                        obsId->aoCtrlId->rms ;
                         obsId->aoCtrlId->thresholdDarkBin =
                         obsId->aoCtrlId->threshold ;
+                     }
 
                      for ( k = 0 ; k < obsId->aoCcdId->subapUsedNb ; k ++ )
                          obsId->aoCtrlId->thresholdVect[k] =
                          obsId->aoCtrlId->threshold;
+
+                     if (epToVxPipeWrite (NULL,
+                           (char *)(int)& (obsId->aoCtrlId->rms),
+                           obsId->pAoRmsContext) == ERROR)
+                     {
+                        ERROR_LOG (
+                        "Failed to init DET_CONTROL_AO_RMS_SIR_NAME record");
+                     }
 
                      if (epToVxPipeWrite (NULL, 
                            (char *)(int)& (obsId->aoCtrlId->threshold), 
@@ -10766,9 +11010,9 @@ void detObserveEnd
                }
 
 #ifdef DEBUG
-               printf ("aoModeCompute (%p, %p, %p, %d, %p)\n",
+               printf ("aoModeCompute (%p, %p, %p, %d, %p, %p)\n",
                        pImage, obsId->aoCcdId, obsId->aoCtrlId, nCoadds, 
-                       obsId->aoCbAoCtrlId);
+                       pThresh, obsId->aoCbAoCtrlId);
 #endif
                if ( obsId->updateAoScale == TRUE )
                {
@@ -10782,7 +11026,8 @@ void detObserveEnd
                } ;
 
                if ( aoModeCompute (pImage, obsId->aoCcdId, obsId->aoCtrlId,
-                                   nCoadds, obsId->aoCbAoCtrlId) == ERROR )
+                                   nCoadds, pThresh, obsId->aoCbAoCtrlId) 
+                    == ERROR )
                {
                   ERROR_LOG ("Failed to aO correction");
                }
@@ -10797,12 +11042,13 @@ void detObserveEnd
 
                nCoadds = (int) obsId->nCoaddFrames;
 #ifdef DEBUG
-               printf ("aoGlobalGuide (%p, %p, %p, %p, %p, %p, %p, %p, %p, %p)\n",
+               printf ("aoGlobalGuide (%p, %p, %p, %p, %p, %p, %p, %p, %p, %p, %d)\n",
                        pImage, obsId->aoCcdId, obsId->aoCtrlId, pTotal, 
-                       pGuides, pFg, pFgAfterRot, pErrorsFg, pTime, pWfsStatus);
-               printf ("aoModeCompute (%p, %p, %p, %d, %p)\n",
+                       pGuides, pFg, pFgAfterRot, pErrorsFg, pTime, pWfsStatus,
+                       (int)obsId->writeToRm);
+               printf ("aoModeCompute (%p, %p, %p, %d, %p, %p)\n",
                        pImage, obsId->aoCcdId, obsId->aoCtrlId, nCoadds, 
-                       obsId->aoCbAoCtrlId);
+                       pThresh, obsId->aoCbAoCtrlId);
 #endif
 
                if ( obsId->updateFgScale == TRUE )
@@ -10831,13 +11077,15 @@ void detObserveEnd
 
                if ( aoGlobalGuide (pImage, obsId->aoCcdId, obsId->aoCtrlId,
                                    pTotal, pGuides, pFg, pFgAfterRot, 
-                                   pErrorsFg, pTime, pWfsStatus) == ERROR )
+                                   pErrorsFg, pTime, pWfsStatus,
+                                   (int)obsId->writeToRm) == ERROR )
                {
                   ERROR_LOG ("Failed to run fast guide correction");
                }
                
                if ( aoModeCompute (pImage, obsId->aoCcdId, obsId->aoCtrlId,
-                                   nCoadds, obsId->aoCbAoCtrlId) == ERROR )
+                                   nCoadds, pThresh, obsId->aoCbAoCtrlId) 
+                    == ERROR )
                {
                   ERROR_LOG ("Failed to aO correction");
                }
@@ -10866,19 +11114,12 @@ void detObserveEnd
                         obsId->updateFgScale = FALSE ;
                      };
 
-                     /*if ( aoGlobalGuide (pImage, obsId->aoCcdId, 
-                                         obsId->aoCtrlId, pTotal, pGuides, 
-                                         pFg, pFgAfterRot, pErrorsFg, pTime, 
-                                         pWfsStatus) == ERROR )
-                     {
-                        ERROR_LOG ("Failed to run FG correction");
-                     }*/
-
                      if ( aoGuideAndFocus (pImage, obsId->aoCcdId, 
-                                           obsId->aoCtrlId,
+                                           obsId->aoCtrlId, pPrevThresh,
                                            pTotal, pCentroids, pErrorCentroids,
                                            pFg, pFgAfterRot, pErrorsFg, pTime, 
-                                           pWfsStatus) == ERROR )
+                                           pWfsStatus, (int)obsId->writeToRm) 
+                          == ERROR )
                      {
                         ERROR_LOG (
                               "Failed to run fast guide and focus correction");
@@ -10914,10 +11155,10 @@ void detObserveEnd
                 */
 #ifdef DEBUG
                printf (
-               "aoGuideAndFocus (%p, %p, %p, %p, %p, %p, %p, %p, %p, %p, %p)\n",
-               pImage, obsId->aoCcdId, obsId->aoCtrlId, pTotal, 
+               "aoGuideAndFocus (%p, %p, %p, %p, %p, %p, %p, %p, %p, %p, %p, %p, %d)\n",
+               pImage, obsId->aoCcdId, obsId->aoCtrlId, pPrevThresh, pTotal, 
                pCentroids, pErrorCentroids, pFg, pFgAfterRot, pErrorsFg, pTime, 
-               pWfsStatus);
+               pWfsStatus, (int)obsId->writeToRm);
 #endif
                if ( obsId->updateFgScale == TRUE )
                {
@@ -10933,12 +11174,24 @@ void detObserveEnd
                };
 
                if ( aoGuideAndFocus (pImage, obsId->aoCcdId, obsId->aoCtrlId, 
-                                     pTotal, pCentroids, pErrorCentroids, 
-                                     pFg, pFgAfterRot, pErrorsFg, pTime, 
-                                     pWfsStatus) == ERROR )
+                                     pPrevThresh, pTotal, pCentroids, 
+                                     pErrorCentroids, pFg, pFgAfterRot, 
+                                     pErrorsFg, pTime, pWfsStatus,
+                                     (int)obsId->writeToRm) == ERROR )
                {
                   ERROR_LOG ("Failed to run fast guide and focus correction");
                };
+
+               if ( obsId->threshRealTimeFlag == TRUE )
+               {
+                  if ( aoThresholdPerSubapCompute (pImage, obsId->aoCcdId,
+                                           obsId->aoCtrlId,
+                                           obsId->rateBrightPixThreshComp,
+                                           pThresh) == ERROR )
+                  {
+                     ERROR_LOG ("Failed to compute threshold per sub-aperture");
+                  }
+               }
 
             break;
 
@@ -10951,10 +11204,10 @@ void detObserveEnd
                nCoadds = (int) obsId->nCoaddFrames;
 #ifdef DEBUG
                printf (
-               "aoGuideAndFocus (%p, %p, %p, %p, %p, %p, %p, %p, %p, %p, %p)\n",
-               pImage, obsId->aoCcdId, obsId->aoCtrlId, pTotal,
+               "aoGuideAndFocus (%p, %p, %p, %p, %p, %p, %p, %p, %p, %p, %p, %p, %d)\n",
+               pImage, obsId->aoCcdId, obsId->aoCtrlId, pPrevThresh, pTotal,
                pCentroids, pErrorCentroids, pFg, pFgAfterRot, pErrorsFg, pTime,
-               pWfsStatus);
+               pWfsStatus, (int)obsId->writeToRm);
 
 #endif
                if ( obsId->updateFgScale == TRUE )
@@ -10971,12 +11224,25 @@ void detObserveEnd
                };
 
                if ( aoGuideAndFocus (pImage, obsId->aoCcdId, obsId->aoCtrlId,
-                                     pTotal, pCentroids, pErrorCentroids,
-                                     pFg, pFgAfterRot, pErrorsFg, pTime, 
-                                     pWfsStatus) == ERROR )
+                                     pPrevThresh, pTotal, pCentroids, 
+                                     pErrorCentroids, pFg, pFgAfterRot, 
+                                     pErrorsFg, pTime, pWfsStatus,
+                                     (int)obsId->writeToRm) == ERROR )
                {
                   ERROR_LOG ("Failed to run fast guide and focus correction");
                }
+
+               if ( obsId->threshRealTimeFlag == TRUE )
+               {
+                  if ( aoThresholdPerSubapCompute (pImage, obsId->aoCcdId,
+                                           obsId->aoCtrlId,
+                                           obsId->rateBrightPixThreshComp,
+                                           pThresh) == ERROR )
+                  {
+                     ERROR_LOG ("Failed to compute threshold per sub-aperture");
+                  }
+               }
+
 #ifdef DEBUG
                printf ("aoImageFloatAverage: %p %p %p %d\n", pImage,
                        obsId->aoCcdId, obsId->aoCtrlId, nCoadds);
@@ -11026,7 +11292,8 @@ void detObserveEnd
                   "Analyze centroids and ao modes of the coadded data");
 
                   if ( aoModeAnalyze (obsId->aoCtrlId->sumVect, obsId->aoCcdId, 
-                                      obsId->aoCtrlId, obsId->aoCbAoCtrlId) 
+                                      obsId->aoCtrlId, pThresh,
+                                      obsId->aoCbAoCtrlId) 
                        == ERROR )
                   {
                      ERROR_LOG ("Failed to analyze coadded data");
@@ -11043,10 +11310,10 @@ void detObserveEnd
                nCoadds = (int) obsId->nCoaddFrames;
 #ifdef DEBUG
                printf (
-               "aoGuideAndFocus (%p, %p, %p, %p, %p, %p, %p, %p, %p, %p, %p)\n",
-               pImage, obsId->aoCcdId, obsId->aoCtrlId, pTotal,
+               "aoGuideAndFocus (%p, %p, %p, %p, %p, %p, %p, %p, %p, %p, %p, %p, %d)\n",
+               pImage, obsId->aoCcdId, obsId->aoCtrlId, pPrevThresh, pTotal,
                pCentroids, pErrorCentroids, pFg, pFgAfterRot, pErrorsFg, pTime,
-               pWfsStatus);
+               pWfsStatus, (int)obsId->writeToRm);
 #endif
                if ( obsId->updateFgScale == TRUE )
                {
@@ -11062,9 +11329,10 @@ void detObserveEnd
                };
 
                if ( aoGuideAndFocus (pImage, obsId->aoCcdId, obsId->aoCtrlId,
-                                     pTotal, pCentroids, pErrorCentroids,
-                                     pFg, pFgAfterRot, pErrorsFg, pTime, 
-                                     pWfsStatus) == ERROR )
+                                     pPrevThresh, pTotal, pCentroids, 
+                                     pErrorCentroids, pFg, pFgAfterRot, 
+                                     pErrorsFg, pTime, pWfsStatus,
+                                     (int)obsId->writeToRm) == ERROR )
                {
                   ERROR_LOG ("Failed to run fast guide and focus correction");
                }
@@ -11117,7 +11385,8 @@ void detObserveEnd
                   "Analyze centroids and ao modes of the coadded data");
 
                   if ( aoModeAnalyze (obsId->aoCtrlId->sumVect, obsId->aoCcdId, 
-                                      obsId->aoCtrlId, obsId->aoCbAoCtrlId) 
+                                      obsId->aoCtrlId, pPrevThresh, 
+                                      obsId->aoCbAoCtrlId) 
                        == ERROR )
                   {
                      ERROR_LOG ("Failed to analyze coadded data");
@@ -11168,13 +11437,13 @@ void detObserveEnd
                nCoadds = (int) obsId->nCoaddFrames;
 #ifdef DEBUG
                printf (
-               "aoGuideAndFocus (%p, %p, %p, %p, %p, %p, %p, %p, %p, %p, %p)\n",
-               pImage, obsId->aoCcdId, obsId->aoCtrlId, pTotal, 
+               "aoGuideAndFocus (%p, %p, %p, %p, %p, %p, %p, %p, %p, %p, %p, %p, %d)\n",
+               pImage, obsId->aoCcdId, obsId->aoCtrlId, pPrevThresh, pTotal, 
                pCentroids, pErrorCentroids, pFg, pFgAfterRot, pErrorsFg, pTime, 
-               pWfsStatus);
-               printf ("aoModeCompute (%p, %p, %p, %d, %p)\n",
+               pWfsStatus, (int)obsId->writeToRm);
+               printf ("aoModeCompute (%p, %p, %p, %d, %p, %p)\n",
                        pImage, obsId->aoCcdId, obsId->aoCtrlId, nCoadds, 
-                       obsId->aoCbAoCtrlId);
+                       pThresh, obsId->aoCbAoCtrlId);
 #endif
 
                if ( obsId->updateFgScale == TRUE )
@@ -11202,15 +11471,29 @@ void detObserveEnd
                } ;
 
                if ( aoGuideAndFocus (pImage, obsId->aoCcdId, obsId->aoCtrlId,
-                                     pTotal, pCentroids, pErrorCentroids, pFg, 
-                                     pFgAfterRot, pErrorsFg, pTime, pWfsStatus) 
+                                     pPrevThresh, pTotal, pCentroids, 
+                                     pErrorCentroids, pFg, pFgAfterRot, 
+                                     pErrorsFg, pTime, pWfsStatus,
+                                     (int)obsId->writeToRm) 
                     == ERROR )
                {
                   ERROR_LOG ("Failed to run fast guide and focus correction");
                }
+
+               if ( obsId->threshRealTimeFlag == TRUE )
+               {
+                  if ( aoThresholdPerSubapCompute (pImage, obsId->aoCcdId,
+                                           obsId->aoCtrlId,
+                                           obsId->rateBrightPixThreshComp,
+                                           pThresh) == ERROR )
+                  {
+                     ERROR_LOG ("Failed to compute threshold per sub-aperture");
+                  }
+               }
                
                if ( aoModeCompute (pImage, obsId->aoCcdId, obsId->aoCtrlId,
-                                   nCoadds, obsId->aoCbAoCtrlId) == ERROR )
+                                   nCoadds, pThresh, obsId->aoCbAoCtrlId) 
+                    == ERROR )
                {
                   ERROR_LOG ("Failed to aO correction");
                }
@@ -11301,35 +11584,51 @@ void detObserveEnd
                   }
 
                   if ( aoRmsNoiseImageCompute (pImage,
-                                               obsId->aoCcdId, &rms) == ERROR )
+                                               obsId->aoCcdId, &rms, &mean) 
+                       == ERROR )
                   {
                      ERROR_LOG ("Failed to compute rms of current frame");
                   }
 
-                  /*printf ( "image %d, rms = %f\n", obsId->coaddCounter, 
-                           rms);*/
-
                   obsId->averageRms += rms;
+                  obsId->averageMean += mean;
                   obsId->coaddCounter ++;
 
                   if ( obsId->coaddCounter == 
                        nCoadds + obsId->nAverageDataThreshComp)
                   {
                      obsId->averageRms /= obsId->nAverageDataThreshComp;
+                     obsId->averageMean /= obsId->nAverageDataThreshComp;
 
-                     obsId->aoCtrlId->threshold =
+                     obsId->aoCtrlId->rms = obsId->averageRms;
+
+                     obsId->aoCtrlId->threshold = obsId->averageMean +
                      obsId->multCoeffRmsThreshComp * obsId->averageRms ;
 
                      if ( obsId->aoCcdId->binningFlag == FALSE )
+                     {
+                        obsId->aoCtrlId->rmsDarkFull = obsId->aoCtrlId->rms ;
                         obsId->aoCtrlId->thresholdDarkFull =
                         obsId->aoCtrlId->threshold ;
+                     }
                      else
+                     {
+                        obsId->aoCtrlId->rmsDarkBin = obsId->aoCtrlId->rms ;
                         obsId->aoCtrlId->thresholdDarkBin =
                         obsId->aoCtrlId->threshold ;
+                     }
 
                      for ( k = 0 ; k < obsId->aoCcdId->subapUsedNb ; k ++ )
                          obsId->aoCtrlId->thresholdVect[k] =
                          obsId->aoCtrlId->threshold;
+
+                     if (epToVxPipeWrite (NULL,
+                           (char *)(int)& (obsId->aoCtrlId->rms),
+                           obsId->pAoRmsContext) == ERROR)
+                     {
+                        ERROR_LOG (
+                        "Failed to init DET_CONTROL_AO_RMS_SIR_NAME record");
+                     }
 
                      if (epToVxPipeWrite (NULL,
                            (char *)(int)& (obsId->aoCtrlId->threshold),
@@ -11371,31 +11670,35 @@ void detObserveEnd
                   obsId->updateAoScale = FALSE ;
                } ;
 
-               if ( (obsId->fgFrame != 0) && 
-                    (obsId->coaddCounter < obsId->fgFrame) )
+               if ( (obsId->ggFrame != 0) && 
+                    (obsId->coaddCounter < obsId->ggFrame) )
                {
                   /*printf ( "coaddCounter =%d fast guide only\n", 
                            obsId->coaddCounter );*/
     
                   if ( aoGlobalGuide (pImage, obsId->aoCcdId, obsId->aoCtrlId,
                                       pTotal, pGuides, pFg, pFgAfterRot, 
-                                      pErrorsFg, pTime, pWfsStatus) == ERROR )
+                                      pErrorsFg, pTime, pWfsStatus,
+                                      (int)obsId->writeToRm) == ERROR )
                   {
                      ERROR_LOG ("Failed to run fast guide correction");
                   }
                   obsId->coaddCounter ++;
                }
-               else if ( (obsId->threshFlag == TRUE) &&
+               else if ( (obsId->threshRealTimeFlag == FALSE) &&
+                         (obsId->threshFlag == TRUE) &&
                          (obsId->coaddCounter < obsId->nAverageDataThreshComp +
-                                                obsId->fgFrame) )
+                                                obsId->ggFrame) )
                {
                   /* printf ( "coaddCounter =%d compute thresh \n",
                            obsId->coaddCounter );*/
 
                   if ( aoGuideAndFocus (pImage, obsId->aoCcdId, 
-                                        obsId->aoCtrlId, pTotal, pCentroids, 
-                                        pErrorCentroids, pFg, pFgAfterRot, 
-                                        pErrorsFg, pTime, pWfsStatus) == ERROR )
+                                        obsId->aoCtrlId, pPrevThresh, pTotal, 
+                                        pCentroids, pErrorCentroids, 
+                                        pFg, pFgAfterRot, pErrorsFg, pTime, 
+                                        pWfsStatus, (int) obsId->writeToRm) 
+                       == ERROR )
                   {
                      ERROR_LOG ("Failed to run FG correction");
                   }
@@ -11410,10 +11713,11 @@ void detObserveEnd
                   obsId->coaddCounter ++;
 
                   if ( obsId->coaddCounter ==
-                       (obsId->nAverageDataThreshComp + obsId->fgFrame) )
+                       (obsId->nAverageDataThreshComp + obsId->ggFrame) )
                   {
                      if ( aoThresholdPerSubapCompute (obsId->aoCtrlId->sumVect,
                                               obsId->aoCcdId,
+                                              obsId->aoCtrlId,
                                               obsId->rateBrightPixThreshComp,
                                               obsId->aoCtrlId->thresholdVect)
                           == ERROR )
@@ -11429,16 +11733,19 @@ void detObserveEnd
                      }
                   }
                }
-               else if ( (obsId->averageFluxFlag == TRUE) &&
+               else if ( (obsId->threshRealTimeFlag == FALSE ) &&
+                         (obsId->averageFluxFlag == TRUE) &&
                          (obsId->coaddCounter < obsId->nFramesAverageFlux +
-                          obsId->nAverageDataThreshComp + obsId->fgFrame) )
+                          obsId->nAverageDataThreshComp + obsId->ggFrame) )
                {
                   /*printf ( "coaddCounter =%d compute total \n", 
                            obsId->coaddCounter );*/
                   if ( aoGuideAndFocus (pImage, obsId->aoCcdId, 
-                                        obsId->aoCtrlId, pTotal, pCentroids,
-                                        pErrorCentroids, pFg, pFgAfterRot, 
-                                        pErrorsFg, pTime, pWfsStatus) == ERROR )
+                                        obsId->aoCtrlId, pPrevThresh, pTotal, 
+                                        pCentroids, pErrorCentroids, pFg, 
+                                        pFgAfterRot, pErrorsFg, pTime, 
+                                        pWfsStatus, (int)obsId->writeToRm) 
+                       == ERROR )
                   {
                      ERROR_LOG ("Failed to run FG correction");
                   }
@@ -11446,7 +11753,7 @@ void detObserveEnd
                   obsId->coaddCounter ++;
 
                   if ( obsId->coaddCounter == (obsId->nFramesAverageFlux+
-                       obsId->nAverageDataThreshComp + obsId->fgFrame) )
+                       obsId->nAverageDataThreshComp + obsId->ggFrame) )
                   {
                      obsId->averageFlux /= 
                      (double)obsId->nFramesAverageFlux;
@@ -11469,18 +11776,33 @@ void detObserveEnd
                         obsId->coaddCounter );*/
 
                   if ( aoGuideAndFocus (pImage, obsId->aoCcdId, 
-                                        obsId->aoCtrlId, pTotal, pCentroids, 
-                                        pErrorCentroids, pFg, pFgAfterRot, 
-                                        pErrorsFg, pTime, pWfsStatus) == ERROR )
+                                        obsId->aoCtrlId, pPrevThresh, pTotal, 
+                                        pCentroids, pErrorCentroids, pFg, 
+                                        pFgAfterRot, pErrorsFg, pTime, 
+                                        pWfsStatus, (int)obsId->writeToRm) 
+                                        == ERROR )
                   {
                      ERROR_LOG ("Failed to run FG correction");
+                  }
+
+                  if ( obsId->threshRealTimeFlag == TRUE )
+                  {
+                     if ( aoThresholdPerSubapCompute (pImage, obsId->aoCcdId,
+                                              obsId->aoCtrlId,
+                                              obsId->rateBrightPixThreshComp,
+                                              pThresh) == ERROR )
+                     {
+                        ERROR_LOG (
+                             "Failed to compute threshold per sub-aperture");
+                     }
                   }
 
                   if ( obsId->aoFlag == TRUE )
                   {
                      if ( aoModeCompute (pImage, obsId->aoCcdId, 
                                          obsId->aoCtrlId,
-                                         nCoadds, obsId->aoCbAoCtrlId) == ERROR )
+                                         nCoadds, pThresh, obsId->aoCbAoCtrlId)
+                          == ERROR )
                      {
                         ERROR_LOG ("Failed to aO correction");
                      }
@@ -13122,6 +13444,7 @@ uint32 detFrameSize
    double       flipYM1;
    double       refX;
    double       refY;
+   double       rms;
    double       thresh;
    double       totalThresh;
    double       scaleX;
@@ -13281,7 +13604,7 @@ uint32 detFrameSize
 
          if ( aoCtrlFileRead ( aoInitFileName, path, darkFileName, flatFileName,
                                refFileName, &refX, &refY, aoImFileName,
-                               aoCmFileName, fgCmFileName, &thresh,
+                               aoCmFileName, fgCmFileName, &rms, &thresh,
                                &totalThresh, obsId->aoCtrlId->port, 
                                &angleM2, &flipXM2, &flipYM2, 
                                &angleM1, &flipXM1, &flipYM1 ) == ERROR )
@@ -13441,7 +13764,7 @@ uint32 detFrameSize
 
          if ( aoCtrlFileRead ( aoInitFileName, path, darkFileName, flatFileName,
                                refFileName, &refX, &refY, aoImFileName,
-                               aoCmFileName, fgCmFileName, &thresh,
+                               aoCmFileName, fgCmFileName, &rms, &thresh,
                                &totalThresh, obsId->aoCtrlId->port, 
                                &angleM2, &flipXM2, &flipYM2,
                                &angleM1, &flipXM1, &flipYM1 ) == ERROR )
@@ -13754,9 +14077,24 @@ uint32 detFrameSize
       obsId->aoCtrlId->threshold = thresh;
 */
       if ( obsId->aoCcdId->binningFlag == FALSE )
-         obsId->aoCtrlId->threshold = obsId->aoCtrlId->thresholdDarkFull;
+      {
+         obsId->aoCtrlId->rms = rms;
+         obsId->aoCtrlId->threshold = thresh;
+         if ( obsId->aoCtrlId->rmsDarkFull == 0.0 )
+            obsId->aoCtrlId->rmsDarkFull = rms;
+         if ( obsId->aoCtrlId->thresholdDarkFull == 0.0 )
+            obsId->aoCtrlId->thresholdDarkFull = thresh;
+      }
       else
-         obsId->aoCtrlId->threshold = obsId->aoCtrlId->thresholdDarkBin;
+      {
+         obsId->aoCtrlId->rms = rms;
+         obsId->aoCtrlId->threshold = thresh;
+
+         if ( obsId->aoCtrlId->thresholdDarkBin == 0.0 )
+            obsId->aoCtrlId->thresholdDarkBin = thresh;
+         if ( obsId->aoCtrlId->rmsDarkBin == 0.0 )
+            obsId->aoCtrlId->rmsDarkBin = rms;
+      }
       for ( k = 0 ; k < obsId->aoCcdId->subapUsedNb ; k ++ )
           obsId->aoCtrlId->thresholdVect[k] = obsId->aoCtrlId->threshold;
 
@@ -13829,6 +14167,13 @@ uint32 detFrameSize
             ERROR_LOG (
             "Failed to init DET_CONTROL_FG_CONT_MAT_INIT_SIR_NAME record");
          }
+      }
+
+      if (epToVxPipeWrite (NULL, (char *)(int)& (obsId->aoCtrlId->rms),
+                           obsId->pAoRmsContext) == ERROR)
+      {
+         ERROR_LOG (
+         "Failed to init DET_CONTROL_AO_RMS_SIR_NAME record");
       }
 
       if (epToVxPipeWrite (NULL, (char *)(int)& (obsId->aoCtrlId->threshold), 
@@ -14659,7 +15004,7 @@ STATUS detObsShow
    printf ("saveCbAoCtrlClosedLoopFrame        : %d\n",
            (int)obsId->saveCbAoCtrlClosedLoopFrame);
    printf ("Number of frames with FG only    : %d\n", 
-           (int)(obsId->fgFrame) );
+           (int)(obsId->ggFrame) );
    printf ("methodFluxComp                   : %d\n", 
            (int)obsId->methodFluxComp);
    printf ("Average flux flag                : %s\n", 
@@ -14668,7 +15013,12 @@ STATUS detObsShow
            (obsId->threshFlag ? "TRUE" : "FALSE") );
    printf ("nFramesAverageFlux               : %d\n", 
            (int)(obsId->nFramesAverageFlux) );
-   printf ("Time with FG only                : %f sec\n", (obsId->fgTime) );
+   printf ("thresholdin real time flag       : %s\n",
+           (obsId->threshRealTimeFlag ? "TRUE" : "FALSE") );
+   printf ("writeToRm flag                   : %s\n",
+           (obsId->writeToRm ? "TRUE" : "FALSE") );
+   printf ("Time with GG only                : %f sec\n", (obsId->ggTime) );
+   printf ("Time to average aO data          : %f sec\n", (obsId->aoTime) );
    printf ("saveCbFgCtrlClosedLoopTime       : %f sec\n",
            obsId->saveCbFgCtrlClosedLoopTime);
    printf ("saveCbAoCtrlClosedLoopTime         : %f sec\n",
@@ -14678,6 +15028,7 @@ STATUS detObsShow
    printf ("multCoeffRmsThreshComp           : %f\n",
            obsId->multCoeffRmsThreshComp);
    printf ("averageRms                       : %f\n", obsId->averageRms);
+   printf ("averageMean                      : %f\n", obsId->averageMean);
    printf ("multCoeffAverageFlux             : %f\n",
            obsId->multCoeffAverageFlux);
    printf ("averageFlux                      : %f\n", obsId->averageFlux);
@@ -15551,7 +15902,9 @@ uint32 detSigModeNone
    obsId->saveAoCbCounter = 0;
    obsId->saveFgCbCounter = 0;
    obsId->averageRms = 0.0;
+   obsId->averageMean = 0.0;
    obsId->averageFlux = 0.0;
+   obsId->threshRealTimeFlag = FALSE;
 
    return (errorNumber);
 }
@@ -15695,7 +16048,9 @@ uint32 detSigModeDark
    obsId->saveAoCbCounter = 0;
    obsId->saveFgCbCounter = 0;
    obsId->averageRms = 0.0;
+   obsId->averageMean = 0.0;
    obsId->averageFlux = 0.0;
+   obsId->threshRealTimeFlag = FALSE;
 
    return (errorNumber);
 }
@@ -15753,6 +16108,7 @@ uint32 detSigModeGg
    long         sigMode;        /* Signal processing mode.                    */
    long         nExp;           /* Number of exposure                         */
    long         outOption;      /* Output option                              */
+   long         flag;           /* writeToRm flag                             */
    double       expTime;        /* Exposure time                              */
 
    /*
@@ -15761,6 +16117,7 @@ uint32 detSigModeGg
     */
 
    errorNumber = 0;
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 0, (char *)&flag);
    sigMode = AO_MODE_GG;
 
    /*
@@ -15796,8 +16153,9 @@ uint32 detSigModeGg
       return (errorNumber);
    }
 
-   MESSAGE_LOG (MSG_LOG,
-                "Signal processing switched to \"Global Guide\" mode");
+   MESSAGE_LOG1 (MSG_LOG,
+                 "Signal processing switched to \"Global Guide\" mode, flag=%d",
+                 (int)flag);
    if (epToVxPipeWrite (NULL, "Global Guide",
                         obsId->pAoProcessModeContext) == ERROR)
    {
@@ -15809,6 +16167,8 @@ uint32 detSigModeGg
     * Define the signal processing mode and associated parameters.
     * These parameters will be used in detObserveEnd.
     */
+
+   obsId->writeToRm = flag;
 
    obsId->sigMode = sigMode;
 
@@ -15836,7 +16196,9 @@ uint32 detSigModeGg
    obsId->saveAoCbCounter = 0;
    obsId->saveFgCbCounter = 0;
    obsId->averageRms = 0.0;
+   obsId->averageMean = 0.0;
    obsId->averageFlux = 0.0;
+   obsId->threshRealTimeFlag = FALSE;
 
    return (errorNumber);
 }
@@ -15892,10 +16254,11 @@ uint32 detSigModeGgAo
 {
    uint32       errorNumber;    /* Error number reported by task.             */
    long         sigMode;        /* Signal processing mode.                    */
-   long         imageNb;        /* Image number to average                    */
    long         subapOff;       /* Number of subapertures allowed to be off   */
    long         nExp;           /* Number of exposure                         */
    long         outOption;      /* Output option                              */
+   long         flag;           /* writeToRm flag                             */
+   double       aoTime;         /* Time used to average images for aO         */
    double       expTime;        /* Exposure time                              */
 
    /*
@@ -15904,8 +16267,9 @@ uint32 detSigModeGgAo
     */
 
    errorNumber = 0;
-   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 0, (char *)&imageNb);
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 0, (char *)&aoTime);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 1, (char *)&subapOff);
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 2, (char *)&flag);
 
    sigMode = AO_MODE_GG_AO;
 
@@ -15942,10 +16306,10 @@ uint32 detSigModeGgAo
       return (errorNumber);
    }
 
-   MESSAGE_LOG2 (MSG_LOG,
+   MESSAGE_LOG3 (MSG_LOG,
        "Signal processing switched to \"Global Guide and aO correction\" mode "
-       "imageNb=%d, allowedSubapOff=%d",
-       (int)imageNb, (int)subapOff);
+       "aoTime=%f s, allowedSubapOff=%d, flag=%d",
+       aoTime, (int)subapOff, (int)flag);
    if (epToVxPipeWrite (NULL, "Global guide and aO",
                         obsId->pAoProcessModeContext) == ERROR)
    {
@@ -15959,8 +16323,9 @@ uint32 detSigModeGgAo
     */
 
    obsId->sigMode = sigMode;
-   obsId->nCoaddFrames = imageNb;
+   obsId->aoTime = aoTime;
    obsId->aoCtrlId->allowedSubapOff = subapOff;
+   obsId->writeToRm = flag;
 
    /* Init the fields of the observe CAD record */
 
@@ -15986,7 +16351,9 @@ uint32 detSigModeGgAo
    obsId->saveAoCbCounter = 0;
    obsId->saveFgCbCounter = 0;
    obsId->averageRms = 0.0;
+   obsId->averageMean = 0.0;
    obsId->averageFlux = 0.0;
+   obsId->threshRealTimeFlag = FALSE;
 
    return (errorNumber);
 }
@@ -16041,10 +16408,10 @@ uint32 detSigModeAo
 {
    uint32       errorNumber;    /* Error number reported by task.             */
    long         sigMode;        /* Signal processing mode.                    */
-   long         imageNb;        /* Image number to average                    */
    long         subapOff;       /* Number of subapertures allowed to be off   */
    long         nExp;           /* Number of exposure                         */
    long         outOption;      /* Output option                              */
+   double       aoTime;         /* Time used to average images for aO         */
    double       expTime;        /* Exposure time                              */
 
    /*
@@ -16053,7 +16420,7 @@ uint32 detSigModeAo
     */
 
    errorNumber = 0;
-   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 0, (char *)&imageNb);
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 0, (char *)&aoTime);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 1, (char *)&subapOff);
 
    sigMode = AO_MODE_AO;
@@ -16093,8 +16460,8 @@ uint32 detSigModeAo
 
    MESSAGE_LOG2 (MSG_LOG,
            "Signal processing switched to \"aO correction\" mode "
-           "imageNb=%d, allowedSubapOff=%d",
-           (int)imageNb, (int)subapOff);
+           "aoTime=%f s, allowedSubapOff=%d",
+           aoTime, (int)subapOff);
    if (epToVxPipeWrite (NULL, "aO",
                         obsId->pAoProcessModeContext) == ERROR)
    {
@@ -16108,7 +16475,7 @@ uint32 detSigModeAo
     */
 
    obsId->sigMode = sigMode;
-   obsId->nCoaddFrames = imageNb;
+   obsId->aoTime = aoTime;
    obsId->aoCtrlId->allowedSubapOff = subapOff;
 
    /* Init the fields of the observe CAD record */
@@ -16135,7 +16502,9 @@ uint32 detSigModeAo
    obsId->saveAoCbCounter = 0;
    obsId->saveFgCbCounter = 0;
    obsId->averageRms = 0.0;
+   obsId->averageMean = 0.0;
    obsId->averageFlux = 0.0;
+   obsId->threshRealTimeFlag = FALSE;
 
    return (errorNumber);
 }
@@ -16194,7 +16563,12 @@ uint32 detSigModeFgFocus
    long         subapOff;       /* Number of subapertures allowed to be off   */
    long         nExp;           /* Number of exposure                         */
    long         outOption;      /* Output option                              */
+   long         flag;           /* writeToRm flag                             */
+   long         threshRT;       /* Flag to indicate if the thresholds are     */
+                                /* computed in real time                      */
    double       expTime;        /* Exposure time                              */
+   double       rateBright;     /* Rate of brightest pixels.                  */
+   double       multCoeff;      /* Multiplicative coefficients for rms value  */
 
    /*
     * Initialise the error number and obtain the attributes provided with the
@@ -16203,6 +16577,13 @@ uint32 detSigModeFgFocus
 
    errorNumber = 0;
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 0, (char *)&subapOff);
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 1, (char *)&flag);
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 2, (char *)&threshRT);
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 3,
+                          (char *) & rateBright);
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 4,
+                          (char *) & multCoeff);
+
 
    sigMode = AO_MODE_FG_FOCUS;
 
@@ -16239,9 +16620,15 @@ uint32 detSigModeFgFocus
       return (errorNumber);
    }
 
-   MESSAGE_LOG1 (MSG_LOG,
+   rateBright = rateBright/100.0; /* in percent */
+
+   MESSAGE_LOG3 (MSG_LOG,
            "Signal processing switched to \"FG and Focus\" mode "
-           "allowedSubapOff=%d", (int)subapOff);
+           "allowedSubapOff=%d, threshRT=%d, flag=%d", 
+           (int)subapOff, (int)threshRT, (int)flag);
+   MESSAGE_LOG2 (MSG_LOG, "rate=%f, coeffRms=%f",
+           (float)rateBright, (float) multCoeff);
+
    if (epToVxPipeWrite (NULL, "Fast Guide and Focus",
                         obsId->pAoProcessModeContext) == ERROR)
    {
@@ -16255,7 +16642,16 @@ uint32 detSigModeFgFocus
     */
 
    obsId->sigMode = sigMode;
+   obsId->threshRealTimeFlag = threshRT;
    obsId->aoCtrlId->allowedSubapOff = subapOff;
+   obsId->writeToRm = flag;
+   if ( threshRT == TRUE )
+   {
+      obsId->rateBrightPixThreshComp = rateBright;
+      obsId->aoCtrlId->thresholdRate = rateBright;
+      obsId->multCoeffRmsThreshComp = multCoeff;
+      obsId->aoCtrlId->thresholdMultCoeff = multCoeff;
+   }
 
    /* Init the fields of the observe CAD record */
 
@@ -16281,6 +16677,7 @@ uint32 detSigModeFgFocus
    obsId->saveAoCbCounter = 0;
    obsId->saveFgCbCounter = 0;
    obsId->averageRms = 0.0;
+   obsId->averageMean = 0.0;
    obsId->averageFlux = 0.0;
 
    return (errorNumber);
@@ -16342,7 +16739,12 @@ uint32 detSigModeFgCoadd
    long         nCoaddFrames;   /* Number of frames to coadd.                 */
    long         nExp;           /* Number of exposure                         */
    long         outOption;      /* Output option                              */
+   long         flag;           /* writeToRm flag                             */
+   long         threshRT;       /* Flag to indicate if the thresholds are     */
+                                /* computed in real time                      */
    double       expTime;        /* Exposure time                              */
+   double       rateBright;     /* Rate of brightest pixels.                  */
+   double       multCoeff;      /* Multiplicative coefficients for rms value  */
 
    char         pFilePath [EPICS_MAX_BYTES_STRING_ATTRIB + 1];
                               /* Path name for files.                         */
@@ -16362,6 +16764,12 @@ uint32 detSigModeFgCoadd
                           (char *) & nCoaddFrames);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 2, pFilePath);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 3, pCoaddFileName);
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 4, (char *)&flag);
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 5, (char *)&threshRT);
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 6,
+                          (char *) & rateBright);
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 7,
+                          (char *) & multCoeff);
 
    /*
     * Check there are valid SDSU and observation context structures.
@@ -16395,9 +16803,16 @@ uint32 detSigModeFgCoadd
       return (errorNumber);
    }
 
+   rateBright = rateBright/100.0; /* in percent */
+
    MESSAGE_LOG1 (MSG_LOG,
    "Signal processing switched to \"FG Focus + Coadd\" mode - nCoaddFrames=%ld",
    nCoaddFrames);
+   MESSAGE_LOG2 (MSG_LOG, "flag=%d, Compute thresholds in real time=%d",
+                 (int)flag, (int)threshRT );
+   MESSAGE_LOG2 (MSG_LOG, "rate=%f, coeffRms=%f",
+                (float)rateBright, (float) multCoeff);
+
    if (epToVxPipeWrite (NULL, "Fast Guide, Focus and Coadd",
                         obsId->pAoProcessModeContext) == ERROR)
    {
@@ -16417,10 +16832,20 @@ uint32 detSigModeFgCoadd
     */
 
    obsId->sigMode = sigMode;
+   obsId->writeToRm = flag;
+   obsId->threshRealTimeFlag = threshRT;
    obsId->aoCtrlId->allowedSubapOff = subapOff;
    obsId->nCoaddFrames = nCoaddFrames;
    strncpy( obsId->pCoaddFileName, pFullCoaddFileName,
             (EPICS_MAX_BYTES_STRING_ATTRIB+1)*2 );
+
+   if ( threshRT == TRUE )
+   {
+      obsId->rateBrightPixThreshComp = rateBright;
+      obsId->aoCtrlId->thresholdRate = rateBright;
+      obsId->multCoeffRmsThreshComp = multCoeff;
+      obsId->aoCtrlId->thresholdMultCoeff = multCoeff;
+   }
 
    /* Init the fields of the observe CAD record */
 
@@ -16446,6 +16871,7 @@ uint32 detSigModeFgCoadd
    obsId->saveAoCbCounter = 0;
    obsId->saveFgCbCounter = 0;
    obsId->averageRms = 0.0;
+   obsId->averageMean = 0.0;
    obsId->averageFlux = 0.0;
 
    return (errorNumber);
@@ -16503,11 +16929,16 @@ uint32 detSigModeFgFocusAo
 {
    uint32       errorNumber;    /* Error number reported by task.             */
    long         sigMode;        /* Signal processing mode.                    */
-   long         imageNb;        /* Image number to average                    */
    long         subapOff;       /* Number of subapertures allowed to be off   */
    long         nExp;           /* Number of exposure                         */
    long         outOption;      /* Output option                              */
+   long         flag;           /* writeToRm flag                             */
+   long         threshRT;       /* Flag to indicate if the thresholds are     */
+                                /* computed in real time                      */
+   double       aoTime;         /* Time used to average images for aO         */
    double       expTime;        /* Exposure time                              */
+   double       rateBright;     /* Rate of brightest pixels.                  */
+   double       multCoeff;      /* Multiplicative coefficients for rms value  */
 
    /*
     * Initialise the error number and obtain the attributes provided with the
@@ -16515,8 +16946,14 @@ uint32 detSigModeFgFocusAo
     */
 
    errorNumber = 0;
-   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 0, (char *)&imageNb);
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 0, (char *)&aoTime);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 1, (char *)&subapOff);
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 2, (char *)&flag);
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 3, (char *)&threshRT);
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 4,
+                          (char *) & rateBright);
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 5,
+                          (char *) & multCoeff);
 
    sigMode = AO_MODE_FG_FOCUS_AO;
 
@@ -16553,10 +16990,15 @@ uint32 detSigModeFgFocusAo
       return (errorNumber);
    }
 
-   MESSAGE_LOG2 (MSG_LOG,
+   rateBright = rateBright/100.0; /* in percent */
+
+   MESSAGE_LOG3 (MSG_LOG,
            "Signal processing switched to \"FG and Focus and aO\" mode "
-           "imageNb=%d, allowedSubapOff=%d",
-           (int)imageNb, (int)subapOff);
+           "aoTime=%f s, allowedSubapOff=%d, flag=%d",
+           aoTime, (int)subapOff, (int)flag);
+   MESSAGE_LOG2 (MSG_LOG, "rate=%f, coeffRms=%f",
+                (float)rateBright, (float) multCoeff);
+
    if (epToVxPipeWrite (NULL, "Fast Guide, Focus and aO",
                         obsId->pAoProcessModeContext) == ERROR)
    {
@@ -16569,9 +17011,19 @@ uint32 detSigModeFgFocusAo
     * These parameters will be used in detObserveEnd.
     */
 
+   obsId->writeToRm = flag;
+   obsId->threshRealTimeFlag = threshRT;
    obsId->sigMode = sigMode;
-   obsId->nCoaddFrames = imageNb;
+   obsId->aoTime = aoTime;
    obsId->aoCtrlId->allowedSubapOff = subapOff;
+
+   if ( threshRT == TRUE )
+   {
+      obsId->rateBrightPixThreshComp = rateBright;
+      obsId->aoCtrlId->thresholdRate = rateBright;
+      obsId->multCoeffRmsThreshComp = multCoeff;
+      obsId->aoCtrlId->thresholdMultCoeff = multCoeff;
+   }
 
    nExp = -1 ;          /* mode continuous */
    outOption = 0 ;      /* NONE */
@@ -16595,6 +17047,7 @@ uint32 detSigModeFgFocusAo
    obsId->saveAoCbCounter = 0;
    obsId->saveFgCbCounter = 0;
    obsId->averageRms = 0.0;
+   obsId->averageMean = 0.0;
    obsId->averageFlux = 0.0;
 
    return (errorNumber);
@@ -16758,7 +17211,9 @@ uint32 detSigModeCoadd
    obsId->saveAoCbCounter = 0;
    obsId->saveFgCbCounter = 0;
    obsId->averageRms = 0.0;
+   obsId->averageMean = 0.0;
    obsId->averageFlux = 0.0;
+   obsId->threshRealTimeFlag = FALSE;
 
    return (errorNumber);
 }
@@ -16819,6 +17274,7 @@ uint32 detSigModeThresh
    long         nAverageData;   /* Number of data to average.                 */
    long         nExp;           /* Number of exposure                         */
    long         outOption;      /* Output option                              */
+   long         flag;           /* writeToRm flag                             */
    double       expTime;        /* Exposure time                              */
    double       rateBright;     /* Rate of brightest pixels.                  */
    double       multCoeff;      /* Multiplicative coefficients for rms value  */
@@ -16840,6 +17296,8 @@ uint32 detSigModeThresh
                           (char *) & multCoeff);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 4,
                           (char *) & threshold);
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 5, (char *)&flag);
+
 
    /*
     * Check there are valid SDSU and observation context structures.
@@ -16880,11 +17338,14 @@ uint32 detSigModeThresh
             "Signal processing switched to \"Threshold Computation\" mode - "
             "method=%d, nAverageData=%d, rateBright=%f, multCoeff=%f",
             (int)method, (int)nAverageData, rateBright, multCoeff);
+   MESSAGE_LOG1 (MSG_LOG, "flag=%d", (int)flag);
 
    /*
     * Define the signal processing mode and associated parameters.
     * These parameters will be used in detObserveEnd.
     */
+
+   obsId->writeToRm = flag;
 
    obsId->methodThreshComp = method;
    obsId->aoCtrlId->thresholdMethod = method;
@@ -16943,7 +17404,9 @@ uint32 detSigModeThresh
    obsId->saveAoCbCounter = 0;
    obsId->saveFgCbCounter = 0;
    obsId->averageRms = 0.0;
+   obsId->averageMean = 0.0;
    obsId->averageFlux = 0.0;
+   obsId->threshRealTimeFlag = FALSE;
 
    return (errorNumber);
 }
@@ -17002,6 +17465,7 @@ uint32 detSigModeGgCoadd
    long         nCoaddFrames;   /* Number of frames to coadd.                 */
    long         nExp;           /* Number of exposure                         */
    long         outOption;      /* Output option                              */
+   long         flag;           /* writeToRm flag                             */
    double       expTime;        /* Exposure time                              */
 
    char         pFilePath [EPICS_MAX_BYTES_STRING_ATTRIB + 1];
@@ -17020,6 +17484,7 @@ uint32 detSigModeGgCoadd
                           (char *) & nCoaddFrames);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 1, pFilePath);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 2, pCoaddFileName);
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 3, (char *)&flag);
 
    /*
     * Check there are valid SDSU and observation context structures.
@@ -17053,9 +17518,9 @@ uint32 detSigModeGgCoadd
       return (errorNumber);
    }
 
-   MESSAGE_LOG1 (MSG_LOG,
-         "Signal processing switched to \"GG + Coadd\" mode - nCoaddFrames=%ld",
-         nCoaddFrames);
+   MESSAGE_LOG2 (MSG_LOG,
+   "Signal processing switched to \"GG + Coadd\" mode - nCoaddFrames=%ld, flag=%d",
+   nCoaddFrames, (int)flag);
    if (epToVxPipeWrite (NULL, "Global Guide and Coadd",
                         obsId->pAoProcessModeContext) == ERROR)
    {
@@ -17073,6 +17538,8 @@ uint32 detSigModeGgCoadd
     * Define the signal processing mode and associated parameters.
     * These parameters will be used in detObserveEnd.
     */
+
+   obsId->writeToRm = flag;
 
    obsId->sigMode = sigMode;
    obsId->nCoaddFrames = nCoaddFrames;
@@ -17103,7 +17570,9 @@ uint32 detSigModeGgCoadd
    obsId->saveAoCbCounter = 0;
    obsId->saveFgCbCounter = 0;
    obsId->averageRms = 0.0;
+   obsId->averageMean = 0.0;
    obsId->averageFlux = 0.0;
+   obsId->threshRealTimeFlag = FALSE;
 
    return (errorNumber);
 }
@@ -17157,7 +17626,7 @@ uint32 detSigModeSeq
 {
    uint32       errorNumber;    /* Error number reported by task.             */
    long         sigMode;        /* Signal processing mode.                    */
-   double       fgTime;         /* Time when fg over the whole CCD in the     */
+   double       ggTime;         /* Time when fg over the whole CCD in the     */
                                 /* closed loop sequence                       */
    long         saveCbFgCtrlClosedLoopFlag;
                                 /* Save FG control circular buffer during     */
@@ -17170,11 +17639,14 @@ uint32 detSigModeSeq
    long         fluxFlag;       /* Average flux after FG Flag                 */
    long         nFramesFlux;    /* Number of frames to average for computing  */
                                 /* the average flux                           */
-   long         imageNb;        /* Image number to average                    */
    long         subapOff;       /* Number of subapertures allowed to be off   */
    long         aoFlag;         /* aO flag (yes or no)                        */
    long         nExp;           /* Number of exposure                         */
    long         outOption;      /* Output option                              */
+   long         flag;           /* writeToRm flag                             */
+   long         threshRT;       /* Flag to indicate if the thresholds are     */
+                                /* computed in real time                      */
+   double       aoTime;         /* Time used to average images for aO         */
    double       expTime;        /* Exposure time                              */
    double       rateBright;     /* Rate of brightest pixels.                  */
    double       multCoeffFlux;  /* Multiplicative coefficient for average flux*/
@@ -17184,6 +17656,10 @@ uint32 detSigModeSeq
    double       saveCbFgCtrlEveryTime;
                                 /* Time when to save the FG control circular  */
                                 /* buffer in the closed loop sequence         */
+   double       rateBrightThreshRT;
+                                /* Rate of brightest pixels.                  */
+   double       multCoeffThreshRT;
+                                /* Multiplicative coefficients for rms value  */
    char         pFilePath [EPICS_MAX_BYTES_STRING_ATTRIB + 1];
                                 /* Path name for circular buffer.             */
 
@@ -17195,7 +17671,7 @@ uint32 detSigModeSeq
 
    errorNumber = 0;
    sigMode = AO_MODE_CLOSED_LOOP;
-   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 0, (char *) & fgTime);
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 0, (char *) & ggTime);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 1, 
                           (char *) & threshFlag);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 2,
@@ -17208,7 +17684,7 @@ uint32 detSigModeSeq
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 6,
                           (char *) & multCoeffFlux);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 7, (char *)&subapOff);
-   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 8, (char *)&imageNb);
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 8, (char *)&aoTime);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 9,
                           (char *) & saveCbAoCtrlClosedLoopFlag);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 10,
@@ -17219,7 +17695,12 @@ uint32 detSigModeSeq
                           (char *) & saveCbFgCtrlEveryTime);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 13, pFilePath);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 14, (char *) & aoFlag);
-
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 15, (char *)&flag);
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 16, (char *)&threshRT);
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 17,
+                          (char *) & rateBrightThreshRT);
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 18,
+                          (char *) & multCoeffThreshRT);
 
    /*
     * Check there are valid SDSU and observation context structures.
@@ -17257,20 +17738,26 @@ uint32 detSigModeSeq
    rateBright = rateBright / 100.0 ; /* in percent */
    multCoeffFlux = multCoeffFlux / 100.0 ; /* in percent */
 
+   rateBrightThreshRT = rateBrightThreshRT / 100.0 ; /* in percent */
+
    MESSAGE_LOG1 (MSG_LOG,
       "Signal processing switched to \"Sequence closed loop\" mode - "
-      "fgTime=%f", fgTime );
+      "ggTime=%f", ggTime );
+   MESSAGE_LOG1 (MSG_LOG, "Compute thresholds in real time=%d", (int)threshRT );
    MESSAGE_LOG3 (MSG_LOG, "threshFlag=%d, nFramesThresh=%d, rateBright=%f",
                  (int)threshFlag, (int)nFramesThresh, rateBright);
    MESSAGE_LOG3 (MSG_LOG, "fluxFlag=%d, nFramesFlux=%d, multCoeffFlux=%f",
                  (int)fluxFlag, (int)nFramesFlux, multCoeffFlux);
-   MESSAGE_LOG3 (MSG_LOG, "aoFlag=%d, imageNb=%d, allowedSubapOff=%d",
-                 (int)aoFlag, (int)imageNb, (int)subapOff);
+   MESSAGE_LOG3 (MSG_LOG, "aoFlag=%d, aoTime=%f s, allowedSubapOff=%d",
+                 (int)aoFlag, aoTime, (int)subapOff);
    MESSAGE_LOG2 (MSG_LOG, "saveCbFgCtrlFlag=%d, saveCbFgCtrlEveryTime=%f",
       (int)saveCbFgCtrlClosedLoopFlag, saveCbFgCtrlEveryTime);
    MESSAGE_LOG2 (MSG_LOG, "saveCbAoCtrlFlag=%d, saveCbAoCtrlEveryTime=%f",
       (int)saveCbAoCtrlClosedLoopFlag, saveCbAoCtrlEveryTime);
    MESSAGE_LOG1 (MSG_LOG, "pFilePath=%s", pFilePath);
+   MESSAGE_LOG1 (MSG_LOG, "flag=%d", (int)flag);
+   MESSAGE_LOG2 (MSG_LOG, "If threshold RT : rate=%f, coeffRms=%f",
+                (float)rateBrightThreshRT, (float) multCoeffThreshRT);
 
    if (epToVxPipeWrite (NULL, "Sequence closed loop",
                         obsId->pAoProcessModeContext) == ERROR)
@@ -17286,7 +17773,9 @@ uint32 detSigModeSeq
 
    obsId->sigMode = sigMode;
 
-   obsId->fgTime = fgTime;
+   obsId->writeToRm = flag;
+
+   obsId->ggTime = ggTime;
    obsId->saveCbFgCtrlClosedLoop = saveCbFgCtrlClosedLoopFlag;
    obsId->saveCbFgCtrlClosedLoopTime = saveCbFgCtrlEveryTime;
    obsId->saveCbAoCtrlClosedLoop = saveCbAoCtrlClosedLoopFlag;
@@ -17296,17 +17785,28 @@ uint32 detSigModeSeq
    obsId->nFramesAverageFlux = nFramesFlux;
    obsId->multCoeffAverageFlux = multCoeffFlux;
 
+   obsId->threshRealTimeFlag = threshRT;
    obsId->threshFlag = threshFlag;
    obsId->methodThreshComp = AO_THRESH_SPOTS;
    obsId->aoCtrlId->thresholdMethod = AO_THRESH_SPOTS;
-   obsId->nAverageDataThreshComp = nFramesThresh;
-   obsId->rateBrightPixThreshComp = rateBright;
-   obsId->aoCtrlId->thresholdRate = rateBright;
+   if ( threshRT == TRUE )
+   {
+      obsId->rateBrightPixThreshComp = rateBrightThreshRT;
+      obsId->aoCtrlId->thresholdRate = rateBrightThreshRT;
+      obsId->multCoeffRmsThreshComp = multCoeffThreshRT;
+      obsId->aoCtrlId->thresholdMultCoeff = multCoeffThreshRT;
+   }
+   else
+   {
+      obsId->nAverageDataThreshComp = nFramesThresh;
+      obsId->rateBrightPixThreshComp = rateBright;
+      obsId->aoCtrlId->thresholdRate = rateBright;
+   }
 
    if ( fluxFlag == TRUE )
       obsId->aoCtrlId->multCoeffTotal= multCoeffFlux;
 
-   obsId->nCoaddFrames = imageNb;
+   obsId->aoTime = aoTime;
    obsId->aoCtrlId->allowedSubapOff = subapOff;
 
    obsId->aoFlag = aoFlag;
@@ -17337,6 +17837,7 @@ uint32 detSigModeSeq
    obsId->saveAoCbCounter = 0;
    obsId->saveFgCbCounter = 0;
    obsId->averageRms = 0.0;
+   obsId->averageMean = 0.0;
    obsId->averageFlux = 0.0;
 
    return (errorNumber);
@@ -17399,6 +17900,7 @@ uint32 detSigModeTotal
                                 /* the average flux                           */
    long         nExp;           /* Number of exposure                         */
    long         outOption;      /* Output option                              */
+   long         flag;           /* writeToRm flag                             */
    double       expTime;        /* Exposure time                              */
    double       multCoeffFlux;  /* Multiplicative coefficient for average flux*/
    double       thresholdFlux;  /* threshold for flux value                   */
@@ -17418,6 +17920,8 @@ uint32 detSigModeTotal
                           (char *) & nFramesFlux);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 3,
                           (char *) & multCoeffFlux);
+   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 4, (char *)&flag);
+
 
    /*
     * Check there are valid SDSU and observation context structures.
@@ -17458,18 +17962,33 @@ uint32 detSigModeTotal
             "Signal processing switched to \"Average Flux computation\" mode - "
             "method=%d, thresholdFlux=%f, nFramesFlux=%d, multCoeffFlux=%f",
              (int)method, thresholdFlux, (int)nFramesFlux, multCoeffFlux);
+   MESSAGE_LOG1 (MSG_LOG, "flag=%d", (int)flag);
+
 
    /*
     * Define the signal processing mode and associated parameters.
     * These parameters will be used in detObserveEnd.
     */
 
+   obsId->writeToRm = flag;
+
    obsId->methodFluxComp = method;
    obsId->aoCtrlId->totalMethod = method;
-   if ( obsId->methodFluxComp == AO_TOTAL_VALUE )
+   if ( ( obsId->methodFluxComp == AO_TOTAL_VALUE ) ||
+        ( obsId->methodFluxComp == AO_TOTAL_FORMULA ) )
    {
       /* no computation requested */
-      obsId->aoCtrlId->totalThreshold = thresholdFlux;
+
+      if ( obsId->methodFluxComp == AO_TOTAL_VALUE )
+      {
+         obsId->aoCtrlId->totalThreshold = thresholdFlux;
+      }
+      else
+      {
+         obsId->aoCtrlId->totalThreshold =
+         aoTotalThresholdCompute (obsId->aoCcdId, obsId->aoCtrlId);
+      }
+
       if (epToVxPipeWrite (NULL,
                            (char *)(int)& (obsId->aoCtrlId->totalThreshold),
                            obsId->pAoTotalContext) == ERROR)
@@ -17516,7 +18035,9 @@ uint32 detSigModeTotal
    obsId->saveAoCbCounter = 0;
    obsId->saveFgCbCounter = 0;
    obsId->averageRms = 0.0;
+   obsId->averageMean = 0.0;
    obsId->averageFlux = 0.0;
+   obsId->threshRealTimeFlag = FALSE;
 
    return (errorNumber);
 }
@@ -17875,6 +18396,7 @@ uint32 detSigMeasAoIm
    sigMode = AO_MODE_MEAS_IM;
    subapOff = 0;
 
+   obsId->writeToRm = TRUE;
    obsId->sigMode = sigMode;
    obsId->nMode = nMode - 1;
    obsId->amplitude = amplitude;
@@ -17912,7 +18434,9 @@ uint32 detSigMeasAoIm
    obsId->saveAoCbCounter = 0;
    obsId->saveFgCbCounter = 0;
    obsId->averageRms = 0.0;
+   obsId->averageMean = 0.0;
    obsId->averageFlux = 0.0;
+   obsId->threshRealTimeFlag = FALSE;
 
    return (errorNumber);
 }
@@ -18300,7 +18824,9 @@ uint32 detSigModeSeqDark
    obsId->saveAoCbCounter = 0;
    obsId->saveFgCbCounter = 0;
    obsId->averageRms = 0.0;
+   obsId->averageMean = 0.0;
    obsId->averageFlux = 0.0;
+   obsId->threshRealTimeFlag = FALSE;
 
    return (errorNumber);
 }
@@ -18602,6 +19128,7 @@ STATUS detInitSigInit
    double refX;
    double refY;
    double thresh;
+   double rms;
    double totalThresh;
 
    if ( detObsIdP2 == NULL )
@@ -18633,7 +19160,7 @@ STATUS detInitSigInit
 
          if ( aoCtrlFileRead ( aoInitFileName, path, darkFileName, flatFileName,
                                refFileName, &refX, &refY, aoImFileName, 
-                               aoCmFileName, fgCmFileName, &thresh,
+                               aoCmFileName, fgCmFileName, &rms, &thresh,
                                &totalThresh, port, 
                                &angleM2, &flipXM2, &flipYM2, 
                                &angleM1, &flipXM1, &flipYM1) == ERROR )
@@ -18679,7 +19206,7 @@ STATUS detInitSigInit
 
          if ( aoCtrlFileRead ( aoInitFileName, path, darkFileName, flatFileName,
                                refFileName, &refX, &refY, aoImFileName, 
-                               aoCmFileName, fgCmFileName, &thresh,
+                               aoCmFileName, fgCmFileName, &rms, &thresh,
                                &totalThresh, port, 
                                &angleM2, &flipXM2, &flipYM2, 
                                &angleM1, &flipXM1, &flipYM1) == ERROR )
@@ -19023,9 +19550,11 @@ uint32 detSigReset
 
    sigMode = AO_MODE_GG;
    obsId->sigMode = sigMode;
+   obsId->writeToRm = TRUE;
 
-   MESSAGE_LOG (MSG_LOG,
-                "Signal processing switched to \"Global Guide\" mode");
+   MESSAGE_LOG1 (MSG_LOG,
+                "Signal processing switched to \"Global Guide\" mode, flag=%d",
+                (int)obsId->writeToRm);
    if (epToVxPipeWrite (NULL, "Global Guide",
                         obsId->pAoProcessModeContext) == ERROR)
    {
@@ -19114,7 +19643,9 @@ uint32 detSigReset
    obsId->saveAoCbCounter = 0;
    obsId->saveFgCbCounter = 0;
    obsId->averageRms = 0.0;
+   obsId->averageMean = 0.0;
    obsId->averageFlux = 0.0;
+   obsId->threshRealTimeFlag = FALSE;
 
    return (errorNumber);
 }
@@ -19801,6 +20332,17 @@ uint32 detGetSirContext
    {
       ERROR_LOG (
            "Failed to get DET_CONTROL_FG_CONT_MAT_INIT_SIR_NAME SIR context");
+      errorNumber = ERROR;
+   }
+
+   /* Get the context of the "aoRms" sir record */
+
+   sprintf (pRecordName, "%s:%s", pRecordPrefix,
+            DET_CONTROL_AO_RMS_SIR_NAME);
+   if (epToVxRecContextGet (pRecordName, & (obsId->pAoRmsContext), NULL)
+       == ERROR)
+   {
+      ERROR_LOG ("Failed to get DET_CONTROL_AO_RMS_SIR_NAME SIR context");
       errorNumber = ERROR;
    }
 

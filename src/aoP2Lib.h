@@ -17,6 +17,8 @@
  * Corinne Boyer
  *
  * HISTORY MODIFICATION:
+ * 07 Feb 2002: CB - Add flip in header of fg and ao circular buffers 
+ * 28 Jan 2002: CB - Threshold in real time
  * 09 Oct 2001: CB - OIWFS GMOS modifications
  * 13 Sep 2001: CB - Add aoThresholdPerSubapCompute(), thresholdVect, 
  *                   thresholdDarkFull and thresholdDarkBin
@@ -46,13 +48,13 @@
 
 #define MODE_NB              (FG_MODE_NB + AO_MODE_NB)
 
-#define CB_IM_RECORD_NB      100       /* Number of records of the image      */
+#define CB_IM_RECORD_NB      500       /* Number of records of the image      */
                                        /* circular buffer                     */
 
-#define CB_AO_CTRL_RECORD_NB 500       /* Number of records of the aO control */
+#define CB_AO_CTRL_RECORD_NB 800       /* Number of records of the aO control */
                                        /* circular buffer                     */
 
-#define CB_FG_CTRL_RECORD_NB 2000      /* Number of records of the FG control */
+#define CB_FG_CTRL_RECORD_NB 8192      /* Number of records of the FG control */
                                        /* circular buffer                     */
 
 #define AO_SUBAP_OFF         32767     /* Indicates there is no light on at   */
@@ -111,7 +113,8 @@ enum
 enum
 {
    AO_TOTAL_SPOTS = 0, /* Computation of average flux when spots */
-   AO_TOTAL_VALUE      /* No computation, used given value       */
+   AO_TOTAL_VALUE,     /* No computation, used given value       */
+   AO_TOTAL_FORMULA    /* No image, use a function(rms,N)        */
 };
 
 enum
@@ -350,6 +353,9 @@ typedef struct
    int          totalMethod;           /* Method to compute average flux      */
                                        /* AO_TOTAL_SPOTS, AO_TOTAL_VALUE      */
 
+   double       rms;                   /* RMS used for the threshold          */
+                                       /* computation                         */
+
    double       threshold;             /* Threshold used for the centroids    */
                                        /* computation                         */ 
    double       thresholdRate;         /* Rate of brighter pixels used to     */
@@ -360,12 +366,19 @@ typedef struct
 
    double       thresholdDarkFull;     /* Threshold computed during sequence  */
                                        /* dark when no binning - save         */ 
-
    double       thresholdDarkBin;      /* Threshold computed during sequence  */
                                        /* dark when binning - save            */ 
+   double       rmsDarkFull;           /* RMS computed during sequence dark   */
+                                       /* when no binning - save              */
+
+   double       rmsDarkBin;            /* RMS computed during sequence dark   */
+                                       /* when binning - save                 */
 
    WFS_VECT     thresholdVect;         /* Threshold computed for each         */
                                        /* subaperture                         */
+
+   WFS_VECT     averageThreshVect;     /* Average threshold computed for each */
+                                       /* subaperture used when aO            */
 
    double       averageTotal;          /* Average of the total counts for the */
                                        /* whole CCD                           */
@@ -487,6 +500,9 @@ typedef struct                         /* Definition of the aO control        */
                                        /* (subapUsedNb values) + the total of */
                                        /* counts for the whole CCD (1 value)  */
 
+   WFS_VECT     thresholdVect;         /* Threshold computed in real time for */
+                                       /* each subaperture                    */
+
    WFS_VECT     centroidsVect;         /* Vector which contains the centroids */
 
    WFS_VECT     errorCentroidsVect;    /* Vector which contains the errors of */
@@ -563,6 +579,9 @@ typedef struct                         /* Definition of the FG control        */
 
    WFS_VECT     errorCentroidsVect;    /* Vector which contains the errors of */
                                        /* the centroids computation           */
+
+   WFS_VECT     thresholdVect;         /* Threshold computed in real time for */
+                                       /* each subaperture                    */
 
    FG_VECT      fgVect;                /* Vector which contains the zernikes  */
                                        /* modes to send to M2 before a&G and  */
@@ -649,6 +668,9 @@ typedef struct
                                        /* a multiple of a double              */
    
    double       exposureTime;          /* Exposure time in second             */
+
+   double       rms;                   /* RMS used for the threshold          */
+                                       /* computation                         */
                                        
    double       threshold;             /* Threshold used for the centroids    */
                                        /* computation                         */
@@ -657,6 +679,15 @@ typedef struct
                                        /* the centroids computation           */
 
    double       angleWithM1;           /* Angle between M1 and P2 coordinates */
+
+   double       flipXWithM1;           /* Flip in X of OIWFS tip measurements */
+                                       /* according to M1 referential         */
+
+   double       flipYWithM1;           /* Flip in Y of OIWFS Tilt measurements*/
+                                       /* according to M1 referential         */
+
+   WFS_VECT     thresholdVect;         /* Threshold computed for each         */
+                                       /* subaperture                         */
 
    WFS_VECT     refWfsVect;            /* Vector containing the center of each*/
                                        /* subapertures                        */
@@ -687,6 +718,9 @@ typedef struct
 
    double       exposureTime;          /* Exposure time in second             */
 
+   double       rms;                   /* RMS used for the threshold          */
+                                       /* computation                         */
+
    double       threshold;             /* Threshold used for the centroids    */
                                        /* computation                         */
 
@@ -695,7 +729,16 @@ typedef struct
 
    double       angleWithM2;           /* Angle between M2 and P2 coordinates */
 
+   double       flipXWithM2;           /* Flip in X of OIWFS tip measurements */
+                                       /* according to M2 referential         */
+
+   double       flipYWithM2;           /* Flip in Y of OIWFS Tilt measurements*/
+                                       /* according to M2 referential         */
+
    double       slidingFocusGain;      /* Gain for sliding average for focus  */
+
+   WFS_VECT     thresholdVect;         /* Threshold computed for each         */
+                                       /* subaperture                         */
 
    WFS_VECT     refWfsVect;            /* Vector containing the center of each*/
 
@@ -847,24 +890,27 @@ STATUS aoDarkSubtract (float * pImage, float * pDark, int xPixels,
 STATUS aoGlobalGuide (float * pImage, AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId, 
                       double * pTotalCountsVect, double * pGuidesVect, 
                       double * pFgVect, double * pFgVectAfterRot,
-                      double * pFgErrorsVect, double * pTime, int * pWfsStatus);
+                      double * pFgErrorsVect, double * pTime, int * pWfsStatus,
+                      int writeToRm);
 STATUS aoGlobalGuideAndError (float * pImage, AO_CCD_ID aoCcdId, 
                               AO_CTRL_ID aoCtrlId, double * pTotalCountsVect, 
                               double * pGuidesVect, double * pFgVect, 
                               double * pFgVectAfterRot, double * pFgErrorsVect, 
-                              double * pTime, int * pWfsStatus);
+                              double * pTime, int * pWfsStatus, int writeToRm);
 STATUS aoImageFloatAverage (float * pImage, AO_CCD_ID aoCcdId, 
                             AO_CTRL_ID aoCtrlId, int imageNb);
 STATUS aoRmsNoiseImageCompute (float * pImage, AO_CCD_ID aoCcdId, 
-                               double * pRmsNoise);
-STATUS aoThresholdCompute (float * pImage, AO_CCD_ID aoCcdId, double ratePixel, 
+                               double * pRmsNoise, double * pMeanNoise);
+STATUS aoThresholdCompute (float * pImage, AO_CCD_ID aoCcdId, 
+                           AO_CTRL_ID aoCtrlId, double ratePixel, 
                            double * pThreshold);
 STATUS aoCentroidsCompute (float * pImage, AO_CCD_ID aoCcdId, 
-                           AO_CTRL_ID aoCtrlId, 
+                           AO_CTRL_ID aoCtrlId, double * pThreshVect,
                            double * pTotalCountsVect, double * pCentroidsVect, 
                            double * pErrorCentroidsVect, int * pWfsStatus);
 STATUS aoModeCompute (float * pImage, AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId, 
-                      int imageNb, AO_CB_AO_CTRL_ID aoCbAoCtrlId);
+                      int imageNb, double *pThreshVect,
+                      AO_CB_AO_CTRL_ID aoCbAoCtrlId);
 STATUS aoCbImSave (char *pCbImFilePath, AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId, 
                    AO_CB_IM_ID aoCbImId);
 STATUS aoCbImZero (AO_CB_IM_ID aoCbImId);
@@ -875,12 +921,13 @@ STATUS aoCbAoCtrlSave (char * pCbAoCtrlFilePath, AO_CCD_ID aoCcdId,
 STATUS aoCbFgCtrlSave (char * pCbFgCtrlFilePath, AO_CCD_ID aoCcdId, 
                        AO_CTRL_ID aoCtrlId, AO_CB_FG_CTRL_ID aoCbFgCtrlId);
 STATUS aoGuideAndFocus (float * pImage, AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId, 
-                        double *pTotalCountsVect, double * pCentroidsVect, 
-                        double * pErrorCentroidsVect, double * pFgVect, 
-                        double * pFgVectAfterRot, double * pFgErrorsVect, 
-                        double * pTime, int * pWfsStatus);
+                        double * pThreshVect, double * pTotalCountsVect, 
+                        double * pCentroidsVect, double * pErrorCentroidsVect, 
+                        double * pFgVect, double * pFgVectAfterRot, 
+                        double * pFgErrorsVect, double * pTime, 
+                        int * pWfsStatus, int writeToRm);
 STATUS aoModeAnalyze (float * pImage, AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId,
-                      AO_CB_AO_CTRL_ID aoCbAoCtrlId);
+                      double * pThreshVect, AO_CB_AO_CTRL_ID aoCbAoCtrlId);
 STATUS aoCentroidsWrite ( char * pCentroidsFileName, double * pCentroids, 
                           int centNb, char * pComment);
 STATUS aoIntMatStructZero (AO_CTRL_ID aoCtrlId);
@@ -893,7 +940,7 @@ STATUS aoCtrlFileRead (char * pInitFileName, char * pPath, char * pDarkFileName,
                        char * pFlatFileName, char * pRefFileName, 
                        double * pRefX, double * pRefY, char * pAoImFileName, 
                        char * pAoCmFileName, char * pFgCmFileName, 
-                       double * pThresh, double * pTotalThresh,
+                       double * pRms, double * pThresh, double * pTotalThresh,
                        int currentPort, double * pAngleM2, double * pFlipXM2, 
                        double * pFlipYM2, double * pAngleM1, double * pFlipXM1,
                        double * pFlipYM1);
@@ -917,7 +964,9 @@ STATUS aoModFocFileRead (char * pInitFileName, double * pA1, double * pP1,
                          double * pA2, double * pP2, double * pC,
                          int * pApply);
 STATUS aoThresholdPerSubapCompute (float * pImage, AO_CCD_ID aoCcdId, 
-                                   double ratePixel, double * pThreshold);
+                                   AO_CTRL_ID aoCtrlId, double ratePixel, 
+                                   double * pThreshold);
+double aoTotalThresholdCompute (AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId);
 PO_SCALE_ID aoPoScaleContextCreate (void);
 STATUS aoPoScaleContextInit (char * pInitFileName, PO_SCALE_ID poScaleId);
 STATUS aoPoScaleFileRead (char * pInitFileName, double * pScaleX,

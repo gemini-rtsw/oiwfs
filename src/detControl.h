@@ -13,6 +13,7 @@
  *   *** THE SDSU CONTROLLERS AT YOUR SITE. SEE DEFINITIONS BELOW.
  *
  *INDENT-OFF*
+ *   30 Jan 2002: CB - Add aoRms sir record
  *   09 Oct 2001: CB - Modifications for OIWFS GMOS
  *   21 Aug 2001: CB - Major modifications to have aO correction with P2 also
  *   02 Apr 2001: CB - add sir adc0, adc1, adc2, adc3
@@ -124,6 +125,10 @@
                                     /* Name of SIR record containing the init */
                                     /* state of the theoretical FG control    */
                                     /* matrix                                 */
+
+#define   DET_CONTROL_AO_RMS_SIR_NAME         "aoRms"
+                                    /* Name of SIR record containing the RMS  */
+                                    /* for threshold computation              */
 
 #define   DET_CONTROL_AO_THRESH_SIR_NAME      "aoThresh"
                                     /* Name of SIR record containing the      */
@@ -502,7 +507,7 @@ typedef   struct      /* Context structure used to describe an observation.   */
    long         saveCbAoCtrlClosedLoopFrame;
                            /* Save aO control circular buffer during closed   */
                            /* loop sequence every this number of frames       */
-   long         fgFrame;   /* Number of frames with FG only over the whole CCD*/
+   long         ggFrame;   /* Number of frames with GG only over the whole CCD*/
                            /* in the closed loop sequence                     */
    long         methodFluxComp;
                            /* Method for average flux computation             */
@@ -514,8 +519,13 @@ typedef   struct      /* Context structure used to describe an observation.   */
    long         nFramesAverageFlux;
                            /* Number of frames to average for computing the   */
                            /* average flux                                    */
-   double       fgTime;    /* Time with FG only over the whole CCD in the     */
+   long         writeToRm; /* Write to RM flag (TRUE/FALSE)                   */
+   long         threshRealTimeFlag;
+                           /* Compute the threshold in real time during fast  */
+                           /* guide (TRUE/FALSE)                              */
+   double       ggTime;    /* Time with GG only over the whole CCD in the     */
                            /* closed loop sequence                            */
+   double       aoTime;    /* Time to average aO data                         */
    double       saveCbFgCtrlClosedLoopTime;
                            /* Save FG control circular  buffer during closed  */
                            /* loop sequence every this time                   */
@@ -529,6 +539,8 @@ typedef   struct      /* Context structure used to describe an observation.   */
                            /* Multiplicative coeff for threshold computation  */
    double       averageRms;  
                            /* Average rms for threshold computation           */
+   double       averageMean;
+                           /* Average mean for threshold computation          */
    double       multCoeffAverageFlux;  
                            /* Multiplicative coefficient for average flux     */
    double       averageFlux;/* Average flux                                   */
@@ -670,6 +682,8 @@ typedef   struct      /* Context structure used to describe an observation.   */
    DATREC_CONTEXT pFgContMatInitContext;
                                       /* Context structure for                */
                                       /* fgContMatInit SIR record.            */
+   DATREC_CONTEXT pAoRmsContext;      /* Context structure for aoRms SIR      */
+                                      /* record.                              */
    DATREC_CONTEXT pAoThreshContext;   /* Context structure for aoThresh SIR   */
                                       /* record.                              */
    DATREC_CONTEXT pAoProcessModeContext;

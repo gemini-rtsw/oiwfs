@@ -29,12 +29,14 @@ data/defFgContMatOiGmosMK.dat
 0.0003
 # Gain for focus sliding average (double)
 0.0005
+# RMS value (double)
+15
 # Threshold value for pixel (double)
 50
 # Threshold value for total counts (double)
 0
 # Port  used by default (integer: 1, 3, 5)
-1
+5
 # Port Angle_M2(rd) Flip_X_M2 Flip_Y_M2 Angle_M1(rd) Flip_X_M1 Flip_Y_M1
   1    1.5708       1.0       1.0       1.5708       1.0       1.0
   3    0.0          1.0       1.0       0.0          1.0       1.0
