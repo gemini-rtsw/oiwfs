@@ -47,7 +47,7 @@ V2-0 29 March 2002 CB:
   - remove from the user interface the detReset command
   - aoP2Lib.c: aoTotalThresholdCompute(): comment out ERROR_SET if N>2
 
-V2-1 02 October 2002 CB:
+V2-1 02 October 2002 CB: 
 ------------------------
   - oiwfs:dc:aoRms precision of 9
   - add bancom card status in main screen 
@@ -67,4 +67,22 @@ V2-1 02 October 2002 CB:
   - update vmeboot.asm and vmehead.asm with last version of DSP code V3.09
   - compiled with GEM8.4
 
-dev-oiwfs-gmos equivalent to V2-1
+WARNING: V2-1 is not working because the vmeboot.asm and vmehead.asm were 
+         updated with last version of DSP code V3.09 but not the boot code 
+         (vmerom.lod). All others modifications corresponding to this version
+         are working fine.
+
+V2-2 18 November 2002 CB:
+-------------------------
+  - update vmebootcode + vmeboot.asm and vmehead.asm with last version of 
+    DSP code V3.09
+  - colors.dl corrected for rules (ERROR instead of ERR)
+  - sig_main.adl: cosmetic modifications
+  - writeZernikes.c: writeWfsToTcs() check status of the GMOS CC opt sensor 
+    before sending new data to the TCS 
+  - remove errors when starting an observation already in progress
+  - add detPowerOff command
+  - modify detInit to initialize correctly signal processing, probe offset 
+    structure, butterworth filters and zero point models
+  - writeZernikes.c: writeWfsToSynchro() do not apply butterworth filter 
+    for focus when output TTF to AO system

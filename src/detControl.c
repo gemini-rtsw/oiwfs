@@ -1,5 +1,5 @@
 static struct {void *v; char *c;} rcsid = {&rcsid,
-   "$Id: detControl.c,v 1.7 2002-10-03 00:34:56 cboyer Exp $"};
+   "$Id: detControl.c,v 1.8 2002-11-19 07:57:20 cboyer Exp $"};
 
 /*+
  *   MODULE NAME:
@@ -31,14 +31,22 @@ static struct {void *v; char *c;} rcsid = {&rcsid,
  *   Steven Beard
  *
  *INDENT-OFF*
+ *   14 Oct 2002: CB - detObserveStart modified when start directive received
+ *                     and observation already in progress.
+ *                   - add detPowerOff
+ *                   - modify detInit to initialize correctly signal processing,
+ *                     probe offset structure, butterworth filters and 
+ *                     zero point models
+ *                   - aoModeCompute modified to reject raw frame when 
+ *                     optsensorEnable is set to DONT_GUIDE(0)
  *   17 Sep 2002: CB - Add SIR outGuide and CAD detSigOutput
  *   16 Sep 2002: CB - Implement seeing computation
- *                     aoModeCompute modified to reject raw frame with status
+ *                   - aoModeCompute modified to reject raw frame with status
  *                     AO_SH_OFF (purpose:aO + chopping)
- *                     Modify detSigInitFgGain to reinit defFocusScale100Hz
+ *                   - Modify detSigInitFgGain to reinit defFocusScale100Hz
  *                     when changing the focus gain
- *                     Add SIR fgFocusGain100
- *                     Add fgTipGain, fgTiltGain, fgFocusGain, cfFocusBw,
+ *                   - Add SIR fgFocusGain100
+ *                   - Add fgTipGain, fgTiltGain, fgFocusGain, cfFocusBw,
  *                     cfTipTiltBw SIR records
  *   22 Mar 2002: CB - Major modifications to download the timing and utility
  *                     code from EEPROMS
@@ -275,6 +283,9 @@ extern SEM_ID accessFocusModel;    /* Semaphore Focus model defined in        */
 extern PO_SCALE_ID poScaleId;      /* Pointer to probe offset scale factor    */
                                    /* structure defined in writeZernikes.c    */
 
+extern long optsensorEnable;       /* Optical sensor state (GUIDE|DONT_GUIDE) */
+                                   /* defined in writeZernikes.c              */
+
 /******************************************************* External functions ***/
 
 extern void ImpMaster ();
@@ -330,6 +341,9 @@ LOCAL uint32   detPrimitive (CAD_CMD_CONTEXT cadCmdContext, int commandNumber,
                              SDSU_ID sdsuId, OBS_ID obsId);
 
 LOCAL uint32   detPowerOn (CAD_CMD_CONTEXT cadCmdContext, int commandNumber,
+                           SDSU_ID sdsuId, OBS_ID obsId);
+
+LOCAL uint32   detPowerOff (CAD_CMD_CONTEXT cadCmdContext, int commandNumber,
                            SDSU_ID sdsuId, OBS_ID obsId);
 
 LOCAL uint32   detMode   (CAD_CMD_CONTEXT cadCmdContext, int commandNumber,
@@ -1133,7 +1147,7 @@ STATUS   detControl
            (sdsuParamWrite (sdsuId, SDSU_IDENT_UTL, "U_TCF", (uint32)tempCoeff )
             == ERROR) )
       {
-         ERROR_LOG ("Error setting temperasture control parameters");
+         ERROR_LOG ("Error setting temperature control parameters");
          initFailed = TRUE;
       }
 #endif
@@ -2145,6 +2159,15 @@ STATUS   detControl
             detPowerOn (cadCmdContext, commandNumber, sdsuId, obsId);
          }
 
+         else if (commandNumber == DET_CONTROL_CMD_POWER_OFF)
+         {
+
+            /* Execute SDSU POWER OFF primitive command. */
+
+            errorNumber =
+            detPowerOff (cadCmdContext, commandNumber, sdsuId, obsId);
+         }
+
          else if (commandNumber == DET_CONTROL_CMD_MODE)
          {
 
@@ -2894,13 +2917,9 @@ STATUS detReadDefaultDspCcdGeometry
        * and use these to calculate the default size expected by the DSP code.
        */
 
-#ifdef DEBUG
       sdsuPrintRepBuf (sdsuId);
-#endif
       sdsuClear1RepBuf (sdsuId);
-#ifdef DEBUG
       sdsuPrintRepBuf (sdsuId);
-#endif
 
       if ( (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_XSIZE", &xSdsuChip) ==
             ERROR) ||
@@ -5318,9 +5337,13 @@ uint32 detObserveStart
 
       if ( obsId->observing )
       {
+/*
          ERROR_SET (S_detControl_BUSY, 
                     "Observation already in progress", ERROR_LOG_NOW);
          errorNumber = S_detControl_BUSY;
+*/
+         MESSAGE_LOG (MSG_LOG, "Observation already in progress");
+         errorNumber = 0;
          return (errorNumber);
       }
 
@@ -7306,6 +7329,27 @@ uint32 detInit
    char         detContInitFileName [ STRING_SIZE ] ;
                                  /* Full Name of the detector controller      */
                                  /* init file                                 */
+   char         poInitFileName [ STRING_SIZE ] ;
+                                 /* Full Name of the probe offset structure   */
+                                 /* init file                                 */
+   char         aoInitFileName [ STRING_SIZE ] ;
+                                 /* Full Name of the signal processing        */
+                                 /* structure init file                       */
+   char         detBwInitFileName [ STRING_SIZE ] ;
+                                 /* Full Name of the BW init file             */
+   char         modInitFileName [ STRING_SIZE ] ;
+                                 /* Name of the model init file               */
+
+   AST_ZP_MODEL_ID_STRUCT   tempAstModel;
+   TREF_ZP_MODEL_ID_STRUCT  tempTrefModel;
+   COMA_ZP_MODEL_ID_STRUCT  tempComaModel;
+   FOCUS_ZP_MODEL_ID_STRUCT tempFocModel;
+
+   long         nExp;               /* Number of exposure                     */
+   long         outOption;          /* Output option                          */
+   double       expTime;            /* Exposure time                          */
+   double       cutoffFreqTT;       /* Cutoff frequency for fast TT           */
+   double       cutoffFreqFoc;      /* Cutoff frequency for fast Focus        */
    
    /*
     * Initialise the error number.
@@ -8091,6 +8135,432 @@ uint32 detInit
          == ERROR) )
    {
       ERROR_LOG ("Error setting temperasture control parameters");
+   }
+
+   /*
+    * Init the poScaleId structure
+    */
+
+#if (MK)
+   if ( obsId->aoCcdId->binningFlag == FALSE )
+      strcpy ( defFileName, DET_CONTROL_PWFS2_AO_FULL_PO_MK_INIT_FILE);
+   else
+      strcpy ( defFileName, DET_CONTROL_PWFS2_AO_BIN_PO_MK_INIT_FILE);
+#else
+   if ( obsId->aoCcdId->binningFlag == FALSE )
+      strcpy ( defFileName, DET_CONTROL_PWFS2_AO_FULL_PO_CP_INIT_FILE);
+   else
+      strcpy ( defFileName, DET_CONTROL_PWFS2_AO_BIN_PO_CP_INIT_FILE);
+#endif
+
+   if ( strcmp (defFileName, "NONE") != 0 )
+   {
+      strcpy ( poInitFileName , DET_CONTROL_PAR_FILE_PATH ) ;
+      strcat ( poInitFileName , "/" ) ;
+      strcat ( poInitFileName , defFileName ) ;
+
+      if ( aoPoScaleContextInit ( poInitFileName, poScaleId ) == ERROR )
+      {
+         ERROR_LOG (
+         "Failed to init probe offset scale context structure on startup");
+      }
+   }
+   else
+   {
+      MESSAGE_LOG (MSG_LOG,
+      "PWFS2 - probe offset scale context not initialised");
+   }
+
+   /*
+    * Init the AO control context structure
+    */
+
+   wfsGetPort (&obsId->aoCtrlId->port);
+
+#if (MK)
+   if ( obsId->aoCcdId->binningFlag == FALSE )
+      strcpy ( defFileName, DET_CONTROL_PWFS2_AO_FULL_CTRL_MK_INIT_FILE);
+   else
+      strcpy ( defFileName, DET_CONTROL_PWFS2_AO_BIN_CTRL_MK_INIT_FILE);
+#else
+   if ( obsId->aoCcdId->binningFlag == FALSE )
+      strcpy ( defFileName, DET_CONTROL_PWFS2_AO_FULL_CTRL_CP_INIT_FILE);
+   else
+      strcpy ( defFileName, DET_CONTROL_PWFS2_AO_BIN_CTRL_CP_INIT_FILE);
+#endif
+
+   if ( strcmp (defFileName, "NONE") != 0 )
+   {
+      strcpy ( aoInitFileName , DET_CONTROL_PAR_FILE_PATH ) ;
+      strcat ( aoInitFileName , "/" ) ;
+      strcat ( aoInitFileName , defFileName ) ;
+
+      if ( aoCtrlContextInit ( aoInitFileName, obsId->aoCcdId, obsId->aoCtrlId )
+            == ERROR )
+      {
+         ERROR_LOG ("Failed to init ao control context structure on startup");
+      }
+
+      if (epToVxPipeWrite (NULL, (char *)(int)& (obsId->aoCtrlId->port),
+                           obsId->pPortContext) == ERROR)
+      {
+         ERROR_LOG (
+         "Failed to initialise DET_CONTROL_PORT_SIR_NAME record");
+      }
+
+      if ( obsId->aoCtrlId->initFlag == TRUE )
+      {
+
+         if ( obsId->aoCcdId->binningFlag == FALSE )
+            expTime = 0.01 ;  /* 10ms */
+         else
+            expTime = 0.005 ; /* 5ms */
+
+         if ( obsId->aoCcdId->binningFlag == FALSE )
+            obsId->defFocusScale100Hz = obsId->aoCtrlId->fgScaleFactorVect[2];
+         else
+         {
+            obsId->defFocusScale100Hz = obsId->aoCtrlId->fgScaleFactorVect[2];
+            obsId->aoCtrlId->fgScaleFactorVect[2] = obsId->defFocusScale100Hz *
+                                                    (100.0 *  expTime);
+         }
+
+         if (epToVxPipeWrite (NULL, "Initialized", obsId->pAoCtrlInitContext)
+             == ERROR)
+         {
+            ERROR_LOG (
+            "Failed to init DET_CONTROL_AO_CTRL_INIT_SIR_NAME record");
+         }
+      }
+
+      if ( obsId->aoCtrlId->darkInitFlag == TRUE )
+      {
+         if (epToVxPipeWrite (NULL, obsId->aoCtrlId->darkFileName,
+                              obsId->pAoDarkInitContext) == ERROR)
+         {
+            ERROR_LOG (
+            "Failed to init DET_CONTROL_AO_DARK_INIT_SIR_NAME record");
+         }
+      }
+
+      if ( obsId->aoCtrlId->flatInitFlag == TRUE )
+      {
+         if (epToVxPipeWrite (NULL, obsId->aoCtrlId->flatFileName,
+                              obsId->pAoFlatInitContext) == ERROR)
+         {
+            ERROR_LOG (
+            "Failed to init DET_CONTROL_AO_FLAT_INIT_SIR_NAME record");
+         }
+      }
+
+      if ( obsId->aoCtrlId->aoIntMatInitFlag == TRUE )
+      {
+         if (epToVxPipeWrite (NULL, obsId->aoCtrlId->aoIntMatFileName,
+                              obsId->pAoIntMatInitContext) == ERROR)
+         {
+            ERROR_LOG (
+            "Failed to init DET_CONTROL_AO_INT_MAT_INIT_SIR_NAME record");
+         }
+      }
+
+      if ( obsId->aoCtrlId->aoContMatInitFlag == TRUE )
+      {
+         if (epToVxPipeWrite (NULL, obsId->aoCtrlId->aoContMatFileName,
+                              obsId->pAoContMatInitContext) == ERROR)
+         {
+            ERROR_LOG (
+            "Failed to init DET_CONTROL_AO_CONT_MAT_INIT_SIR_NAME record");
+         }
+      }
+
+      if ( obsId->aoCtrlId->fgContMatInitFlag == TRUE )
+      {
+         if (epToVxPipeWrite (NULL, obsId->aoCtrlId->fgContMatFileName,
+                              obsId->pFgContMatInitContext) == ERROR)
+         {
+            ERROR_LOG (
+            "Failed to init DET_CONTROL_FG_CONT_MAT_INIT_SIR_NAME record");
+         }
+      }
+
+      if ( obsId->aoCtrlId->seeingCoeffMatInitFlag == TRUE )
+      {
+         if (epToVxPipeWrite (NULL, obsId->aoCtrlId->seeingCoeffMatFileName,
+                              obsId->pSeeingCoeffMatInitContext) == ERROR)
+         {
+            ERROR_LOG (
+            "Failed to init DET_CONTROL_SEEING_COEFF_MAT_INIT_SIR_NAME record");
+         }
+      }
+
+      if (epToVxPipeWrite (NULL, (char *)(int)& (obsId->aoCtrlId->rms),
+                           obsId->pAoRmsContext) == ERROR)
+      {
+         ERROR_LOG (
+         "Failed to init DET_CONTROL_AO_RMS_SIR_NAME record");
+      }
+
+      if (epToVxPipeWrite (NULL, (char *)(int)& (obsId->aoCtrlId->threshold),
+                           obsId->pAoThreshContext) == ERROR)
+      {
+         ERROR_LOG (
+         "Failed to init DET_CONTROL_AO_THRESH_SIR_NAME record");
+      }
+
+      if (epToVxPipeWrite (NULL, 
+                           (char *)(int)& (obsId->aoCtrlId->totalThreshold),
+                           obsId->pAoTotalContext) == ERROR)
+      {
+         ERROR_LOG (
+         "Failed to init DET_CONTROL_AO_TOTAL_SIR_NAME record");
+      }
+
+      if (epToVxPipeWrite (NULL,
+                    (char *)(int)& (obsId->aoCtrlId->fgScaleFactorVect[0]),
+                    obsId->pFgTipGainContext) == ERROR)
+      {
+         ERROR_LOG (
+         "Failed to init DET_CONTROL_FG_TIP_GAIN_SIR_NAME record");
+      }
+
+      if (epToVxPipeWrite (NULL,
+                    (char *)(int)& (obsId->aoCtrlId->fgScaleFactorVect[1]),
+                    obsId->pFgTiltGainContext) == ERROR)
+      {
+         ERROR_LOG (
+         "Failed to init DET_CONTROL_FG_TILT_GAIN_SIR_NAME record");
+      }
+
+      if (epToVxPipeWrite (NULL,
+                    (char *)(int)& (obsId->aoCtrlId->fgScaleFactorVect[2]),
+                    obsId->pFgFocusGainContext) == ERROR)
+      {
+         ERROR_LOG (
+         "Failed to init DET_CONTROL_FG_FOCUS_GAIN_SIR_NAME record");
+      }
+
+      if (epToVxPipeWrite (NULL,
+                           (char *)(int)& (obsId->defFocusScale100Hz),
+                           obsId->pFgFocusGain100Context) == ERROR)
+      {
+         ERROR_LOG (
+         "Failed to init DET_CONTROL_FG_FOCUS_GAIN_100_SIR_NAME record");
+      }
+
+      if (epToVxPipeWrite (NULL,
+                           (char *)(int)& (obsId->aoCtrlId->seeingScaleFactor),
+                           obsId->pSeeingGainContext) == ERROR)
+      {
+         ERROR_LOG (
+         "Failed to init DET_CONTROL_SEEING_GAIN_SIR_NAME record");
+      }
+
+   }
+   else
+   {
+      MESSAGE_LOG (MSG_LOG, "PWFS2 - AO control context not initialised");
+   }
+
+   /*
+    * Read the default settings from the BW init file
+    */
+
+#if (MK)
+   strcpy ( defFileName, DET_CONTROL_PWFS2_BW_MK_INIT_FILE);
+#else
+   strcpy ( defFileName, DET_CONTROL_PWFS2_BW_CP_INIT_FILE);
+#endif
+
+   printf ( "defFileName =%s\n", defFileName);
+
+   if ( strcmp (defFileName, "NONE") != 0 )
+   {
+      strcpy ( detBwInitFileName , DET_CONTROL_PAR_FILE_PATH ) ;
+      strcat ( detBwInitFileName , "/" ) ;
+      strcat ( detBwInitFileName , defFileName ) ;
+
+      if ( detInitBwDef ( detBwInitFileName, &cutoffFreqTT, &cutoffFreqFoc)
+           == ERROR )
+      {
+         MESSAGE_LOG ( MSG_LOG,
+           "Failed to read BW default settings from file");
+
+         /* Set the focus cutoff frequency to 0.0167Hz anyway (1mn convergence
+            time) and cutoff TT frequency to 10Hz */
+
+         cutoffFreqFoc = 0.0167; /* in Hz */
+         cutoffFreqTT = 10.0;    /* in Hz */
+      }
+   }
+   else
+   {
+      /* Set the focus cutoff frequency to 0.0167Hz anyway (1mn convergence
+         time) and cutoff TT frequency to 10Hz */
+
+      cutoffFreqFoc = 0.0167; /* in Hz */
+      cutoffFreqTT = 10.0;    /* in Hz */
+   }
+
+   /*
+    * Mode is no processing, init the fields of the observe CAD record
+    */
+
+   obsId->sigMode = AO_MODE_NONE;
+
+   MESSAGE_LOG (MSG_LOG, "Switching signal processing off");
+   if (epToVxPipeWrite (NULL, "No processing",
+                        obsId->pAoProcessModeContext) == ERROR)
+   {
+      ERROR_LOG (
+      "Failed to init DET_CONTROL_AO_PROCESS_MODE_SIR_NAME record");
+   }
+
+   nExp = -1 ;          /* mode continuous */
+   if (detDhsInitialised)
+      outOption = 1 ;      /* DHS */
+   else
+      outOption = 0 ;      /* NO DHS */
+   if ( obsId->aoCcdId->binningFlag == FALSE )
+      expTime = 0.01 ;  /* 10ms */
+   else
+      expTime = 0.005 ; /* 5ms */
+
+   obsId->exposureTime = expTime;
+   obsId->cutoffFrequencyTipTilt = cutoffFreqTT;
+   obsId->cutoffFrequencyFocus = cutoffFreqFoc;
+
+   if ( detInitObserveRecord (pRecordPrefix, &nExp, &expTime, &outOption) ==
+        ERROR )
+   {
+      ERROR_LOG ( "Failed to init fields of observe record");
+   }
+
+   if ( detComputeCoeffButterworth ( obsId->exposureTime,
+                                     &(obsId->cutoffFrequencyTipTilt),
+                                     &(obsId->cutoffFrequencyFocus)) == ERROR )
+   {
+      ERROR_LOG ( "Failed to init coefficients of butterworth filter");
+   }
+
+   if (epToVxPipeWrite( NULL, (char *)(int)&(obsId->cutoffFrequencyTipTilt),
+                        obsId->pCfTipTiltBwContext ) == ERROR)
+   {
+      ERROR_LOG ("Failed to set the BW TT cutoff frequency SIR record");
+   }
+
+   if (epToVxPipeWrite( NULL, (char *)(int)&(obsId->cutoffFrequencyFocus),
+                        obsId->pCfFocusBwContext ) == ERROR)
+   {
+      ERROR_LOG ("Failed to set the BW focus cutoff frequency SIR record");
+   }
+
+
+   /*
+    * Init the ao zero point models
+    */
+
+#if (MK)
+   strcpy ( defFileName, DET_CONTROL_PWFS2_AO_MOD_MK_INIT_FILE);
+#else
+   strcpy ( defFileName, DET_CONTROL_PWFS2_AO_MOD_CP_INIT_FILE);
+#endif
+
+   if ( strcmp (defFileName, "NONE") != 0 )
+   {
+      strcpy ( modInitFileName , DET_CONTROL_PAR_FILE_PATH ) ;
+      strcat ( modInitFileName , "/" ) ;
+      strcat ( modInitFileName , defFileName ) ;
+
+      if ( aoModInit ( modInitFileName, &tempAstModel, &tempTrefModel,
+                       &tempComaModel, &tempFocModel ) == ERROR )
+      {
+         ERROR_LOG ( "Failed to init zero point models on startup" );
+      }
+
+      /* Now init the real models */
+
+      if (semTake (accessAstigModel, ZP_MODEL_SEM_TIMEOUT) != OK)
+      {
+         ERROR_LOG ( "Timeout on mutex acess to astigModel" );
+      }
+      else
+      {
+         astigModel.a1 = tempAstModel.a1;
+         astigModel.a2 = tempAstModel.a2;
+         astigModel.a3 = tempAstModel.a3;
+         astigModel.p1 = tempAstModel.p1;
+         astigModel.p2 = tempAstModel.p2;
+         astigModel.p3 = tempAstModel.p3;
+         astigModel.c = tempAstModel.c;
+         astigModel.b1 = tempAstModel.b1;
+         astigModel.b2 = tempAstModel.b2;
+         astigModel.b3 = tempAstModel.b3;
+         astigModel.pp1 = tempAstModel.pp1;
+         astigModel.pp2 = tempAstModel.pp2;
+         astigModel.pp3 = tempAstModel.pp3;
+         astigModel.d = tempAstModel.d;
+         astigModel.applyModel = tempAstModel.applyModel;
+         astigModel.gain0 = tempAstModel.gain0;
+         astigModel.gain45 = tempAstModel.gain45;
+         astigModel.offsetAstig0 = tempAstModel.offsetAstig0;
+         astigModel.offsetAstig45 = tempAstModel.offsetAstig45;
+
+         semGive (accessAstigModel);
+      }
+
+      if (semTake (accessTrefoilModel, ZP_MODEL_SEM_TIMEOUT) != OK)
+      {
+         ERROR_LOG ( "Timeout on mutex acess to trefoilModel" );
+      }
+      else
+      {
+         trefoilModel.a = tempTrefModel.a;
+         trefoilModel.p = tempTrefModel.p;
+         trefoilModel.c = tempTrefModel.c;
+         trefoilModel.b = tempTrefModel.b;
+         trefoilModel.pp = tempTrefModel.pp;
+         trefoilModel.d = tempTrefModel.d;
+         trefoilModel.applyModel = tempTrefModel.applyModel;
+
+         semGive (accessTrefoilModel);
+      }
+
+      if (semTake (accessComaModel, ZP_MODEL_SEM_TIMEOUT) != OK)
+      {
+         ERROR_LOG ( "Timeout on mutex acess to comaModel" );
+      }
+      else
+      {
+         comaModel.a = tempComaModel.a;
+         comaModel.p = tempComaModel.p;
+         comaModel.c = tempComaModel.c;
+         comaModel.b = tempComaModel.b;
+         comaModel.pp = tempComaModel.pp;
+         comaModel.d = tempComaModel.d;
+         comaModel.applyModel = tempComaModel.applyModel;
+
+         semGive (accessComaModel);
+      }
+
+      if (semTake (accessFocusModel, ZP_MODEL_SEM_TIMEOUT) != OK)
+      {
+         ERROR_LOG ( "Timeout on mutex acess to focusModel" );
+      }
+      else
+      {
+         focusModel.a1 = tempFocModel.a1;
+         focusModel.a2 = tempFocModel.a2;
+         focusModel.p1 = tempFocModel.p1;
+         focusModel.p2 = tempFocModel.p2;
+         focusModel.c = tempFocModel.c;
+         focusModel.applyModel = tempFocModel.applyModel;
+
+         semGive (accessFocusModel);
+      }
+   }
+   else
+   {
+      MESSAGE_LOG ( MSG_LOG, "aO zero point model not initialized");
    }
 
    /*
@@ -11471,6 +11941,12 @@ void detObserveEnd
                   ERROR_LOG ("Failed to compute centroids on raw image");
                }
 
+               /* Check the status of the optsensorEnable */
+
+               if ( optsensorEnable == 0 ) /* DONT_GUIDE */
+                  imageStatus = AO_SH_OFF;
+
+               /* Compute the aO modes */
 #ifdef DEBUG
                printf ("aoModeCompute (%p, %d, %p, %p, %d, %p, %p)\n",
                        pImage, imageStatus, obsId->aoCcdId, obsId->aoCtrlId, 
@@ -11545,6 +12021,12 @@ void detObserveEnd
 
                imageStatus = *pWfsStatus;
 
+               /* Check the status of the optsensorEnable */
+
+               if ( optsensorEnable == 0 ) /* DONT_GUIDE */
+                  imageStatus = AO_SH_OFF;
+
+               /* Compute the aO modes */
 #ifdef DEBUG
                printf ("aoModeCompute (%p, %d, %p, %p, %d, %p, %p)\n",
                        pImage, imageStatus, obsId->aoCcdId, obsId->aoCtrlId,
@@ -11964,6 +12446,12 @@ void detObserveEnd
                   }
                }
 
+               /* Check the status of the optsensorEnable */
+
+               if ( optsensorEnable == 0 ) /* DONT_GUIDE */
+                  imageStatus = AO_SH_OFF;
+
+               /* Compute the aO modes */
 #ifdef DEBUG
                printf ("aoModeCompute (%p, %d, %p, %p, %d, %p, %p)\n",
                        pImage, imageStatus, obsId->aoCcdId, obsId->aoCtrlId,
@@ -12281,6 +12769,13 @@ void detObserveEnd
 
                   if ( obsId->aoFlag == TRUE )
                   {
+                     /* Check the status of the optsensorEnable */
+
+                     if ( optsensorEnable == 0 ) /* DONT_GUIDE */
+                        imageStatus = AO_SH_OFF;
+
+                     /* Compute the aO modes */
+
                      if ( aoModeCompute (pImage, imageStatus, obsId->aoCcdId, 
                                          obsId->aoCtrlId,
                                          nCoadds, pThresh, obsId->aoCbAoCtrlId)
@@ -23515,6 +24010,85 @@ uint32 detSigOutput
          "Failed to initialise DET_CONTROL_OUT_GUIDE_SIR_NAME record");
          errorNumber = ERROR;
       }
+   }
+
+   return (errorNumber);
+}
+
+/* -------------------------------------------------------------------------- */
+
+/*+
+ *   FUNCTION NAME:
+ *   detPowerOff
+ *
+ *   INVOCATION:
+ *   detPowerOff (cadCmdContext, commandNumber, sdsuId, obsId) 
+ *
+ *   PARAMETERS: (">" input, "!" modified, "<" output)
+ *   (>) cadCmdContext        (CAD_CMD_CONTEXT) CAD command context structure
+ *   (>) commandNumber        (int)             Command number
+ *   (>) sdsuId               (SDSU_ID)         Current SDSU context structure
+ *   (>) obsId                (OBS_ID)          Observation context structure
+ *
+ *   FUNCTION VALUE:
+ *   (uint32)   Error number. 0 if command successful.
+ *
+ *   PURPOSE:
+ *   Execute detPowerOff command
+ *
+ *   DESCRIPTION:
+ *   This function executes POWER OFF command for the Bob Leach controller
+ *
+ *   EXTERNAL VARIABLES:
+ *   NONE
+ *
+ *   PRIOR REQUIREMENTS:
+ *   None
+ *
+ *   INCLUDE FILES:
+ *   detControl.h
+ *
+ *   DEFICIENCIES:
+ *   None known
+ *-
+ */
+
+uint32 detPowerOff
+   (
+   CAD_CMD_CONTEXT cadCmdContext,  /* CAD command context structure.          */
+   int             commandNumber,  /* Command number.                         */
+   SDSU_ID         sdsuId,         /* SDSU context structure.                 */
+   OBS_ID          obsId           /* Observation context structure.          */
+   )
+{
+   uint32          errorNumber;     /* Error number reported by task.         */
+
+   /*
+    * Initialise the error number.
+    */
+
+   errorNumber = 0;
+
+   /*
+    * Check there are valid SDSU context structure.
+    */
+
+   if ( sdsuId == NULL )
+   {
+      ERROR_SET (S_detControl_INTERNAL, "SDSU context not initialised",
+                 ERROR_LOG_NOW);
+      errorNumber = S_detControl_INTERNAL;
+      return (errorNumber);
+   }
+
+   /*
+    * Issue the primitive commands to the SDSU controller.
+    */
+
+   if (sdsuPrimitive (sdsuId, "POF", SDSU_IDENT_UTL, NULL, NULL) == ERROR)
+   {
+      ERROR_LOG ("Failed to turn off the power of UTILITY with POF command");
+      errorNumber = S_detControl_SDSU_ERROR;
    }
 
    return (errorNumber);

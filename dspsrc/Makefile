@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.3 2002-09-19 23:59:28 cboyer Exp $
+# $Id: Makefile,v 1.4 2002-11-19 07:57:20 cboyer Exp $
 #
 
 include .applTop
@@ -40,6 +40,7 @@ timrom.lod: timappl0.asm timappl1.asm timboot.asm timhead.asm
 	$(DSPLNK) -btim.cld -v timboot.cln timappl0.cln timappl1.cln
 	@rm -f $@
 	$(CLDLOD) tim.cld >$@
+	$(SREC) -bs timrom.lod
 
 timappl0.lod: timappl0.asm timboot.asm timhead.asm
 	$(ASM56K) -b -ltimboot.ls timboot.asm

@@ -86,6 +86,8 @@
  * 13-Feb-2002: cb - add pWfsStatus to writeWfsToSynchro 
  * 16-Sep-2002: cb - implement butterworth filter for focus correction
  * 17-Sep-2002: cb - add outGuide to writeWfsToSynchro
+ * 25-Oct-2002: cb - writeWfsToSynchro: do not apply butterworth filter for 
+ *                   focus in case of AO (outGuide = AO_NODE)
  *
  */
 /* INDENT ON */
@@ -1467,6 +1469,10 @@ STATUS writeWfsToSynchro
 
          focus = *(pz+2) - focusModel.focus;
 
+/*
+         printf ( "focus:%f\n", focus);
+*/
+
 #ifdef RUNNING_AVERAGE
 
          if ( aoCtrlId->focusCounter == 0 )
@@ -1479,12 +1485,33 @@ STATUS writeWfsToSynchro
          (aoCtrlId->slidingFocusGain * focus) +
          (aoCtrlId->one_slidingFocusGain * aoCtrlId->previousFocus) ;
 #else
-         averageFocus = newDfilter (focus,2);
+         /* In case of SCS, apply butterworth filter. In case of ALTAIR, do */
+         /* nothing */
+         if ( outGuide == SCS_NODE ) 
+         {
+            averageFocus = newDfilter (focus,2);
+/*
+            printf ( "outguide=scs apply filter, averagefocus=%f\n", 
+                     averageFocus);
+*/
+         }
+         else 
+         {
+            averageFocus = focus;
+/*
+            printf ( "outguide=ao do not apply filter, averagefocus=%f\n", 
+                     averageFocus);
+*/
+         }
 #endif
 
          result.z4 = (averageFocus - f->probe[7]) * 
                      aoCtrlId->fgScaleFactorVect[2];
 
+/*
+         printf ( "result.z4=%f\n", 
+                  result.z4);
+*/
 #ifdef RUNNING_AVERAGE
          aoCtrlId->previousFocus = averageFocus;
 #endif

@@ -13,6 +13,7 @@
  *   *** THE SDSU CONTROLLERS AT YOUR SITE. SEE DEFINITIONS BELOW.
  *
  *INDENT-OFF*
+ *   14 Oct 2002: CB - Add detPowerOff
  *   16 Sep 2002: CB - Add fgFocusGain100, fgTipGain, fgTiltGain, fgFocusGain, 
  *                     cfFocusBw, cfTipTiltBw sir records 
  *   22 Mar 2002: CB - Major modification to download the code from EEPROMS
@@ -922,6 +923,7 @@ enum
    DET_CONTROL_CMD_GEOMETRY,   /* Set detector readout geometry.              */
    DET_CONTROL_CMD_PRIMITIVE,  /* Execute SDSU primitive command.             */
    DET_CONTROL_CMD_POWER_ON,   /* Execute POWER ON command.                   */
+   DET_CONTROL_CMD_POWER_OFF,  /* Execute POWER OFF command.                  */
    DET_CONTROL_CMD_MODE,       /* Set detector readout mode.                  */
    DET_CONTROL_CMD_OFFSET,     /* Set detector ADC offsets.                   */
    DET_CONTROL_CMD_TEMP        /* Define temperature control params.          */

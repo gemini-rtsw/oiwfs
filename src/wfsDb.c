@@ -1,5 +1,5 @@
 static struct {void *v; char *c;} rcsid = {&rcsid,
- "$Id: wfsDb.c,v 1.5 2002-10-03 00:34:56 cboyer Exp $"};
+ "$Id: wfsDb.c,v 1.6 2002-11-19 07:57:20 cboyer Exp $"};
 
 /*+
  * MODULE NAME:
@@ -61,6 +61,7 @@ static struct {void *v; char *c;} rcsid = {&rcsid,
  * Steven Beard
  *
  * HISTORY MODIFICATIONS
+ * 14 Oct 2002 - cb Add detPowerOff
  * 17 Sep 2002 - cb Add detSigOutput CAD and outGuide SIR
  * 16 Sep 2002 - cb Implement seeing computation (seeing SIR record, detSigInit
  *                  modified)
@@ -377,6 +378,14 @@ CAD_RECORD pWfsDbCadList [] =
   RECORD_NAME ("dc:detPowerOn"),
   TASK_NAME ("p2", DET_CONTROL_TASK_NAME),
   DET_CONTROL_CMD_POWER_ON,
+  STOP_DIRECTIVE_UNSUPPORTED,
+  SIMULATION_MODE_SUPPORTED,
+  40.0
+ },
+ {
+  RECORD_NAME ("dc:detPowerOff"),
+  TASK_NAME ("p2", DET_CONTROL_TASK_NAME),
+  DET_CONTROL_CMD_POWER_OFF,
   STOP_DIRECTIVE_UNSUPPORTED,
   SIMULATION_MODE_SUPPORTED,
   40.0
