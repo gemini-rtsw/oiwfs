@@ -119,3 +119,18 @@ V2-6 10 February 2004 CB:
   - set default of the detSigModeSeq CAD from pv load file (one per site)
   - startup: increase stack size for tasks: recD, p2:detControlD and wfsControlD
   - update internal parameters when the GMOS port change detPortGet()
+
+V2-7.dev aPRIL 2005 AA:
+----------------------
+
+1) Going back to DSP code of V2-4, while V2-6 is fixed
+vmeboot.asm v3.05
+vmehead.asm v3.05
+vme-39.asm v0.3
+
+2) Updating
+oiwfsGmosInstall
+IMP_StartupCP.oiwfs
+IMP_StartupMK.oiwfs (with 15 seconds pulse connection)
+startup/startupCP.vws
+src/epToVxLib.c (WARNING message for Unsync Error)

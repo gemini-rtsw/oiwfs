@@ -1,4 +1,4 @@
-# $Id: startupCP.vws,v 1.6 2004-02-11 02:46:58 cboyer Exp $
+# $Id: startupCP.vws,v 1.7 2005-05-09 18:39:21 gemvx Exp $
 #
 # VxWorks startup script to load and execute system (iocCore) software.
 #
@@ -21,7 +21,7 @@ pwd
 
 < $(version)/bin/$(arch)/local
 
-hostAdd ("reggie","172.17.2.12")
+hostAdd ("jughead","172.17.2.14")
 
 ld < /gemini/external/GEM8.4/base/bin/$(arch)/iocCore
 ld < /gemini/external/GEM8.4/base/bin/$(arch)/seq
@@ -108,7 +108,6 @@ iocInit ("$(version)/data/resource.def")
 # Configure the initial state of the system
 #dbpf "pwfs2:dc:initialising.VAL","2"
 pvload "$(version)/data/pwfs2CP.pv","top=oiwfs:, sadtop=oiwfs:, wfs=dc:"
-pvload "$(version)/data/OiGmosSetDefCommandCP.pv","top=oiwfs:, wfs=dc:"
 
 # Initialise the database records not initialised by iocInit.
 epToVxCaInitRecords ()
@@ -122,7 +121,7 @@ epToVxCaInitRecords ()
 # (clientName, numConnect, hostName, serverName)
 # (Uncomment this line to activate the DHS. Comment it to prevent the DHS 
 # from being used).
-detDhsParamInit ("oiwfs", 16, "172.17.4.15", "dataServerSS")
+detDhsParamInit ("oiwfs", 16, "172.17.2.14", "dataServerSS")
 
 # Spawn generic-record i/o Daemon task after querying the number of processors
 NProc = 1
@@ -152,6 +151,9 @@ taskSpawn ("wfsResMonitor", 255, 0x8, 4000, wfsResourceMonitor, 10000000, 200000
 
 # Do not allow to use D64 cycles on the bus
 *0xfd050128 &= 0xffffbfff
+
+# More database initializations
+pvload "$(version)/data/OiGmosSetDefCommandCP.pv","top=oiwfs:, wfs=dc:"
 
 # Start sequences
 seq &timeSeq, "sys=oiwfs:"
