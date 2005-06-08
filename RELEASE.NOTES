@@ -124,8 +124,8 @@ V2-7.dev aPRIL 2005 AA:
 ----------------------
 
 1) Going back to DSP code of V2-4, while V2-6 is fixed
-vmeboot.asm v3.05
-vmehead.asm v3.05
+vmeboot.asm v3.09a (V3.05 at GN in oi V2-4)
+vmehead.asm v3.09 (V3.05 at GN in oi V2-4)
 vme-39.asm v0.3
 
 2) Updating
@@ -134,3 +134,8 @@ IMP_StartupCP.oiwfs
 IMP_StartupMK.oiwfs (with 15 seconds pulse connection)
 startup/startupCP.vws
 src/epToVxLib.c (WARNING message for Unsync Error)
+par/defXXXCtrlOiGmosCP.dat: Updated default FG gains & fixed port 3 values
+par/defAoModOiGmosCP.dat: Fixed offsets  for astigmatism 0 and 45 
+par/defDetContOiGmosCP.dat: Fixed ADC values
+
+src/wfsDb.c: Updated default FG gains; Updated I par in ClosedLoopMode

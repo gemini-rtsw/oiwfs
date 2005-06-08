@@ -15,7 +15,7 @@ double $(top)$(wfs)initSigModeSeq.G = 10.0 ;
 int $(top)$(wfs)initSigModeSeq.H = 0 ;
 double $(top)$(wfs)initSigModeSeq.I = 40.0 ;
 int $(top)$(wfs)initSigModeSeq.J = 0 ;
-double $(top)$(wfs)initSigModeSeq.K = 10.0 ;
+double $(top)$(wfs)initSigModeSeq.K = 60.0 ;
 int $(top)$(wfs)initSigModeSeq.L = 0 ;
 double $(top)$(wfs)initSigModeSeq.M = 0.1 ;
 string $(top)$(wfs)initSigModeSeq.N = "." ;
@@ -23,7 +23,7 @@ int $(top)$(wfs)initSigModeSeq.O = 1 ;
 int $(top)$(wfs)initSigModeSeq.P = 1 ;
 int $(top)$(wfs)initSigModeSeq.Q = 1 ;
 double $(top)$(wfs)initSigModeSeq.R = 15.0 ;
-double $(top)$(wfs)initSigModeSeq.S = 2.5 ;
+double $(top)$(wfs)initSigModeSeq.S = 3 ;
 int $(top)$(wfs)initSigModeSeq.T = 1 ;
 };
 
