@@ -120,7 +120,7 @@ V2-6 10 February 2004 CB:
   - startup: increase stack size for tasks: recD, p2:detControlD and wfsControlD
   - update internal parameters when the GMOS port change detPortGet()
 
-V2-7.dev aPRIL 2005 AA:
+V2-7 May 2005 AA:
 ----------------------
 
 1) Going back to DSP code of V2-4, while V2-6 is fixed
