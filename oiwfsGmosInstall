@@ -18,6 +18,10 @@ else
 fi
 
 cp IMP_Startup$site.oiwfs IMP_Startup.oiwfs
+cp par/200Hz$site.fits par/200Hz.fits
+cp par/100Hz$site.fits par/100Hz.fits
+cp par/10Hz$site.fits par/10Hz.fits
+cp par/50Hz$site.fits par/50Hz.fits
 
 applSetup.pl -T ppc604 -I adl -I capfast -I src -I startup\
              -I docs -I dspsrc -I par -I db\

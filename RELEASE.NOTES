@@ -137,5 +137,9 @@ src/epToVxLib.c (WARNING message for Unsync Error)
 par/defXXXCtrlOiGmosCP.dat: Updated default FG gains & fixed port 3 values
 par/defAoModOiGmosCP.dat: Fixed offsets  for astigmatism 0 and 45 
 par/defDetContOiGmosCP.dat: Fixed ADC values
-
+par/100Hz.fits: added
+par/10Hz.fits: added
+par/200Hz.fits: added
+par/50Hz.fits: added
 src/wfsDb.c: Updated default FG gains; Updated I par in ClosedLoopMode
+
