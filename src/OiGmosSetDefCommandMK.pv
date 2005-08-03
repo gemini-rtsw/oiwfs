@@ -28,7 +28,20 @@ int $(top)$(wfs)initSigModeSeq.T = 1 ;
 };
 
 #
+# Set up defaults for detSigModeSeqDark CAD commands
+#
+
+group {
+int $(top)$(wfs)initSigModeSeqDark.A = 100 ;
+string $(top)$(wfs)initSigModeSeqDark.B = "./data" ;
+string $(top)$(wfs)initSigModeSeqDark.C = "coadd.fits";
+int $(top)$(wfs)initSigModeSeqDark.D = 100 ;
+double $(top)$(wfs)initSigModeSeqDark.E = 2.5 ;
+};
+
+#
 # Init the defaults at startup
 #
 
 int $(top)$(wfs)initSigModeSeq.PROC = 1 ;
+int $(top)$(wfs)initSigModeSeqDark.PROC = 1 ;
