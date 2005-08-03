@@ -1,5 +1,5 @@
 [schematic2]
-uniq 149
+uniq 150
 [tools]
 [detail]
 s 2464 -704 500 512 wfsCadMore.sch
@@ -210,10 +210,10 @@ xform 0 1616 784
 p 2608 -688 200 0 1 author:S.M.Beard
 p 3120 -720 100 0 0 border:D
 p 2608 -768 200 0 0 checked:B.Goodrich
-p 3120 -784 200 0 -1 date:$Date: 2004-02-11 02:46:56 $
-p 2592 2304 200 0 -1 id:$Id: wfsCadMore.sch,v 1.5 2004-02-11 02:46:56 cboyer Exp $
+p 3120 -784 200 0 -1 date:$Date: 2005-08-03 16:09:02 $
+p 2592 2304 200 0 -1 id:$Id: wfsCadMore.sch,v 1.6 2005-08-03 16:09:02 gemvx Exp $
 p 2720 -768 100 0 1 modified:C. Boyer
 p 3120 -432 200 0 -1 project:Gemini PWFS2
-p 2592 -528 200 0 -1 revision:$Revision: 1.5 $
+p 2592 -528 200 0 -1 revision:$Revision: 1.6 $
 p 3120 -560 200 0 -1 title:Wavefront Sensor CAD Records
 [comments]
