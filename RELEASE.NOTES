@@ -143,3 +143,13 @@ par/200Hz.fits: added
 par/50Hz.fits: added
 src/wfsDb.c: Updated default FG gains; Updated I par in ClosedLoopMode
 
+V2-8 AUG 2005 AA:
+----------------------
+  * set default of the detSigModeSeqDark CAD from pv load file 
+    - src/OiGmosSetDefCommandCP.pv updated
+    - src/OiGmosSetDefCommandMK.pv updated
+    - capfats/wfsGensub1.sch modified
+    - adl/detSigModeSeqDark.adl
+    - src/detControl.*: Added new functions
+
+  * removed wfsGetPort call (not used)
