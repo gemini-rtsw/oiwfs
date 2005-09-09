@@ -1,31 +1,8 @@
-	COMMENT *
-SDSU2 VME Interface Board Boot Code
-Instrument: Gemini WFS
-Revision: 3.09a  (must agree with status word V_FW_VER in P: memory)
+       COMMENT *
+Gemini WFS VME Interface Board Boot Code
+Controller: SDSU2 
+Revision: 3.09  (must agree with status word V_FW_VER in P: memory)
 (This code is adapted from vmeboot v3.00 written by Dr. Bob Leach at SDSU)
-
-    (c) 2002				(c) 2002
-    National Research Council		Conseil national de recherches
-    Ottawa, Canada, K1A 0R6 		Ottawa, Canada, K1A 0R6
-    All rights reserved			Tous droits reserves
-
-    NRC disclaims any warranties,	Le CNRC denie toute garantie
-    expressed, implied, or statu-	enoncee, implicite ou legale,
-    tory, of any kind with respect	de quelque nature que se soit,
-    to the software, including		concernant le logiciel, y com-
-    without limitation any war-		pris sans restriction toute
-    ranty of merchantability or		garantie de valeur marchande
-    fitness for a particular pur-	ou de pertinence pour un usage
-    pose.  NRC shall not be liable	particulier.  Le CNRC ne
-    in any event for any damages,	pourra en aucun cas etre tenu
-    whether direct or indirect,		responsable de tout dommage,
-    special or general, consequen-	direct ou indirect, particul-
-    tial or incidental, arising		ier ou general, accessoire ou
-    from the use of the software.	fortuit, resultant de l'utili-
-					sation du logiciel.
-
-
-Modifications:
 
 98/05/22 TDH -removed common constant definitions to vmehead.asm
              -added command RRS
@@ -62,12 +39,9 @@ Modifications:
 
 00/02/28 TDH -no changes required for header file version 3.08
 
-2000/10/16 TDH -changed how reply is sent from SRA routine to avoid dummy reply
+00/10/16 TDH -changed how reply is sent from SRA routine to avoid dummy reply
 
-2002/03/22 TDH -disabled IRQ_TST polling so that code is compatible with
-                unmodified hardware
-
-	*
+        *
 
 ; Define listing page width
         PAGE    132             ; Printronix page width - 132 columns
@@ -112,7 +86,7 @@ Modifications:
 ;   the address of the SWI = software interrupt, which we never use. 
         ORG     P:ROM_ID,P:ROM_ID+ROM_OFF
 V_FW_ID		DC	$000000	; board serial number
-V_FW_VER	DC      $03090a	; Version 3.09, board #1 = VMEINF Rev. 7A
+V_FW_VER	DC      $030901	; Version 3.09, board #1 = VMEINF Rev. 7A
 
 
 
@@ -314,8 +288,8 @@ L3
 ; interrupt cycle to finish (as indicated by IRQ going high again).
  	JCLR    #INTR,X:OPTIONS,START 	; Optional interrupt generation
         MOVE	A,X:RQINTR		; Request a VMEbus interrupt
-;	JSET	#IRQ_TST,X:PBD,*	; wait for IRQ line to go low
-;	JCLR	#IRQ_TST,X:PBD,*	; wait for IRQ line to go high again
+	JSET	#IRQ_TST,X:PBD,*	; wait for IRQ line to go low
+	JCLR	#IRQ_TST,X:PBD,*	; wait for IRQ line to go high again
 	JMP	<START
 
 SKP_RPY	REP	X:<NWORDS	; Skip over this command because reply
