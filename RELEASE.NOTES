@@ -153,3 +153,24 @@ V2-8 AUG 2005 AA:
     - src/detControl.*: Added new functions
 
   * removed wfsGetPort call (not used)
+
+V2-9 SEP 2005 AA:
+----------------------
+ * Using IR vme board 
+  Current:
+  vmeboot.asm v3.09a 
+  vmehead.asm v3.09
+  vme-39.asm v0.30
+
+  New
+  vmeboot.asm v3.09
+  vmehead.asm v3.09
+  vme-39.asm v0.30b (v0.30 should also work, but b version 
+  could be also used by Nifs if needed)
+
+ * Loaded prm DB and put switch dm screen 
+   NOTE: prm 2.1 required!
+
+ startup/
+	Tasks prmLib,prmControl and prmtest loaded (Status deleted)
+ src/OiGmosSetDefCommandMK/CP.pv
