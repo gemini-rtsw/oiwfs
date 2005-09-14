@@ -6,11 +6,11 @@ display {
 	majv="2"
 	mnrv="4"
 	ndyng="0"
-	npc="14"
-	nstr="39"
+	npc="15"
+	nstr="51"
 	ndynamic="14"
 	nplot="0"
-	nrd="1"
+	nrd="0"
 	nes="0"
 	nkd="1"
 	npd="0"
@@ -23,23 +23,23 @@ display {
 	}
 	clr="1"
 	bclr="13"
-	nwords_dspy="2526"
+	nwords_dspy="2436"
 	nwords_sta="816"
 	nwords_cmap="0"
 	nwords_crules="0"
-	odyng="1412"
-	osta="596"
-	odynamic="1412"
-	oplot="2354"
-	ord="2354"
-	oes="2514"
-	okd="2514"
-	opd="2526"
-	opo="2526"
+	odyng="1482"
+	osta="666"
+	odynamic="1482"
+	oplot="2424"
+	ord="2424"
+	oes="2424"
+	okd="2424"
+	opd="2436"
+	opo="2436"
 	opc="68"
-	ostr="238"
-	ocmap="596"
-	ocrules="596"
+	ostr="244"
+	ocmap="666"
+	ocrules="666"
 	style="solid"
 	fill="outline"
 	width="0"
@@ -52,7 +52,7 @@ display {
 	pixwid="1280"
 	pixht="1024"
 	mmwid="361"
-	mmht="288"
+	mmht="289"
 }
 "<<basic attribute>>" {
 	attr {
@@ -691,9 +691,9 @@ display {
 "text entry" {
 	object {
 		x="261"
-		y="264"
+		y="258"
 		width="61"
-		height="19"
+		height="25"
 		groupid="0"
 	}
 	control {
@@ -747,9 +747,9 @@ display {
 		bclr="7"
 		label="none"
 		clrmod="rule"
-		rulechan[0] = "$(top)$(car)C.VAL"
-		rulechan[1] = "$(top)$(car)C.VAL"
-		rulechan[2] = "$(top)$(car)C.VAL"
+		rulechan[0] = "$(top)prmC.VAL"
+		rulechan[1] = "$(top)prmC.VAL"
+		rulechan[2] = "$(top)prmC.VAL"
 		rulechan[3] = ""
 		rulechan[4] = ""
 		rulechan[5] = ""
@@ -764,7 +764,7 @@ display {
 		rulechan[14] = ""
 		rulechan[15] = ""
 		clrrule="health"
-		clrargs="C=$(top)$(car)C"
+		clrargs="C=$(top)prmC"
 		rulecolorbg="1"
 		rulecolorfg="1"
 		hdl="0"
@@ -788,7 +788,7 @@ display {
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)prmMode.VAL"
+		chan="$(top)prmMode"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -809,7 +809,7 @@ display {
 		rulechan[13] = ""
 		rulechan[14] = ""
 		rulechan[15] = ""
-		clrrule="alarm"
+		clrrule=""
 		clrargs=""
 		rulecolorbg="1"
 		rulecolorfg="1"
@@ -834,14 +834,14 @@ display {
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)prmInput.VAL"
+		chan="$(top)prmInput"
 		clr="0"
 		bclr="7"
 		label="none"
-		clrmod="rule"
-		rulechan[0] = "$(top)$(car)C.VAL"
-		rulechan[1] = "$(top)$(car)C.VAL"
-		rulechan[2] = "$(top)$(car)C.VAL"
+		clrmod="static"
+		rulechan[0] = ""
+		rulechan[1] = ""
+		rulechan[2] = ""
 		rulechan[3] = ""
 		rulechan[4] = ""
 		rulechan[5] = ""
@@ -855,7 +855,7 @@ display {
 		rulechan[13] = ""
 		rulechan[14] = ""
 		rulechan[15] = ""
-		clrrule="alarm"
+		clrrule=""
 		clrargs=""
 		rulecolorbg="1"
 		rulecolorfg="1"
@@ -880,7 +880,7 @@ display {
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)prmOutput.VAL"
+		chan="$(top)prmOutput"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -901,7 +901,7 @@ display {
 		rulechan[13] = ""
 		rulechan[14] = ""
 		rulechan[15] = ""
-		clrrule="alarm"
+		clrrule=""
 		clrargs=""
 		rulecolorbg="1"
 		rulecolorfg="1"
@@ -920,9 +920,9 @@ display {
 "text entry" {
 	object {
 		x="502"
-		y="263"
+		y="257"
 		width="61"
-		height="19"
+		height="25"
 		groupid="0"
 	}
 	control {
@@ -961,140 +961,6 @@ display {
 		convertParams=""
 	}
 	format="decimal"
-}
-"related display" {
-	object {
-		x="25"
-		y="80"
-		width="80"
-		height="20"
-		groupid="0"
-	}
-	selfkill="off"
-	display[0] {
-		label="Details"
-		name="cad_details2.dl"
-		args="top=$(top),cad=$(cad)"
-	}
-	display[1] {
-		label=""
-		name=""
-		args=""
-	}
-	display[2] {
-		label=""
-		name=""
-		args=""
-	}
-	display[3] {
-		label=""
-		name=""
-		args=""
-	}
-	display[4] {
-		label=""
-		name=""
-		args=""
-	}
-	display[5] {
-		label=""
-		name=""
-		args=""
-	}
-	display[6] {
-		label=""
-		name=""
-		args=""
-	}
-	display[7] {
-		label=""
-		name=""
-		args=""
-	}
-	display[8] {
-		label=""
-		name=""
-		args=""
-	}
-	display[9] {
-		label=""
-		name=""
-		args=""
-	}
-	display[10] {
-		label=""
-		name=""
-		args=""
-	}
-	display[11] {
-		label=""
-		name=""
-		args=""
-	}
-	display[12] {
-		label=""
-		name=""
-		args=""
-	}
-	display[13] {
-		label=""
-		name=""
-		args=""
-	}
-	display[14] {
-		label=""
-		name=""
-		args=""
-	}
-	display[15] {
-		label=""
-		name=""
-		args=""
-	}
-	display[16] {
-		label=""
-		name=""
-		args=""
-	}
-	display[17] {
-		label=""
-		name=""
-		args=""
-	}
-	display[18] {
-		label=""
-		name=""
-		args=""
-	}
-	display[19] {
-		label=""
-		name=""
-		args=""
-	}
-	display[20] {
-		label=""
-		name=""
-		args=""
-	}
-	display[21] {
-		label=""
-		name=""
-		args=""
-	}
-	display[22] {
-		label=""
-		name=""
-		args=""
-	}
-	display[23] {
-		label=""
-		name=""
-		args=""
-	}
-	clr="0"
-	bclr="6"
-	menu_title=""
-	decorate="none"
 }
 "kill display" {
 	object {
