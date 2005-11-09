@@ -192,4 +192,7 @@ FR5027: FgDiagP2 channels renamed from fgDiag?P2 to fgDiag?Oi
 - adl/sig_main.adl updated to call showAoDiagOi.dl 
 - src/writeZernikes.c functions showAoDiagP2 replaced by showAoDiagOi
 
+wfs_switch dm screen copied from prm & different according to site
+- adl/wfs_switchMK/CP added
+- oiwfsGmosInstall 
 
