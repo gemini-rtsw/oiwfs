@@ -7,11 +7,11 @@ display {
 	mnrv="4"
 	ndyng="0"
 	npc="15"
-	nstr="51"
-	ndynamic="14"
+	nstr="58"
+	ndynamic="12"
 	nplot="0"
 	nrd="0"
-	nes="0"
+	nes="1"
 	nkd="1"
 	npd="0"
 	npo="0"
@@ -19,27 +19,27 @@ display {
 		x="0"
 		y="0"
 		width="678"
-		height="310"
+		height="376"
 	}
 	clr="1"
 	bclr="13"
-	nwords_dspy="2436"
+	nwords_dspy="2622"
 	nwords_sta="816"
 	nwords_cmap="0"
 	nwords_crules="0"
-	odyng="1482"
-	osta="666"
-	odynamic="1482"
-	oplot="2424"
-	ord="2424"
-	oes="2424"
-	okd="2424"
-	opd="2436"
-	opo="2436"
+	odyng="1654"
+	osta="838"
+	odynamic="1654"
+	oplot="2452"
+	ord="2452"
+	oes="2452"
+	okd="2610"
+	opd="2622"
+	opo="2622"
 	opc="68"
 	ostr="244"
-	ocmap="666"
-	ocrules="666"
+	ocmap="838"
+	ocrules="838"
 	style="solid"
 	fill="outline"
 	width="0"
@@ -49,9 +49,9 @@ display {
 	clrrule="alarm"
 	pv=""
 	cmap="colors.dl"
-	pixwid="1280"
+	pixwid="2560"
 	pixht="1024"
-	mmwid="361"
+	mmwid="722"
 	mmht="289"
 }
 "<<basic attribute>>" {
@@ -296,17 +296,17 @@ display {
 	object {
 		x="21"
 		y="266"
-		width="252"
+		width="314"
 		height="16"
 		groupid="0"
 	}
-	textix="INPUT (1:GMOS / 2:NIFS):"
+	textix="INPUT (1:GMOS/2:NIFS/3:NIRI):"
 	align="horiz. left"
 }
 "text" {
 	object {
-		x="340"
-		y="267"
+		x="455"
+		y="265"
 		width="133"
 		height="16"
 		groupid="0"
@@ -592,106 +592,10 @@ display {
 	align="horiz. left"
 	format="decimal"
 }
-"message button" {
-	object {
-		x="145"
-		y="78"
-		width="71"
-		height="24"
-		groupid="0"
-	}
-	control {
-		chan="$(top)$(cad).DIR"
-		clr="1"
-		bclr="6"
-		label="none"
-		clrmod="static"
-		rulechan[0] = ""
-		rulechan[1] = ""
-		rulechan[2] = ""
-		rulechan[3] = ""
-		rulechan[4] = ""
-		rulechan[5] = ""
-		rulechan[6] = ""
-		rulechan[7] = ""
-		rulechan[8] = ""
-		rulechan[9] = ""
-		rulechan[10] = ""
-		rulechan[11] = ""
-		rulechan[12] = ""
-		rulechan[13] = ""
-		rulechan[14] = ""
-		rulechan[15] = ""
-		clrrule="alarm"
-		clrargs=""
-		rulecolorbg="1"
-		rulecolorfg="1"
-		hdl="0"
-		ldl="0"
-		prec="-1"
-		newunits=""
-		units="none"
-		decorate="none"
-		convertFunc=""
-		convertParams=""
-	}
-	inactive_label="PRESET"
-	pressed_label="PRESET"
-	press_msg="MARK"
-	release_msg="PRESET"
-}
-"message button" {
-	object {
-		x="231"
-		y="78"
-		width="71"
-		height="24"
-		groupid="0"
-	}
-	control {
-		chan="$(top)$(cad).DIR"
-		clr="1"
-		bclr="6"
-		label="none"
-		clrmod="static"
-		rulechan[0] = ""
-		rulechan[1] = ""
-		rulechan[2] = ""
-		rulechan[3] = ""
-		rulechan[4] = ""
-		rulechan[5] = ""
-		rulechan[6] = ""
-		rulechan[7] = ""
-		rulechan[8] = ""
-		rulechan[9] = ""
-		rulechan[10] = ""
-		rulechan[11] = ""
-		rulechan[12] = ""
-		rulechan[13] = ""
-		rulechan[14] = ""
-		rulechan[15] = ""
-		clrrule="alarm"
-		clrargs=""
-		rulecolorbg="1"
-		rulecolorfg="1"
-		hdl="0"
-		ldl="0"
-		prec="-1"
-		newunits=""
-		units="none"
-		decorate="none"
-		convertFunc=""
-		convertParams=""
-	}
-	inactive_label="DEFAULT"
-	pressed_label="(CLEAR)"
-	press_msg="MARK"
-	release_msg="CLEAR"
-}
 "text entry" {
 	object {
-		x="261"
-		y="258"
+		x="316"
+		y="260"
 		width="61"
 		height="25"
 		groupid="0"
@@ -919,8 +823,8 @@ display {
 }
 "text entry" {
 	object {
-		x="502"
-		y="257"
+		x="572"
+		y="258"
 		width="61"
 		height="25"
 		groupid="0"
@@ -961,6 +865,139 @@ display {
 		convertParams=""
 	}
 	format="decimal"
+}
+"execute script" {
+	object {
+		x="306"
+		y="349"
+		width="358"
+		height="20"
+		groupid="0"
+	}
+	script[0] {
+		label="1. Change Oiwfs Software Link"
+		path="/gemini/epics3.13.4/prm/prm/data/updateOiwfs.csh $(top)prmInput"
+		args=""
+	}
+	script[1] {
+		label="2. Reboot Oiwfs Vme"
+		path="/gemini/epics3.13.4/prm/prm/data/rebootOiwfs.csh"
+		args=""
+	}
+	script[2] {
+		label="3. (Oiwfs Console/Startup) "
+		path="cd"
+		args=""
+	}
+	script[3] {
+		label="4. (Restart Oiwfs dm screens)"
+		path="cd"
+		args=""
+	}
+	script[4] {
+		label=""
+		path=""
+		args=""
+	}
+	script[5] {
+		label=""
+		path=""
+		args=""
+	}
+	script[6] {
+		label=""
+		path=""
+		args=""
+	}
+	script[7] {
+		label=""
+		path=""
+		args=""
+	}
+	script[8] {
+		label=""
+		path=""
+		args=""
+	}
+	script[9] {
+		label=""
+		path=""
+		args=""
+	}
+	script[10] {
+		label=""
+		path=""
+		args=""
+	}
+	script[11] {
+		label=""
+		path=""
+		args=""
+	}
+	script[12] {
+		label=""
+		path=""
+		args=""
+	}
+	script[13] {
+		label=""
+		path=""
+		args=""
+	}
+	script[14] {
+		label=""
+		path=""
+		args=""
+	}
+	script[15] {
+		label=""
+		path=""
+		args=""
+	}
+	script[16] {
+		label=""
+		path=""
+		args=""
+	}
+	script[17] {
+		label=""
+		path=""
+		args=""
+	}
+	script[18] {
+		label=""
+		path=""
+		args=""
+	}
+	script[19] {
+		label=""
+		path=""
+		args=""
+	}
+	script[20] {
+		label=""
+		path=""
+		args=""
+	}
+	script[21] {
+		label=""
+		path=""
+		args=""
+	}
+	script[22] {
+		label=""
+		path=""
+		args=""
+	}
+	script[23] {
+		label=""
+		path=""
+		args=""
+	}
+	clr="1"
+	bclr="13"
+	menu_title=""
+	decorate="none"
 }
 "kill display" {
 	object {
