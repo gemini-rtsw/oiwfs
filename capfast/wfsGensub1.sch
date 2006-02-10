@@ -1,10 +1,25 @@
 [schematic2]
-uniq 127
+uniq 130
 [tools]
 [detail]
 s 112 2224 500 0 PWFS2 - WFS more genSub records
 s 2464 -704 500 512 wfsGensub1.sch
 [cell use]
+use egenSubB 2912 1095 100 0 initSigInitAoThresh
+xform 0 3056 1520
+p 2976 1056 100 0 1 DESC:Init the detSigInitAoThresh
+p 3008 1872 100 0 1 FTA:DOUBLE
+p 3008 1840 100 0 1 FTB:DOUBLE
+p 3296 1888 100 0 1 FTVA:DOUBLE
+p 3296 1856 100 0 1 FTVB:DOUBLE
+p 2976 896 100 0 1 PINI:NO
+p 2976 928 100 0 1 PREC:5
+p 2624 1598 100 0 0 PRIO:LOW
+p 2976 960 100 0 1 PV:$(top)$(wfs)
+p 2976 1024 100 0 1 SCAN:Passive
+p 2976 992 100 0 1 SNAM:detInitSigInitAoThresh
+p 3456 1888 100 0 1 def(OUTA):$(top)$(wfs)detSigInitAoThresh.A
+p 3456 1856 100 0 1 def(OUTB):$(top)$(wfs)detSigInitAoThresh.B
 use egenSubB 704 1095 100 0 initSigInitFgGain
 xform 0 848 1520
 p 768 1056 100 0 1 DESC:Init the detSigInitFgGain
@@ -81,12 +96,12 @@ use egenSubB -480 1095 100 0 initSigModeSeq
 xform 0 -336 1520
 p -416 1056 100 0 1 DESC:Init the detSigModeSeq
 p -400 1888 100 0 1 FTA:DOUBLE
-p -400 1856 100 0 1 FTB:LONG
-p -400 1824 100 0 1 FTC:LONG
-p -400 1792 100 0 1 FTD:DOUBLE
-p -400 1760 100 0 1 FTE:LONG
-p -400 1728 100 0 1 FTF:LONG
-p -400 1696 100 0 1 FTG:DOUBLE
+p -400 1856 100 0 1 FTB:DOUBLE
+p -400 1824 100 0 0 FTC:DOUBLE
+p -400 1792 100 0 0 FTD:DOUBLE
+p -400 1760 100 0 0 FTE:DOUBLE
+p -400 1728 100 0 0 FTF:DOUBLE
+p -400 1696 100 0 0 FTG:DOUBLE
 p -400 1664 100 0 1 FTH:LONG
 p -400 1632 100 0 1 FTI:DOUBLE
 p -400 1600 100 0 1 FTJ:LONG
@@ -102,12 +117,12 @@ p -400 1312 100 0 1 FTS:DOUBLE
 p -400 1280 100 0 1 FTT:LONG
 p -400 1248 100 0 0 FTU:DOUBLE
 p -128 1888 100 0 1 FTVA:DOUBLE
-p -128 1856 100 0 1 FTVB:LONG
-p -128 1824 100 0 1 FTVC:LONG
-p -128 1792 100 0 1 FTVD:DOUBLE
-p -128 1760 100 0 1 FTVE:LONG
-p -128 1728 100 0 1 FTVF:LONG
-p -128 1696 100 0 1 FTVG:DOUBLE
+p -128 1856 100 0 1 FTVB:DOUBLE
+p -128 1824 100 0 0 FTVC:DOUBLE
+p -128 1792 100 0 0 FTVD:DOUBLE
+p -128 1760 100 0 0 FTVE:DOUBLE
+p -128 1728 100 0 0 FTVF:DOUBLE
+p -128 1696 100 0 0 FTVG:DOUBLE
 p -128 1664 100 0 1 FTVH:LONG
 p -128 1632 100 0 1 FTVI:DOUBLE
 p -128 1600 100 0 1 FTVJ:LONG
@@ -130,11 +145,11 @@ p -416 1024 100 0 1 SCAN:Passive
 p -416 992 100 0 1 SNAM:detInitSigModeSeq
 p 32 1888 100 0 1 def(OUTA):$(top)$(wfs)detSigModeSeq.A
 p 32 1856 100 0 1 def(OUTB):$(top)$(wfs)detSigModeSeq.B
-p 32 1824 100 0 1 def(OUTC):$(top)$(wfs)detSigModeSeq.C
-p 32 1792 100 0 1 def(OUTD):$(top)$(wfs)detSigModeSeq.D
-p 32 1760 100 0 1 def(OUTE):$(top)$(wfs)detSigModeSeq.E
-p 32 1728 100 0 1 def(OUTF):$(top)$(wfs)detSigModeSeq.F
-p 32 1696 100 0 1 def(OUTG):$(top)$(wfs)detSigModeSeq.G
+p 32 1824 100 0 0 def(OUTC):0.0
+p 32 1792 100 0 0 def(OUTD):0.0
+p 32 1760 100 0 0 def(OUTE):0.0
+p 32 1728 100 0 0 def(OUTF):0.0
+p 32 1696 100 0 0 def(OUTG):0.0
 p 32 1664 100 0 1 def(OUTH):$(top)$(wfs)detSigModeSeq.H
 p 32 1632 100 0 1 def(OUTI):$(top)$(wfs)detSigModeSeq.I
 p 32 1600 100 0 1 def(OUTJ):$(top)$(wfs)detSigModeSeq.J
@@ -227,9 +242,9 @@ p -1004 -947 100 0 1 FTQ:DOUBLE
 p 2608 -688 200 0 1 author:S.M.Beard
 p 3120 -720 100 0 0 border:D
 p 2608 -768 200 0 1 checked:B.Goodrich
-p 3120 -784 200 0 -1 date:$Date: 2005-08-03 16:09:03 $
-p 2592 2304 200 0 -1 id:$Id: wfsGensub1.sch,v 1.2 2005-08-03 16:09:03 gemvx Exp $
+p 3120 -784 200 0 -1 date:$Date: 2006-02-10 20:37:06 $
+p 2592 2304 200 0 -1 id:$Id: wfsGensub1.sch,v 1.3 2006-02-10 20:37:06 gemvx Exp $
 p 3120 -432 200 0 -1 project:Gemini PWFS2
-p 2592 -528 200 0 -1 revision:$Revision: 1.2 $
+p 2592 -528 200 0 -1 revision:$Revision: 1.3 $
 p 3120 -560 200 0 -1 title:Wavefront Sensor more genSub Records
 [comments]
