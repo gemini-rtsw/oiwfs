@@ -17,6 +17,9 @@
  * Corinne Boyer
  *
  * HISTORY MODIFICATION:
+ * 02 Jan 2006: AA - Add aoMaxThreshold to aoCtrlId
+ * 02 Jan 2006: AA - Remove aoThreshold from aoCtrlContextUpdate
+ * 02 Jan 2006: AA - Remove pAothreshold from aoCtrlFileRead
  * 23 Jan 2004: CB - Add gains into aoCtrlFileRead()
  * 31 Jan 2003: CB - Add aoThreshold to aoCtrlId
  * 18 Nov 2002: CB - Implement seeing computation according to FR's method
@@ -537,6 +540,9 @@ typedef struct
 
    double       aoThreshold;           /* aO threshold above which the aO     */
                                        /* gains are increased                 */
+   double       aoMaxThreshold;        /* aO threshold above which the aO     */
+                                       /* values are clamped                  */
+
 } AO_CTRL_ID_STRUCT, * AO_CTRL_ID;
 
 /********************************** Definition of the image circular buffer ***/
@@ -963,7 +969,7 @@ STATUS aoCtrlContextUpdate (char * pDarkFileName, char * pFlatFileName,
                             double flipXWithM2, double flipYWithM2, 
                             double angleWithM1, double flipXWithM1,
                             double flipYWithM1, double seeingScaleFactor,
-                            double aoThreshold, AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId);
+                            AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId);
 STATUS aoCtrlContextShow (AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId, int verbose);
 STATUS aoDarkSubtract (float * pImage, float * pDark, int xPixels,
                        int yPixels);
@@ -990,7 +996,7 @@ STATUS aoCentroidsCompute (float * pImage, AO_CCD_ID aoCcdId,
                            double * pTotalCountsVect, double * pCentroidsVect, 
                            double * pErrorCentroidsVect, int * pWfsStatus);
 STATUS aoModeCompute (float * pImage, int imageStatus, AO_CCD_ID aoCcdId, 
-                      AO_CTRL_ID aoCtrlId, int imageNb, double *pThreshVect,
+                      AO_CTRL_ID aoCtrlId, int imageNb, int pauseNb, double *pThreshVect,
                       AO_CB_AO_CTRL_ID aoCbAoCtrlId);
 STATUS aoCbImSave (char *pCbImFilePath, AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId, 
                    AO_CB_IM_ID aoCbImId);
@@ -1026,7 +1032,6 @@ STATUS aoCtrlFileRead (char * pInitFileName, char * pPath, char * pDarkFileName,
                        int currentPort, double * pAngleM2, double * pFlipXM2, 
                        double * pFlipYM2, double * pAngleM1, double * pFlipXM1,
                        double * pFlipYM1, double * pSeeingGain, 
-                       double * pAoThreshold,
                        double *pFgGain, double * pSlidingFocusGain);
 STATUS aoModInit (char * pInitFileName, AST_ZP_MODEL_ID astModelId,
                   TREF_ZP_MODEL_ID trefModelId, COMA_ZP_MODEL_ID comaModelId,
