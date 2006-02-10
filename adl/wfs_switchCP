@@ -715,7 +715,7 @@ display {
 		groupid="0"
 	}
 	monitor {
-		chan="oiwfs:activeC.VAL"
+		chan="$(top)activeC.VAL"
 		clr="12"
 		bclr="7"
 		label="none"

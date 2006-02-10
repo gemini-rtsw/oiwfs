@@ -715,7 +715,7 @@ display {
 		groupid="0"
 	}
 	monitor {
-		chan="oiwfs:activeC.VAL"
+		chan="$(top)activeC.VAL"
 		clr="12"
 		bclr="7"
 		label="none"
@@ -771,13 +771,13 @@ display {
 		args=""
 	}
 	script[2] {
-		label=" NIFS"
-		path="$EPICS/extensions/bin/solaris/caput $(top)prmSelect.C 2"
+		label=" GNIRS"
+		path="$EPICS/extensions/bin/solaris/caput $(top)prmSelect.C 3"
 		args=""
 	}
 	script[3] {
-		label=" NIRI"
-		path="$EPICS/extensions/bin/solaris/caput $(top)prmSelect.C 3"
+		label=""
+		path=""
 		args=""
 	}
 	script[4] {
