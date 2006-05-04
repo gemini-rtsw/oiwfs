@@ -1,11 +1,11 @@
-# $Id: startupSimulCP.vws,v 1.1 2006-02-10 20:40:07 gemvx Exp $
+# $Id: startupSimulCP.vws,v 1.2 2006-05-04 21:38:32 gemvx Exp $
 #
 # VxWorks startup script to load and execute system (iocCore) software.
 #
 # STAND-ALONE VERSION FOR GEMINI NORTH.
 #
 
-shellPromptSet "oiwfs gmos > "
+shellPromptSet "soiwfs gmos > "
 
 # Make delete key work for backspace
 tyBackspaceSet 0177
@@ -130,7 +130,7 @@ epToVxCaInitRecords ()
 # (clientName, numConnect, hostName, serverName)
 # (Uncomment this line to activate the DHS. Comment it to prevent the DHS 
 # from being used).
-detDhsParamInit ("oiwfs", 16, "172.17.2.14", "dataServerSS")
+detDhsParamInit ("soiwfs", 16, "172.17.2.14", "dataServerSS")
 
 # Spawn generic-record i/o Daemon task after querying the number of processors
 NProc = 1

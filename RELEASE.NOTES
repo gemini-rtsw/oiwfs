@@ -327,3 +327,9 @@ wfs_switch dm screen copied from prm & different according to site
 	Added with new soiwfs top name
    - adl/wfs_switch*
 	oiwfs specific replaced by top
+
+   PENDING: 
+   - src/wfsDb.h
+	For simulation, TOP should be replaced from oiwfs: by soiwfs:
+   - src/detControl.c
+	For simulation, replace wlStream from oiwfsScience to soiwfsScience
