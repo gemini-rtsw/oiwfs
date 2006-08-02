@@ -1,5 +1,5 @@
 static struct {void *v; char *c;} rcsid = {&rcsid,
-   "$Id: detControl.c,v 1.15 2006-08-02 16:35:04 gemvx Exp $"};
+   "$Id: detControl.c,v 1.16 2006-08-02 19:55:03 gemvx Exp $"};
 
 /*+
  *   MODULE NAME:
@@ -22481,9 +22481,9 @@ uint32 detWriteDefSirContext
       errorNumber = ERROR;
    }
 
-   /* Init "aoProcessMode" sir record - note sigMode = AO_MODE_NONE */
+   /* Init "aoProcessMode" sir record - note sigMode = AO_MODE_CLOSED_LOOP */
 
-   if (epToVxPipeWrite (NULL, "No processing", obsId->pAoProcessModeContext)
+   if (epToVxPipeWrite (NULL, "Sequence closed loop", obsId->pAoProcessModeContext)
        == ERROR)
    {
       ERROR_LOG (
