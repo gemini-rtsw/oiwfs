@@ -23,11 +23,11 @@
  * dfilter           - low pass filter
  * ttfZero           - Receive ttfZero array from TCS
  * aoZero            - Receive aoZero array from TCS
- * showFgDiag1Oi     - Write diagnostic data from OIWFS FG structure to gensub
+ * showFgDiag1P2     - Write diagnostic data from PWFS2 FG structure to gensub
  *                     outputs for display
- * showFgDiag2Oi     - Write diagnostic data from OIWFS FG structure to gensub
+ * showFgDiag2P2     - Write diagnostic data from PWFS2 FG structure to gensub
  *                     outputs for display
- * showAoDiagOi      - Write diagnostic data from OIWFS aO structure to gensub
+ * showAoDiagP2      - Write diagnostic data from PWFS2 aO structure to gensub
  *                     outputs for display
  * showCbDiag        - Write diagnostic data from cb structure to gensub
  *                     outputs for display 
@@ -2376,13 +2376,13 @@ long aoZero
 /*
  *+
  * FUNCTION NAME:
- * showAoDiagOi
+ * showAoDiagP2
  *
  * INVOCATION:
  * struct genSubRecord * pgsub
  * long   status;
  *
- * long showAoDiagOi (struct genSubRecord * pgsub)
+ * long showAoDiagP2 (struct genSubRecord * pgsub)
  *
  * PARAMETERS: (">" input, "!" modified, "<" output)
  * > genSubRecord (struct genSubRecord *)   pointer to record
@@ -2412,7 +2412,7 @@ long aoZero
  *-
  */
 
-STATUS showAoDiagOi
+STATUS showAoDiagP2
    (
    struct genSubRecord * pgsub
    )
@@ -2448,7 +2448,7 @@ STATUS showAoDiagOi
 
       if ( (indexCb < 0) && (indexCb > (CB_AO_CTRL_RECORD_NB - 1)) )
       {
-         printf ( "showAoDiagOi(): position in CB out of range\n" ) ;
+         printf ( "showAoDiag1(): position in CB out of range\n" ) ;
          return (OK);
       }
 
@@ -2518,13 +2518,13 @@ STATUS showAoDiagOi
 /*
  *+
  * FUNCTION NAME:
- * showFgDiag1Oi
+ * showFgDiag1P2
  *
  * INVOCATION:
  * struct genSubRecord * pgsub
  * long   status;
  *
- * long    showFgDiag1Oi(struct genSubRecord * pgsub)
+ * long    showFgDiag1P2(struct genSubRecord * pgsub)
  *
  * PARAMETERS: (">" input, "!" modified, "<" output)
  * > genSubRecord (struct genSubRecord *)   pointer to record
@@ -2554,7 +2554,7 @@ STATUS showAoDiagOi
  *-
  */
 
-STATUS showFgDiag1Oi(struct genSubRecord * pgsub)
+STATUS showFgDiag1P2(struct genSubRecord * pgsub)
 {
    int i=0;
    int j=0;
@@ -2589,7 +2589,7 @@ STATUS showFgDiag1Oi(struct genSubRecord * pgsub)
 
       if ( (indexCb < 0) && (indexCb > (CB_FG_CTRL_RECORD_NB - 1)) )
       {
-         printf ( "showFgDiag1Oi(): position in CB out of range\n" ) ;
+         printf ( "showFgDiag1P2(): position in CB out of range\n" ) ;
          return (ERROR);
       }
 
@@ -2658,13 +2658,13 @@ STATUS showFgDiag1Oi(struct genSubRecord * pgsub)
 /*
  *+
  * FUNCTION NAME:
- * showFgDiag2Oi
+ * showFgDiag2P2
  *
  * INVOCATION:
  * struct genSubRecord * pgsub
  * long   status;
  *
- * long    showFgDiag2Oi(struct genSubRecord * pgsub)
+ * long    showFgDiag2P2(struct genSubRecord * pgsub)
  *
  * PARAMETERS: (">" input, "!" modified, "<" output)
  * > genSubRecord (struct genSubRecord *)   pointer to record
@@ -2692,7 +2692,7 @@ STATUS showFgDiag1Oi(struct genSubRecord * pgsub)
  *-
  */
 
-STATUS showFgDiag2Oi(struct genSubRecord * pgsub)
+STATUS showFgDiag2P2(struct genSubRecord * pgsub)
 {
 
    if(semTake(accessFgData, WFS_TIMEOUT) != OK)
