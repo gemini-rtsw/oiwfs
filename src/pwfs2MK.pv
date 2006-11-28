@@ -8,7 +8,7 @@ string $(sadtop)name = "OIWFS GMOS DC";
 #
 # Set up version of the software 
 #
-string $(sadtop)version = "V2-10";
+string $(sadtop)version = "V2-8";
 
 #
 #set default value for inPosition SIR record

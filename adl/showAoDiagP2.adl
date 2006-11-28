@@ -1,45 +1,45 @@
 file {
-	name="showFgDiagOi.dl"
+	name="showAoDiagP2.dl"
 }
 display {
 	magic="305419896"
 	majv="2"
 	mnrv="4"
-	ndyng="3"
-	npc="31"
-	nstr="64"
-	ndynamic="28"
+	ndyng="2"
+	npc="26"
+	nstr="56"
+	ndynamic="24"
 	nplot="0"
 	nrd="0"
-	nes="0"
+	nes="2"
 	nkd="1"
 	npd="0"
 	npo="0"
 	object {
 		x="328"
 		y="298"
-		width="639"
-		height="755"
+		width="670"
+		height="595"
 	}
 	clr="1"
 	bclr="13"
-	nwords_dspy="5054"
-	nwords_sta="908"
+	nwords_dspy="4452"
+	nwords_sta="604"
 	nwords_cmap="120"
-	nwords_crules="922"
-	odyng="3034"
-	osta="2126"
-	odynamic="3194"
-	oplot="5042"
-	ord="5042"
-	oes="5042"
-	okd="5042"
-	opd="5054"
-	opo="5054"
+	nwords_crules="820"
+	odyng="2432"
+	osta="1828"
+	odynamic="2540"
+	oplot="4124"
+	ord="4124"
+	oes="4124"
+	okd="4440"
+	opd="4452"
+	opo="4452"
 	opc="68"
-	ostr="502"
-	ocmap="1084"
-	ocrules="1204"
+	ostr="408"
+	ocmap="888"
+	ocrules="1008"
 	style="solid"
 	fill="outline"
 	width="0"
@@ -52,7 +52,7 @@ display {
 	pixwid="1280"
 	pixht="1024"
 	mmwid="361"
-	mmht="288"
+	mmht="289"
 }
 "<<color map>>" {
 	ncolors="29"
@@ -261,7 +261,7 @@ display {
 	}
 }
 "<<color rules>>" {
-	nrules="9"
+	nrules="8"
 	dl_color_rule {
 		name="alarm"
 		info[0] {
@@ -1214,125 +1214,6 @@ display {
 		default_fg="24"
 		default_bg="18"
 	}
-	dl_color_rule {
-		name="optsensor"
-		info[0] {
-			chan="$(C)"
-			value="0"
-			connector="use"
-			comparator="equals"
-			clr="23"
-		}
-		info[1] {
-			chan="$(C)"
-			value="1"
-			connector="use"
-			comparator="equals"
-			clr="24"
-		}
-		info[2] {
-			chan=""
-			value=""
-			connector="use"
-			comparator="less than"
-			clr="1"
-		}
-		info[3] {
-			chan=""
-			value=""
-			connector="use"
-			comparator="less than"
-			clr="1"
-		}
-		info[4] {
-			chan=""
-			value=""
-			connector="use"
-			comparator="less than"
-			clr="1"
-		}
-		info[5] {
-			chan=""
-			value=""
-			connector="use"
-			comparator="less than"
-			clr="1"
-		}
-		info[6] {
-			chan=""
-			value=""
-			connector="use"
-			comparator="less than"
-			clr="1"
-		}
-		info[7] {
-			chan=""
-			value=""
-			connector="use"
-			comparator="less than"
-			clr="1"
-		}
-		info[8] {
-			chan=""
-			value=""
-			connector="use"
-			comparator="less than"
-			clr="1"
-		}
-		info[9] {
-			chan=""
-			value=""
-			connector="use"
-			comparator="less than"
-			clr="1"
-		}
-		info[10] {
-			chan=""
-			value=""
-			connector="use"
-			comparator="less than"
-			clr="1"
-		}
-		info[11] {
-			chan=""
-			value=""
-			connector="use"
-			comparator="less than"
-			clr="1"
-		}
-		info[12] {
-			chan=""
-			value=""
-			connector="use"
-			comparator="less than"
-			clr="1"
-		}
-		info[13] {
-			chan=""
-			value=""
-			connector="use"
-			comparator="less than"
-			clr="1"
-		}
-		info[14] {
-			chan=""
-			value=""
-			connector="use"
-			comparator="less than"
-			clr="1"
-		}
-		info[15] {
-			chan=""
-			value=""
-			connector="use"
-			comparator="less than"
-			clr="1"
-		}
-		fg_enable="on"
-		bg_enable="off"
-		default_fg="17"
-		default_bg="1"
-	}
 }
 "<<basic attribute>>" {
 	attr {
@@ -1347,10 +1228,10 @@ display {
 		x="11"
 		y="10"
 		width="530"
-		height="29"
+		height="28"
 		groupid="0"
 	}
-	textix="$(sensor) - FG Centroids"
+	textix="$(sensor) - aO Centroids"
 	align="horiz. left"
 }
 "text" {
@@ -1368,8 +1249,8 @@ display {
 	object {
 		x="9"
 		y="46"
-		width="620"
-		height="698"
+		width="652"
+		height="537"
 		groupid="0"
 	}
 }
@@ -1387,7 +1268,7 @@ display {
 "text" {
 	object {
 		x="57"
-		y="234"
+		y="233"
 		width="37"
 		height="20"
 		groupid="0"
@@ -1409,23 +1290,12 @@ display {
 "text" {
 	object {
 		x="382"
-		y="235"
+		y="234"
 		width="37"
 		height="20"
 		groupid="0"
 	}
 	textix="2:"
-	align="horiz. left"
-}
-"text" {
-	object {
-		x="16"
-		y="466"
-		width="93"
-		height="20"
-		groupid="0"
-	}
-	textix="Guiding:"
 	align="horiz. left"
 }
 "text" {
@@ -1452,30 +1322,8 @@ display {
 }
 "text" {
 	object {
-		x="124"
-		y="467"
-		width="17"
-		height="20"
-		groupid="0"
-	}
-	textix="X"
-	align="horiz. left"
-}
-"text" {
-	object {
-		x="124"
-		y="491"
-		width="15"
-		height="20"
-		groupid="0"
-	}
-	textix="Y"
-	align="horiz. left"
-}
-"text" {
-	object {
 		x="16"
-		y="343"
+		y="351"
 		width="179"
 		height="20"
 		groupid="0"
@@ -1494,36 +1342,10 @@ display {
 	textix="Position displayed in control CB:"
 	align="horiz. left"
 }
-"line" {
-	object {
-		x="9"
-		y="449"
-		width="620"
-		height="1"
-		groupid="0"
-	}
-	npoints="2"
-	point[0] {
-		x="9"
-		y="450"
-	}
-	point[1] {
-		x="628"
-		y="450"
-	}
-	orgpoint[0] {
-		x="0"
-		y="1001"
-	}
-	orgpoint[1] {
-		x="999"
-		y="1001"
-	}
-}
 "text" {
 	object {
-		x="375"
-		y="467"
+		x="279"
+		y="350"
 		width="92"
 		height="20"
 		groupid="0"
@@ -1533,19 +1355,19 @@ display {
 }
 "text" {
 	object {
-		x="16"
-		y="566"
-		width="237"
+		x="14"
+		y="431"
+		width="179"
 		height="20"
 		groupid="0"
 	}
-	textix="CR angle ... ... ...:"
+	textix="Composite angle:"
 	align="horiz. left"
 }
 "text" {
 	object {
-		x="380"
-		y="566"
+		x="322"
+		y="433"
 		width="37"
 		height="20"
 		groupid="0"
@@ -1562,17 +1384,6 @@ display {
 		groupid="0"
 	}
 	textix="T"
-	align="horiz. left"
-}
-"text" {
-	object {
-		x="17"
-		y="420"
-		width="303"
-		height="20"
-		groupid="0"
-	}
-	textix="Zero point model focus:"
 	align="horiz. left"
 }
 "text" {
@@ -1611,39 +1422,6 @@ display {
 "text" {
 	object {
 		x="410"
-		y="236"
-		width="17"
-		height="20"
-		groupid="0"
-	}
-	textix="X"
-	align="horiz. left"
-}
-"text" {
-	object {
-		x="410"
-		y="261"
-		width="15"
-		height="20"
-		groupid="0"
-	}
-	textix="Y"
-	align="horiz. left"
-}
-"text" {
-	object {
-		x="410"
-		y="289"
-		width="20"
-		height="14"
-		groupid="0"
-	}
-	textix="T"
-	align="horiz. left"
-}
-"text" {
-	object {
-		x="86"
 		y="235"
 		width="17"
 		height="20"
@@ -1654,7 +1432,7 @@ display {
 }
 "text" {
 	object {
-		x="86"
+		x="410"
 		y="260"
 		width="15"
 		height="20"
@@ -1665,7 +1443,7 @@ display {
 }
 "text" {
 	object {
-		x="86"
+		x="410"
 		y="288"
 		width="20"
 		height="14"
@@ -1676,8 +1454,63 @@ display {
 }
 "text" {
 	object {
+		x="86"
+		y="234"
+		width="17"
+		height="20"
+		groupid="0"
+	}
+	textix="X"
+	align="horiz. left"
+}
+"text" {
+	object {
+		x="86"
+		y="259"
+		width="15"
+		height="20"
+		groupid="0"
+	}
+	textix="Y"
+	align="horiz. left"
+}
+"text" {
+	object {
+		x="86"
+		y="287"
+		width="20"
+		height="14"
+		groupid="0"
+	}
+	textix="T"
+	align="horiz. left"
+}
+"text" {
+	object {
+		x="13"
+		y="470"
+		width="325"
+		height="20"
+		groupid="0"
+	}
+	textix="Zero point model astig0:"
+	align="horiz. left"
+}
+"text" {
+	object {
+		x="420"
+		y="468"
+		width="98"
+		height="20"
+		groupid="0"
+	}
+	textix="astig45:"
+	align="horiz. left"
+}
+"text" {
+	object {
 		x="16"
-		y="383"
+		y="391"
 		width="62"
 		height="20"
 		groupid="0"
@@ -1685,102 +1518,58 @@ display {
 	textix="Time:"
 	align="horiz. left"
 }
+"text" {
+	object {
+		x="24"
+		y="518"
+		width="349"
+		height="20"
+		groupid="0"
+	}
+	textix="0 Astigmatism before rotation:"
+	align="horiz. left"
+}
+"text" {
+	object {
+		x="14"
+		y="551"
+		width="349"
+		height="20"
+		groupid="0"
+	}
+	textix="45 Astigmatism before rotation:"
+	align="horiz. left"
+}
 "line" {
 	object {
-		x="10"
-		y="521"
-		width="620"
-		height="1"
+		x="9"
+		y="504"
+		width="652"
+		height="0"
 		groupid="0"
 	}
 	npoints="2"
 	point[0] {
-		x="10"
-		y="522"
+		x="9"
+		y="504"
 	}
 	point[1] {
-		x="629"
-		y="522"
+		x="661"
+		y="504"
 	}
 	orgpoint[0] {
 		x="0"
-		y="1001"
+		y="-1"
 	}
 	orgpoint[1] {
-		x="999"
-		y="1001"
+		x="1000"
+		y="-1"
 	}
 }
 "text" {
 	object {
-		x="16"
-		y="596"
-		width="231"
-		height="20"
-		groupid="0"
-	}
-	textix="Probe angle ... ... :"
-	align="horiz. left"
-}
-"text" {
-	object {
-		x="380"
-		y="596"
-		width="37"
-		height="20"
-		groupid="0"
-	}
-	textix="deg"
-	align="horiz. left"
-}
-"text" {
-	object {
-		x="16"
-		y="626"
-		width="233"
-		height="20"
-		groupid="0"
-	}
-	textix="Probe offset X (pix):"
-	align="horiz. left"
-}
-"text" {
-	object {
-		x="16"
-		y="656"
-		width="231"
-		height="20"
-		groupid="0"
-	}
-	textix="Probe offset Y (pix):"
-	align="horiz. left"
-}
-"text" {
-	object {
-		x="16"
-		y="686"
-		width="234"
-		height="20"
-		groupid="0"
-	}
-	textix="Probe offset Z (pix):"
-	align="horiz. left"
-}
-"text" {
-	object {
-		x="16"
-		y="716"
-		width="207"
-		height="20"
-		groupid="0"
-	}
-	textix="GMOS CC optsensor:"
-	align="horiz. left"
-}
-"text" {
-	object {
-		x="44"
-		y="187"
+		x="365"
+		y="190"
 		width="57"
 		height="14"
 		groupid="0"
@@ -1790,8 +1579,8 @@ display {
 }
 "text" {
 	object {
-		x="370"
-		y="187"
+		x="41"
+		y="189"
 		width="57"
 		height="14"
 		groupid="0"
@@ -1801,8 +1590,8 @@ display {
 }
 "text" {
 	object {
-		x="44"
-		y="310"
+		x="366"
+		y="312"
 		width="57"
 		height="14"
 		groupid="0"
@@ -1812,35 +1601,13 @@ display {
 }
 "text" {
 	object {
-		x="368"
-		y="314"
+		x="43"
+		y="308"
 		width="57"
 		height="14"
 		groupid="0"
 	}
 	textix="Thresh"
-	align="horiz. left"
-}
-"text" {
-	object {
-		x="16"
-		y="536"
-		width="237"
-		height="20"
-		groupid="0"
-	}
-	textix="Composite angle ... :"
-	align="horiz. left"
-}
-"text" {
-	object {
-		x="380"
-		y="536"
-		width="37"
-		height="20"
-		groupid="0"
-	}
-	textix="deg"
 	align="horiz. left"
 }
 "<<basic attribute>>" {
@@ -1861,9 +1628,9 @@ display {
 			rulecolorfg="1"
 			rulecolorbg="1"
 			chan=""
-			rulechan[0] = "$(top)fgDiag1Oi.VALB"
-			rulechan[1] = "$(top)fgDiag1Oi.VALB"
-			rulechan[2] = "$(top)fgDiag1Oi.VALB"
+			rulechan[0] = "$(top)aoDiagP2.VALB"
+			rulechan[1] = "$(top)aoDiagP2.VALB"
+			rulechan[2] = "$(top)aoDiagP2.VALB"
 			rulechan[3] = ""
 			rulechan[4] = ""
 			rulechan[5] = ""
@@ -1878,14 +1645,14 @@ display {
 			rulechan[14] = ""
 			rulechan[15] = ""
 			clrrule="wfs"
-			clrargs="C=$(top)fgDiag1Oi.VALB"
+			clrargs="C=$(top)aoDiagP2.VALB"
 		}
 	}
 }
 "oval" {
 	object {
 		x="200"
-		y="343"
+		y="351"
 		width="20"
 		height="21"
 		groupid="0"
@@ -1901,7 +1668,7 @@ display {
 			rulecolorfg="1"
 			rulecolorbg="1"
 			chan=""
-			rulechan[0] = "$(top)fgDiag1Oi.VALR"
+			rulechan[0] = "$(top)aoDiagP2.VALP"
 			rulechan[1] = ""
 			rulechan[2] = ""
 			rulechan[3] = ""
@@ -1918,54 +1685,14 @@ display {
 			rulechan[14] = ""
 			rulechan[15] = ""
 			clrrule="time"
-			clrargs="C=$(top)fgDiag1Oi.VALR"
+			clrargs="C=$(top)aoDiagP2.VALP"
 		}
 	}
 }
 "oval" {
 	object {
 		x="74"
-		y="381"
-		width="20"
-		height="21"
-		groupid="0"
-	}
-}
-"<<dynamic attribute>>" {
-	attr {
-		mod {
-			clrmod="rule"
-			vis="static"
-		}
-		param {
-			rulecolorfg="1"
-			rulecolorbg="1"
-			chan=""
-			rulechan[0] = "$(top)optsensorState.VALA"
-			rulechan[1] = "$(top)optsensorState.VALA"
-			rulechan[2] = ""
-			rulechan[3] = ""
-			rulechan[4] = ""
-			rulechan[5] = ""
-			rulechan[6] = ""
-			rulechan[7] = ""
-			rulechan[8] = ""
-			rulechan[9] = ""
-			rulechan[10] = ""
-			rulechan[11] = ""
-			rulechan[12] = ""
-			rulechan[13] = ""
-			rulechan[14] = ""
-			rulechan[15] = ""
-			clrrule="optsensor"
-			clrargs="C=$(top)optsensorState.VALA"
-		}
-	}
-}
-"oval" {
-	object {
-		x="223"
-		y="715"
+		y="389"
 		width="20"
 		height="21"
 		groupid="0"
@@ -1974,13 +1701,13 @@ display {
 "text update" {
 	object {
 		x="102"
-		y="230"
+		y="229"
 		width="160"
 		height="21"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiag1Oi.VALE"
+		chan="$(top)aoDiagP2.VALC"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -2020,13 +1747,13 @@ display {
 "text update" {
 	object {
 		x="102"
-		y="255"
+		y="254"
 		width="160"
 		height="21"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiag1Oi.VALF"
+		chan="$(top)aoDiagP2.VALD"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -2066,13 +1793,13 @@ display {
 "text update" {
 	object {
 		x="427"
-		y="232"
+		y="231"
 		width="160"
 		height="21"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiag1Oi.VALG"
+		chan="$(top)aoDiagP2.VALE"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -2112,13 +1839,13 @@ display {
 "text update" {
 	object {
 		x="427"
-		y="258"
+		y="257"
 		width="160"
 		height="21"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiag1Oi.VALH"
+		chan="$(top)aoDiagP2.VALF"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -2164,7 +1891,7 @@ display {
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiag1Oi.VALI"
+		chan="$(top)aoDiagP2.VALG"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -2210,7 +1937,7 @@ display {
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiag1Oi.VALJ"
+		chan="$(top)aoDiagP2.VALH"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -2256,7 +1983,7 @@ display {
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiag1Oi.VALK"
+		chan="$(top)aoDiagP2.VALI"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -2302,99 +2029,7 @@ display {
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiag1Oi.VALL"
-		clr="0"
-		bclr="7"
-		label="none"
-		clrmod="static"
-		rulechan[0] = ""
-		rulechan[1] = ""
-		rulechan[2] = ""
-		rulechan[3] = ""
-		rulechan[4] = ""
-		rulechan[5] = ""
-		rulechan[6] = ""
-		rulechan[7] = ""
-		rulechan[8] = ""
-		rulechan[9] = ""
-		rulechan[10] = ""
-		rulechan[11] = ""
-		rulechan[12] = ""
-		rulechan[13] = ""
-		rulechan[14] = ""
-		rulechan[15] = ""
-		clrrule=""
-		clrargs=""
-		rulecolorbg="1"
-		rulecolorfg="1"
-		hdl="0"
-		ldl="0"
-		prec="4"
-		newunits=""
-		units="none"
-		decorate="none"
-		convertFunc=""
-		convertParams=""
-	}
-	align="horiz. left"
-	format="decimal"
-}
-"text update" {
-	object {
-		x="144"
-		y="464"
-		width="160"
-		height="21"
-		groupid="0"
-	}
-	monitor {
-		chan="$(top)fgDiag1Oi.VALC"
-		clr="0"
-		bclr="7"
-		label="none"
-		clrmod="static"
-		rulechan[0] = ""
-		rulechan[1] = ""
-		rulechan[2] = ""
-		rulechan[3] = ""
-		rulechan[4] = ""
-		rulechan[5] = ""
-		rulechan[6] = ""
-		rulechan[7] = ""
-		rulechan[8] = ""
-		rulechan[9] = ""
-		rulechan[10] = ""
-		rulechan[11] = ""
-		rulechan[12] = ""
-		rulechan[13] = ""
-		rulechan[14] = ""
-		rulechan[15] = ""
-		clrrule=""
-		clrargs=""
-		rulecolorbg="1"
-		rulecolorfg="1"
-		hdl="0"
-		ldl="0"
-		prec="4"
-		newunits=""
-		units="none"
-		decorate="none"
-		convertFunc=""
-		convertParams=""
-	}
-	align="horiz. left"
-	format="decimal"
-}
-"text update" {
-	object {
-		x="145"
-		y="490"
-		width="159"
-		height="21"
-		groupid="0"
-	}
-	monitor {
-		chan="$(top)fgDiag1Oi.VALD"
+		chan="$(top)aoDiagP2.VALJ"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -2440,7 +2075,7 @@ display {
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiag1Oi.VALA"
+		chan="$(top)aoDiagP2.VALA"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -2480,13 +2115,13 @@ display {
 "text update" {
 	object {
 		x="102"
-		y="280"
+		y="279"
 		width="160"
 		height="21"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiag1Oi.VALM"
+		chan="$(top)aoDiagP2.VALK"
 		clr="11"
 		bclr="7"
 		label="none"
@@ -2526,13 +2161,13 @@ display {
 "text update" {
 	object {
 		x="427"
-		y="284"
+		y="283"
 		width="160"
 		height="21"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiag1Oi.VALN"
+		chan="$(top)aoDiagP2.VALL"
 		clr="11"
 		bclr="7"
 		label="none"
@@ -2578,7 +2213,7 @@ display {
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiag1Oi.VALO"
+		chan="$(top)aoDiagP2.VALM"
 		clr="11"
 		bclr="7"
 		label="none"
@@ -2624,7 +2259,7 @@ display {
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiag1Oi.VALP"
+		chan="$(top)aoDiagP2.VALN"
 		clr="11"
 		bclr="7"
 		label="none"
@@ -2663,14 +2298,14 @@ display {
 }
 "text update" {
 	object {
-		x="450"
-		y="467"
+		x="354"
+		y="350"
 		width="160"
 		height="21"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiag1Oi.VALQ"
+		chan="$(top)aoDiagP2.VALO"
 		clr="11"
 		bclr="7"
 		label="none"
@@ -2709,14 +2344,14 @@ display {
 }
 "text update" {
 	object {
-		x="250"
-		y="564"
+		x="192"
+		y="430"
 		width="127"
 		height="23"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)ttfZero.VALE"
+		chan="$(top)aoZero.VALF"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -2755,14 +2390,60 @@ display {
 }
 "text update" {
 	object {
-		x="271"
-		y="417"
-		width="127"
-		height="23"
+		x="283"
+		y="466"
+		width="94"
+		height="25"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)ttfZero.VALJ"
+		chan="$(top)aoZero.VALG"
+		clr="0"
+		bclr="7"
+		label="none"
+		clrmod="static"
+		rulechan[0] = ""
+		rulechan[1] = ""
+		rulechan[2] = ""
+		rulechan[3] = ""
+		rulechan[4] = ""
+		rulechan[5] = ""
+		rulechan[6] = ""
+		rulechan[7] = ""
+		rulechan[8] = ""
+		rulechan[9] = ""
+		rulechan[10] = ""
+		rulechan[11] = ""
+		rulechan[12] = ""
+		rulechan[13] = ""
+		rulechan[14] = ""
+		rulechan[15] = ""
+		clrrule=""
+		clrargs=""
+		rulecolorbg="1"
+		rulecolorfg="1"
+		hdl="0"
+		ldl="0"
+		prec="-1"
+		newunits=""
+		units="none"
+		decorate="none"
+		convertFunc=""
+		convertParams=""
+	}
+	align="horiz. left"
+	format="decimal"
+}
+"text update" {
+	object {
+		x="512"
+		y="466"
+		width="95"
+		height="24"
+		groupid="0"
+	}
+	monitor {
+		chan="$(top)aoZero.VALH"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -2802,13 +2483,13 @@ display {
 "text update" {
 	object {
 		x="103"
-		y="383"
+		y="391"
 		width="439"
 		height="21"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiag1Oi.VALR"
+		chan="$(top)aoDiagP2.VALP"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -2847,14 +2528,14 @@ display {
 }
 "text update" {
 	object {
-		x="250"
-		y="594"
-		width="127"
-		height="23"
+		x="355"
+		y="517"
+		width="160"
+		height="21"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)probeOffset.VALC"
+		chan="$(top)ao.VALC"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -2893,106 +2574,14 @@ display {
 }
 "text update" {
 	object {
-		x="250"
-		y="624"
-		width="127"
-		height="23"
+		x="356"
+		y="549"
+		width="160"
+		height="21"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)probeOffset.VALD"
-		clr="0"
-		bclr="7"
-		label="none"
-		clrmod="static"
-		rulechan[0] = ""
-		rulechan[1] = ""
-		rulechan[2] = ""
-		rulechan[3] = ""
-		rulechan[4] = ""
-		rulechan[5] = ""
-		rulechan[6] = ""
-		rulechan[7] = ""
-		rulechan[8] = ""
-		rulechan[9] = ""
-		rulechan[10] = ""
-		rulechan[11] = ""
-		rulechan[12] = ""
-		rulechan[13] = ""
-		rulechan[14] = ""
-		rulechan[15] = ""
-		clrrule=""
-		clrargs=""
-		rulecolorbg="1"
-		rulecolorfg="1"
-		hdl="0"
-		ldl="0"
-		prec="-1"
-		newunits=""
-		units="none"
-		decorate="none"
-		convertFunc=""
-		convertParams=""
-	}
-	align="horiz. left"
-	format="decimal"
-}
-"text update" {
-	object {
-		x="250"
-		y="654"
-		width="127"
-		height="23"
-		groupid="0"
-	}
-	monitor {
-		chan="$(top)probeOffset.VALF"
-		clr="0"
-		bclr="7"
-		label="none"
-		clrmod="static"
-		rulechan[0] = ""
-		rulechan[1] = ""
-		rulechan[2] = ""
-		rulechan[3] = ""
-		rulechan[4] = ""
-		rulechan[5] = ""
-		rulechan[6] = ""
-		rulechan[7] = ""
-		rulechan[8] = ""
-		rulechan[9] = ""
-		rulechan[10] = ""
-		rulechan[11] = ""
-		rulechan[12] = ""
-		rulechan[13] = ""
-		rulechan[14] = ""
-		rulechan[15] = ""
-		clrrule=""
-		clrargs=""
-		rulecolorbg="1"
-		rulecolorfg="1"
-		hdl="0"
-		ldl="0"
-		prec="-1"
-		newunits=""
-		units="none"
-		decorate="none"
-		convertFunc=""
-		convertParams=""
-	}
-	align="horiz. left"
-	format="decimal"
-}
-"text update" {
-	object {
-		x="250"
-		y="684"
-		width="127"
-		height="23"
-		groupid="0"
-	}
-	monitor {
-		chan="$(top)probeOffset.VALH"
+		chan="$(top)ao.VALD"
 		clr="0"
 		bclr="7"
 		label="none"
@@ -3032,13 +2621,13 @@ display {
 "text update" {
 	object {
 		x="102"
-		y="183"
+		y="185"
 		width="160"
-		height="22"
+		height="25"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiag2Oi.VALC"
+		chan="$(top)aoDiagP2.VALS"
 		clr="17"
 		bclr="7"
 		label="none"
@@ -3078,13 +2667,13 @@ display {
 "text update" {
 	object {
 		x="427"
-		y="184"
+		y="186"
 		width="160"
 		height="21"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiag2Oi.VALD"
+		chan="$(top)aoDiagP2.VALT"
 		clr="17"
 		bclr="7"
 		label="none"
@@ -3123,14 +2712,14 @@ display {
 }
 "text update" {
 	object {
-		x="102"
-		y="307"
+		x="103"
+		y="305"
 		width="160"
 		height="21"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiag2Oi.VALA"
+		chan="$(top)aoDiagP2.VALQ"
 		clr="17"
 		bclr="7"
 		label="none"
@@ -3169,14 +2758,14 @@ display {
 }
 "text update" {
 	object {
-		x="427"
-		y="311"
+		x="428"
+		y="309"
 		width="160"
 		height="21"
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)fgDiag2Oi.VALB"
+		chan="$(top)aoDiagP2.VALR"
 		clr="17"
 		bclr="7"
 		label="none"
@@ -3213,56 +2802,276 @@ display {
 	align="horiz. left"
 	format="decimal"
 }
-"text update" {
+"execute script" {
 	object {
-		x="250"
-		y="535"
-		width="127"
-		height="23"
+		x="518"
+		y="516"
+		width="131"
+		height="20"
 		groupid="0"
 	}
-	monitor {
-		chan="$(top)ttfZero.VALF"
-		clr="0"
-		bclr="7"
-		label="none"
-		clrmod="static"
-		rulechan[0] = ""
-		rulechan[1] = ""
-		rulechan[2] = ""
-		rulechan[3] = ""
-		rulechan[4] = ""
-		rulechan[5] = ""
-		rulechan[6] = ""
-		rulechan[7] = ""
-		rulechan[8] = ""
-		rulechan[9] = ""
-		rulechan[10] = ""
-		rulechan[11] = ""
-		rulechan[12] = ""
-		rulechan[13] = ""
-		rulechan[14] = ""
-		rulechan[15] = ""
-		clrrule=""
-		clrargs=""
-		rulecolorbg="1"
-		rulecolorfg="1"
-		hdl="0"
-		ldl="0"
-		prec="-1"
-		newunits=""
-		units="none"
-		decorate="none"
-		convertFunc=""
-		convertParams=""
+	script[0] {
+		label="StripTool"
+		path="StripTool z4BRConfig.ST"
+		args=""
 	}
-	align="horiz. left"
-	format="decimal"
+	script[1] {
+		label=""
+		path=""
+		args=""
+	}
+	script[2] {
+		label=""
+		path=""
+		args=""
+	}
+	script[3] {
+		label=""
+		path=""
+		args=""
+	}
+	script[4] {
+		label=""
+		path=""
+		args=""
+	}
+	script[5] {
+		label=""
+		path=""
+		args=""
+	}
+	script[6] {
+		label=""
+		path=""
+		args=""
+	}
+	script[7] {
+		label=""
+		path=""
+		args=""
+	}
+	script[8] {
+		label=""
+		path=""
+		args=""
+	}
+	script[9] {
+		label=""
+		path=""
+		args=""
+	}
+	script[10] {
+		label=""
+		path=""
+		args=""
+	}
+	script[11] {
+		label=""
+		path=""
+		args=""
+	}
+	script[12] {
+		label=""
+		path=""
+		args=""
+	}
+	script[13] {
+		label=""
+		path=""
+		args=""
+	}
+	script[14] {
+		label=""
+		path=""
+		args=""
+	}
+	script[15] {
+		label=""
+		path=""
+		args=""
+	}
+	script[16] {
+		label=""
+		path=""
+		args=""
+	}
+	script[17] {
+		label=""
+		path=""
+		args=""
+	}
+	script[18] {
+		label=""
+		path=""
+		args=""
+	}
+	script[19] {
+		label=""
+		path=""
+		args=""
+	}
+	script[20] {
+		label=""
+		path=""
+		args=""
+	}
+	script[21] {
+		label=""
+		path=""
+		args=""
+	}
+	script[22] {
+		label=""
+		path=""
+		args=""
+	}
+	script[23] {
+		label=""
+		path=""
+		args=""
+	}
+	clr="1"
+	bclr="13"
+	menu_title=""
+	decorate="none"
+}
+"execute script" {
+	object {
+		x="519"
+		y="551"
+		width="131"
+		height="20"
+		groupid="0"
+	}
+	script[0] {
+		label="StripTool"
+		path="StripTool z5BRConfig.ST"
+		args=""
+	}
+	script[1] {
+		label=""
+		path=""
+		args=""
+	}
+	script[2] {
+		label=""
+		path=""
+		args=""
+	}
+	script[3] {
+		label=""
+		path=""
+		args=""
+	}
+	script[4] {
+		label=""
+		path=""
+		args=""
+	}
+	script[5] {
+		label=""
+		path=""
+		args=""
+	}
+	script[6] {
+		label=""
+		path=""
+		args=""
+	}
+	script[7] {
+		label=""
+		path=""
+		args=""
+	}
+	script[8] {
+		label=""
+		path=""
+		args=""
+	}
+	script[9] {
+		label=""
+		path=""
+		args=""
+	}
+	script[10] {
+		label=""
+		path=""
+		args=""
+	}
+	script[11] {
+		label=""
+		path=""
+		args=""
+	}
+	script[12] {
+		label=""
+		path=""
+		args=""
+	}
+	script[13] {
+		label=""
+		path=""
+		args=""
+	}
+	script[14] {
+		label=""
+		path=""
+		args=""
+	}
+	script[15] {
+		label=""
+		path=""
+		args=""
+	}
+	script[16] {
+		label=""
+		path=""
+		args=""
+	}
+	script[17] {
+		label=""
+		path=""
+		args=""
+	}
+	script[18] {
+		label=""
+		path=""
+		args=""
+	}
+	script[19] {
+		label=""
+		path=""
+		args=""
+	}
+	script[20] {
+		label=""
+		path=""
+		args=""
+	}
+	script[21] {
+		label=""
+		path=""
+		args=""
+	}
+	script[22] {
+		label=""
+		path=""
+		args=""
+	}
+	script[23] {
+		label=""
+		path=""
+		args=""
+	}
+	clr="1"
+	bclr="13"
+	menu_title=""
+	decorate="none"
 }
 "kill display" {
 	object {
-		x="559"
-		y="15"
+		x="592"
+		y="14"
 		width="70"
 		height="23"
 		groupid="0"
