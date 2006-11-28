@@ -17,10 +17,7 @@
  * Corinne Boyer
  *
  * HISTORY MODIFICATION:
- * 23 Jan 2004: CB - Add gains into aoCtrlFileRead()
- * 31 Jan 2003: CB - Add aoThreshold to aoCtrlId
- * 18 Nov 2002: CB - Implement seeing computation according to FR's method
- * 16 Sep 2002: CB - Implement seeing computation according to BE's method
+ * 16 Sep 2002: CB - Implement seeing computation
  * 07 Feb 2002: CB - Add flip in header of fg and ao circular buffers 
  * 28 Jan 2002: CB - Threshold in real time
  * 09 Oct 2001: CB - OIWFS GMOS modifications
@@ -81,25 +78,6 @@
 
 #define PO_SCALE_TIMEOUT     100       /* Timeout probe offset scale semaphore*/
                                        /* Number of vxworks ticks             */
-
-#define SEEING_ROW_NB        6         /* Row number of seeing coeff matrix   */
-                                       /* and vector (includes TTF, 2 astig.  */
-                                       /* and the noise)                      */
-
-#define TELESCOPE_DIAMETER   8.0       /* Telescope diameter in meter         */
-
-#define SEEING_LAMBDA        0.5       /* Wavelength for seeing computation   */
-                                       /* in micron                           */
-
-#define SEEING_FOCUS_KOLMO   4.98867e-3
-                                       /* Constant for seeing computation in  */
-                                       /* radians at 0.5 micron               */
-
-#define MICRON_TO_METER      1.0e-6    /* Conversion factor from micron to    */
-                                       /* meter                               */
-
-#define RADIAN_TO_ARCSEC     4.848e-6  /* Conversion factor from radian to    */
-                                       /* arcsec                              */
 
 /********************************************************************* Enum ***/
 
@@ -163,13 +141,7 @@ typedef double AO_MATRIX [ 2 * SUBAP_NB * AO_MODE_NB ];
 
 typedef double FG_MATRIX [ 2 * SUBAP_NB * FG_MODE_NB ];
 
-/* BE's seeing method:
 typedef double CENT_MATRIX [ 4 * SUBAP_NB * SUBAP_NB ];
-*/
-
-typedef double SEEING_VECT [ SEEING_ROW_NB ];
-
-typedef double SEEING_MATRIX [ SEEING_ROW_NB * 2 * SUBAP_NB ];
 
 typedef struct                         /* Structure needed to measure a column*/
                                        /* of the interaction matrixes         */
@@ -324,10 +296,6 @@ typedef struct
    int          seeingCoeffMatInitFlag;/* TRUE or FALSE, if seeing coefficient*/
                                        /* matrix is init or not               */
 
-   int           seeingCoeffVectInitFlag;
-                                       /* TRUE or FALSE, if seeing coefficient*/
-                                       /* vector is init or not               */
-
    int          allowedSubapOff;       /* Number of subapertures allowed to   */
                                        /* be off when computing the centroids */
 
@@ -360,6 +328,9 @@ typedef struct
 
    int          port;                  /* ISS port where OIWFS is connected   */
 
+   int          unused;                /* The structure size must be equal to */
+                                       /* a number multiple of a double       */
+
    char         darkFileName [ STRING_SIZE ]; 
                                        /* Name of the file which contains the */
                                        /* dark image                          */
@@ -390,10 +361,6 @@ typedef struct
                                        /* Name of the seeing coefficient      */
                                        /* matrix file                         */
 
-   char          seeingCoeffVectFileName [ STRING_SIZE ];
-                                       /* Name of the seeing coefficient      */
-                                       /* vector file                         */
-
    IMAGE_VECT   darkVect;              /* Vector containing the dark image for*/
                                        /* the whole CCD                       */
 
@@ -414,17 +381,7 @@ typedef struct
    WFS_VECT     averageThreshVect;     /* Average threshold computed for each */
                                        /* subaperture used when aO            */
 
-/* BE's seeing method:
-   WFS_VECT     averageCentroidsVect;     Average centroids vector used for
-                                          seeing computation
-*/
-
-   SEEING_VECT  seeingCoeffVect;       /* Seeing Coefficient vector           */
-
-   SEEING_VECT  averageSeeingVect;     /* Average seeing vector used for      */
-                                       /* seeing computation                  */
-
-   SEEING_VECT  varianceSeeingVect;    /* Variance seeing vector used for     */
+   WFS_VECT     averageCentroidsVect;  /* Average centroids vector used for   */
                                        /* seeing computation                  */
 
    AO_VECT      aoScaleFactorVect;     /* Vector containing the scale factor  */
@@ -443,15 +400,11 @@ typedef struct
 
    FG_MATRIX    fgContMat;             /* FG control matrix                   */
 
-/* BE's seeing method:
-   CENT_MATRIX  averageCentroidsMat;      Average of the product of the         
-                                          centroids vector by its transposed    
-                                          used for seeing computation           
+   CENT_MATRIX  averageCentroidsMat;   /* Average of the product of the       */
+                                       /* centroids vector by its transposed  */
+                                       /* used for seeing computation         */
 
-   CENT_MATRIX  seeingCoeffMat;           Seeing Coefficient matrix             
-*/
-
-   SEEING_MATRIX seeingCoeffMat;       /* Seeing Coefficient matrix           */
+   CENT_MATRIX  seeingCoeffMat;        /* Seeing Coefficient matrix           */
 
    double       rms;                   /* RMS used for the threshold          */
                                        /* computation                         */
@@ -526,17 +479,11 @@ typedef struct
 
    double       previousFocus;         /* Previous focus mode value           */
 
-   double       r0;                    /* r0                                  */
-
    double       seeing;                /* Seeing                              */
-
-   double       jitter;                /* X/Y average residual jitter         */
 
    double       seeingScaleFactor;     /* Scale factor used to compute the    */
                                        /* seeing                              */
 
-   double       aoThreshold;           /* aO threshold above which the aO     */
-                                       /* gains are increased                 */
 } AO_CTRL_ID_STRUCT, * AO_CTRL_ID;
 
 /********************************** Definition of the image circular buffer ***/
@@ -958,12 +905,11 @@ STATUS aoCtrlContextUpdate (char * pDarkFileName, char * pFlatFileName,
                             char * pAoContMatFileName, 
                             char * pFgContMatFileName, 
                             char * pSeeingCoeffMatFileName,
-                            char * pSeeingCoeffVectFileName,
                             double xCenter, double yCenter, double angleWithM2, 
                             double flipXWithM2, double flipYWithM2, 
                             double angleWithM1, double flipXWithM1,
                             double flipYWithM1, double seeingScaleFactor,
-                            double aoThreshold, AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId);
+                            AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId);
 STATUS aoCtrlContextShow (AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId, int verbose);
 STATUS aoDarkSubtract (float * pImage, float * pDark, int xPixels,
                        int yPixels);
@@ -1021,13 +967,11 @@ STATUS aoCtrlFileRead (char * pInitFileName, char * pPath, char * pDarkFileName,
                        char * pFlatFileName, char * pRefFileName, 
                        double * pRefX, double * pRefY, char * pAoImFileName, 
                        char * pAoCmFileName, char * pFgCmFileName, 
-                       char * pSeeingCmFileName, char * pSeeingCvFileName,
-                       double * pRms, double * pThresh, double * pTotalThresh,
+                       char * pSeeingCmFileName, double * pRms, 
+                       double * pThresh, double * pTotalThresh,
                        int currentPort, double * pAngleM2, double * pFlipXM2, 
                        double * pFlipYM2, double * pAngleM1, double * pFlipXM1,
-                       double * pFlipYM1, double * pSeeingGain, 
-                       double * pAoThreshold,
-                       double *pFgGain, double * pSlidingFocusGain);
+                       double * pFlipYM1, double * pSeeingGain);
 STATUS aoModInit (char * pInitFileName, AST_ZP_MODEL_ID astModelId,
                   TREF_ZP_MODEL_ID trefModelId, COMA_ZP_MODEL_ID comaModelId,
                   FOCUS_ZP_MODEL_ID focModelId);
@@ -1061,11 +1005,6 @@ STATUS aoSeeingCompute (double * pCentroidsVect, int * pWfsStatus,
                         AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId, int framesNb);
 STATUS aoSeeingCoeffMatRead (char * pSeeingCoeffMatFileName, AO_CCD_ID aoCcdId,
                              AO_CTRL_ID aoCtrlId);
-STATUS aoNewMatRead (char * pMatFileName, int typeExpected, int rowNbExpected,
-                     int colNbExpected, double * pMat);
-STATUS aoNewSeeingCompute (double * pCentroidsVect, int * pWfsStatus,
-                           AO_CCD_ID aoCcdId, AO_CTRL_ID aoCtrlId,
-                           int framesNb);
 #endif
 
 #endif /* __INCaoP2Libh */

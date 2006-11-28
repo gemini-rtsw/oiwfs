@@ -10,9 +10,6 @@
  *
  *INDENT-OFF*
  * $Log: not supported by cvs2svn $
- * Revision 1.1.1.1  2002/01/29 01:53:31  cboyer
- * Initial creation of the Gemini oiwfs GMOS repository
- *
  * Revision 1.4  2000/07/10 21:47:46  cboyer
  * Major Modifications : V1-0 10 July 2000 CB (see RELEASE.NOTES)
  *
@@ -124,6 +121,6 @@ IMPORT STATUS   wfsSysInit (const int processorNumber,
                             const BOOL redirectErrorLog);
 IMPORT STATUS   wfsShow (void);
 IMPORT void     wfsGetTelName (char *pTelName);
-/*IMPORT void     wfsGetPort (int *pPort);*/
+IMPORT void     wfsGetPort (int *pPort);
 
 #endif /* __INCwfsLibh */

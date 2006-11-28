@@ -7,7 +7,7 @@ display {
 	mnrv="4"
 	ndyng="1"
 	npc="21"
-	nstr="151"
+	nstr="153"
 	ndynamic="17"
 	nplot="0"
 	nrd="14"
@@ -19,27 +19,27 @@ display {
 		x="328"
 		y="298"
 		width="790"
-		height="809"
+		height="817"
 	}
 	clr="1"
 	bclr="13"
-	nwords_dspy="6416"
+	nwords_dspy="6458"
 	nwords_sta="280"
 	nwords_cmap="0"
 	nwords_crules="0"
-	odyng="2976"
-	osta="2696"
-	odynamic="3036"
-	oplot="4164"
-	ord="4164"
-	oes="6404"
-	okd="6404"
-	opd="6416"
-	opo="6416"
+	odyng="3018"
+	osta="2738"
+	odynamic="3078"
+	oplot="4206"
+	ord="4206"
+	oes="6446"
+	okd="6446"
+	opd="6458"
+	opo="6458"
 	opc="68"
 	ostr="326"
-	ocmap="2696"
-	ocrules="2696"
+	ocmap="2738"
+	ocrules="2738"
 	style="solid"
 	fill="outline"
 	width="0"
@@ -65,7 +65,7 @@ display {
 "rectangle" {
 	object {
 		x="9"
-		y="611"
+		y="609"
 		width="769"
 		height="189"
 		groupid="0"
@@ -84,7 +84,7 @@ display {
 }
 "text" {
 	object {
-		x="16"
+		x="17"
 		y="55"
 		width="300"
 		height="22"
@@ -98,13 +98,13 @@ display {
 		x="9"
 		y="53"
 		width="768"
-		height="502"
+		height="498"
 		groupid="0"
 	}
 }
 "text" {
 	object {
-		x="16"
+		x="17"
 		y="143"
 		width="365"
 		height="19"
@@ -115,7 +115,7 @@ display {
 }
 "text" {
 	object {
-		x="16"
+		x="17"
 		y="83"
 		width="218"
 		height="21"
@@ -126,7 +126,7 @@ display {
 }
 "text" {
 	object {
-		x="16"
+		x="17"
 		y="113"
 		width="229"
 		height="20"
@@ -138,7 +138,7 @@ display {
 "text" {
 	object {
 		x="16"
-		y="619"
+		y="617"
 		width="335"
 		height="22"
 		groupid="0"
@@ -148,7 +148,7 @@ display {
 }
 "text" {
 	object {
-		x="16"
+		x="17"
 		y="170"
 		width="370"
 		height="19"
@@ -159,8 +159,8 @@ display {
 }
 "text" {
 	object {
-		x="16"
-		y="198"
+		x="17"
+		y="197"
 		width="382"
 		height="19"
 		groupid="0"
@@ -170,8 +170,8 @@ display {
 }
 "text" {
 	object {
-		x="16"
-		y="364"
+		x="17"
+		y="361"
 		width="365"
 		height="19"
 		groupid="0"
@@ -181,8 +181,8 @@ display {
 }
 "text" {
 	object {
-		x="16"
-		y="225"
+		x="17"
+		y="224"
 		width="372"
 		height="19"
 		groupid="0"
@@ -192,8 +192,8 @@ display {
 }
 "text" {
 	object {
-		x="16"
-		y="391"
+		x="17"
+		y="443"
 		width="365"
 		height="19"
 		groupid="0"
@@ -203,8 +203,8 @@ display {
 }
 "text" {
 	object {
-		x="16"
-		y="474"
+		x="17"
+		y="470"
 		width="364"
 		height="19"
 		groupid="0"
@@ -214,8 +214,8 @@ display {
 }
 "text" {
 	object {
-		x="16"
-		y="502"
+		x="17"
+		y="497"
 		width="387"
 		height="19"
 		groupid="0"
@@ -225,8 +225,8 @@ display {
 }
 "text" {
 	object {
-		x="16"
-		y="253"
+		x="17"
+		y="252"
 		width="371"
 		height="19"
 		groupid="0"
@@ -236,8 +236,8 @@ display {
 }
 "text" {
 	object {
-		x="16"
-		y="281"
+		x="17"
+		y="279"
 		width="363"
 		height="19"
 		groupid="0"
@@ -247,8 +247,8 @@ display {
 }
 "text" {
 	object {
-		x="16"
-		y="308"
+		x="17"
+		y="306"
 		width="364"
 		height="19"
 		groupid="0"
@@ -258,8 +258,8 @@ display {
 }
 "text" {
 	object {
-		x="16"
-		y="530"
+		x="17"
+		y="525"
 		width="385"
 		height="19"
 		groupid="0"
@@ -269,8 +269,8 @@ display {
 }
 "text" {
 	object {
-		x="16"
-		y="336"
+		x="17"
+		y="334"
 		width="363"
 		height="19"
 		groupid="0"
@@ -280,8 +280,8 @@ display {
 }
 "text" {
 	object {
-		x="16"
-		y="419"
+		x="17"
+		y="388"
 		width="365"
 		height="19"
 		groupid="0"
@@ -291,8 +291,8 @@ display {
 }
 "text" {
 	object {
-		x="16"
-		y="447"
+		x="17"
+		y="415"
 		width="365"
 		height="19"
 		groupid="0"
@@ -303,7 +303,7 @@ display {
 "rectangle" {
 	object {
 		x="9"
-		y="560"
+		y="558"
 		width="768"
 		height="45"
 		groupid="0"
@@ -312,7 +312,7 @@ display {
 "text" {
 	object {
 		x="14"
-		y="571"
+		y="569"
 		width="335"
 		height="22"
 		groupid="0"
@@ -372,7 +372,7 @@ display {
 }
 "text update" {
 	object {
-		x="380"
+		x="381"
 		y="138"
 		width="390"
 		height="21"
@@ -510,7 +510,7 @@ display {
 }
 "text update" {
 	object {
-		x="380"
+		x="381"
 		y="165"
 		width="390"
 		height="21"
@@ -556,8 +556,8 @@ display {
 }
 "text update" {
 	object {
-		x="380"
-		y="193"
+		x="381"
+		y="192"
 		width="390"
 		height="21"
 		groupid="0"
@@ -602,8 +602,8 @@ display {
 }
 "text update" {
 	object {
-		x="380"
-		y="359"
+		x="381"
+		y="356"
 		width="163"
 		height="21"
 		groupid="0"
@@ -648,8 +648,8 @@ display {
 }
 "text update" {
 	object {
-		x="380"
-		y="221"
+		x="381"
+		y="220"
 		width="390"
 		height="21"
 		groupid="0"
@@ -694,8 +694,8 @@ display {
 }
 "text update" {
 	object {
-		x="380"
-		y="387"
+		x="381"
+		y="438"
 		width="390"
 		height="21"
 		groupid="0"
@@ -740,8 +740,8 @@ display {
 }
 "text update" {
 	object {
-		x="380"
-		y="497"
+		x="381"
+		y="492"
 		width="390"
 		height="22"
 		groupid="0"
@@ -786,8 +786,8 @@ display {
 }
 "text update" {
 	object {
-		x="380"
-		y="470"
+		x="381"
+		y="466"
 		width="390"
 		height="21"
 		groupid="0"
@@ -880,8 +880,8 @@ display {
 }
 "text update" {
 	object {
-		x="380"
-		y="248"
+		x="381"
+		y="247"
 		width="390"
 		height="21"
 		groupid="0"
@@ -926,8 +926,8 @@ display {
 }
 "text update" {
 	object {
-		x="380"
-		y="276"
+		x="381"
+		y="274"
 		width="390"
 		height="21"
 		groupid="0"
@@ -972,8 +972,8 @@ display {
 }
 "text update" {
 	object {
-		x="380"
-		y="304"
+		x="381"
+		y="302"
 		width="390"
 		height="21"
 		groupid="0"
@@ -1018,8 +1018,8 @@ display {
 }
 "text update" {
 	object {
-		x="380"
-		y="526"
+		x="381"
+		y="521"
 		width="390"
 		height="21"
 		groupid="0"
@@ -1064,8 +1064,8 @@ display {
 }
 "text update" {
 	object {
-		x="380"
-		y="332"
+		x="381"
+		y="329"
 		width="390"
 		height="21"
 		groupid="0"
@@ -1111,7 +1111,7 @@ display {
 "text update" {
 	object {
 		x="184"
-		y="570"
+		y="568"
 		width="176"
 		height="22"
 		groupid="0"
@@ -1157,7 +1157,7 @@ display {
 "related display" {
 	object {
 		x="28"
-		y="675"
+		y="673"
 		width="329"
 		height="24"
 		groupid="0"
@@ -1291,7 +1291,7 @@ display {
 "related display" {
 	object {
 		x="28"
-		y="647"
+		y="645"
 		width="329"
 		height="21"
 		groupid="0"
@@ -1425,7 +1425,7 @@ display {
 "related display" {
 	object {
 		x="378"
-		y="736"
+		y="734"
 		width="329"
 		height="23"
 		groupid="0"
@@ -1559,7 +1559,7 @@ display {
 "related display" {
 	object {
 		x="378"
-		y="767"
+		y="765"
 		width="330"
 		height="23"
 		groupid="0"
@@ -1693,7 +1693,7 @@ display {
 "related display" {
 	object {
 		x="378"
-		y="645"
+		y="643"
 		width="329"
 		height="23"
 		groupid="0"
@@ -1827,7 +1827,7 @@ display {
 "related display" {
 	object {
 		x="28"
-		y="736"
+		y="734"
 		width="329"
 		height="23"
 		groupid="0"
@@ -1961,7 +1961,7 @@ display {
 "related display" {
 	object {
 		x="28"
-		y="707"
+		y="705"
 		width="328"
 		height="22"
 		groupid="0"
@@ -2095,7 +2095,7 @@ display {
 "related display" {
 	object {
 		x="378"
-		y="677"
+		y="675"
 		width="328"
 		height="22"
 		groupid="0"
@@ -2229,7 +2229,7 @@ display {
 "related display" {
 	object {
 		x="378"
-		y="707"
+		y="705"
 		width="328"
 		height="22"
 		groupid="0"
@@ -2237,12 +2237,12 @@ display {
 	selfkill="off"
 	display[0] {
 		label="SHOW FG CENTROIDS"
-		name="showFgDiagOi.dl"
+		name="showFgDiagP2.dl"
 		args="top=$(top),sensor=$(sensor)"
 	}
 	display[1] {
 		label="SHOW AO CENTROIDS"
-		name="showAoDiagOi.dl"
+		name="showAoDiagP2.dl"
 		args="top=$(top),sensor=$(sensor)"
 	}
 	display[2] {
@@ -2363,7 +2363,7 @@ display {
 "related display" {
 	object {
 		x="28"
-		y="768"
+		y="766"
 		width="328"
 		height="22"
 		groupid="0"
@@ -2497,7 +2497,7 @@ display {
 "related display" {
 	object {
 		x="550"
-		y="358"
+		y="355"
 		width="221"
 		height="22"
 		groupid="0"
@@ -2630,8 +2630,8 @@ display {
 }
 "related display" {
 	object {
-		x="380"
-		y="414"
+		x="381"
+		y="383"
 		width="389"
 		height="22"
 		groupid="0"
@@ -2764,8 +2764,8 @@ display {
 }
 "related display" {
 	object {
-		x="380"
-		y="441"
+		x="381"
+		y="410"
 		width="389"
 		height="22"
 		groupid="0"
@@ -2899,7 +2899,7 @@ display {
 "related display" {
 	object {
 		x="378"
-		y="570"
+		y="568"
 		width="329"
 		height="21"
 		groupid="0"

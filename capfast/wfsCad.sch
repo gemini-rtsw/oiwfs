@@ -1,5 +1,5 @@
 [schematic2]
-uniq 122
+uniq 121
 [tools]
 [detail]
 s 336 2240 500 0 PWFS2 - WFS CAD Records
@@ -93,14 +93,6 @@ p -688 768 100 0 0 FTVB:STRING
 p -736 384 100 0 1 INAM:epToVxCadInit
 p -384 416 100 0 1 PV:$(top)$(wfs)
 p -384 384 100 0 1 SNAM:epToVxCadExecute
-use ecad2 3488 -345 100 0 detPowerOff
-xform 0 3648 -32
-p 3904 80 100 0 1 DESC:POWER OFF UTL DSP board
-p 3600 32 100 0 0 FTVA:STRING
-p 3600 -32 100 0 0 FTVB:STRING
-p 3904 48 100 0 1 INAM:epToVxCadInit
-p 3904 -16 100 0 1 PV:$(top)$(wfs)
-p 3904 16 100 0 1 SNAM:epToVxCadExecute
 use ecad20 3488 407 100 0 detSigInit
 xform 0 3648 1296
 p 3536 384 100 0 1 DESC:Initialize signal processing
@@ -121,12 +113,12 @@ p 3600 1200 100 0 1 FTVN:DOUBLE
 p 3600 1168 100 0 1 FTVO:DOUBLE
 p 3600 1136 100 0 1 FTVP:DOUBLE
 p 3600 1104 100 0 1 FTVQ:STRING
-p 3600 1072 100 0 1 FTVR:STRING
+p 3600 1072 100 0 0 FTVR:STRING
 p 3584 1296 100 0 0 FTVS:STRING
 p 3584 1264 100 0 0 FTVT:STRING
 p 3536 352 100 0 1 INAM:epToVxCadInit
-p 3584 480 100 0 1 PREC:5
-p 3536 288 100 0 1 PV:$(top)$(wfs)
+p 3536 224 100 0 1 PREC:5
+p 3552 272 100 0 1 PV:$(top)$(wfs)
 p 3536 320 100 0 1 SNAM:epToVxCadExecute
 use ecad20 2880 423 100 0 detGeometry
 xform 0 3040 1312
@@ -281,10 +273,10 @@ xform 0 1616 784
 p 2608 -688 200 0 1 author:S.M.Beard
 p 3120 -720 100 0 0 border:D
 p 2608 -768 200 0 0 checked:B.Goodrich
-p 3120 -784 200 0 -1 date:$Date: 2002-11-25 22:44:09 $
-p 2592 2304 200 0 -1 id:$Id: wfsCad.sch,v 1.5 2002-11-25 22:44:09 cboyer Exp $
+p 3120 -784 200 0 -1 date:$Date: 2002-09-18 01:30:31 $
+p 2592 2304 200 0 -1 id:$Id: wfsCad.sch,v 1.3 2002-09-18 01:30:31 cboyer Exp $
 p 2720 -768 100 0 1 modified:C. Boyer
 p 3120 -432 200 0 -1 project:Gemini PWFS2
-p 2592 -528 200 0 -1 revision:$Revision: 1.5 $
+p 2592 -528 200 0 -1 revision:$Revision: 1.3 $
 p 3120 -560 200 0 -1 title:Wavefront Sensor CAD Records
 [comments]

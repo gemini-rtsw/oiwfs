@@ -22,9 +22,9 @@ data/defAoContMatOiGmosMK.dat
 # Name of FG control matrix file
 data/defFgContMatOiGmosMK.dat
 # Scale factor for tip mode (double)
-0.1
+0.04
 # Scale factor for tilt mode (double)
-0.1
+0.04
 # Scale factor for focus mode at 100Hz (double)
 0.0003
 # Gain for focus sliding average (double)
@@ -43,9 +43,5 @@ data/defFgContMatOiGmosMK.dat
   5    1.5708       1.0       -1.0      1.5708       1.0       -1.0
 # Name of seeing coefficient matrix file
 data/defSeeingCoeffMatOiGmosMK.dat
-# Name of seeing coefficient vector file
-data/defSeeingCoeffVectOiGmosMK.dat
 # Scale factor for seeing computation (double)
-1.02
-# Threshold above which the aO gain is increased (double)
-1.0
+0.00103
