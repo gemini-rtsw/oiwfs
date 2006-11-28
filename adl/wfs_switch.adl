@@ -6,12 +6,12 @@ display {
 	majv="2"
 	mnrv="4"
 	ndyng="0"
-	npc="16"
-	nstr="57"
-	ndynamic="10"
+	npc="15"
+	nstr="51"
+	ndynamic="14"
 	nplot="0"
 	nrd="0"
-	nes="1"
+	nes="0"
 	nkd="1"
 	npd="0"
 	npo="0"
@@ -19,27 +19,27 @@ display {
 		x="0"
 		y="0"
 		width="678"
-		height="300"
+		height="310"
 	}
 	clr="1"
 	bclr="13"
 	nwords_dspy="2436"
-	nwords_sta="792"
+	nwords_sta="816"
 	nwords_cmap="0"
 	nwords_crules="0"
-	odyng="1606"
-	osta="814"
-	odynamic="1606"
-	oplot="2266"
-	ord="2266"
-	oes="2266"
+	odyng="1482"
+	osta="666"
+	odynamic="1482"
+	oplot="2424"
+	ord="2424"
+	oes="2424"
 	okd="2424"
 	opd="2436"
 	opo="2436"
 	opc="68"
-	ostr="256"
-	ocmap="814"
-	ocrules="814"
+	ostr="244"
+	ocmap="666"
+	ocrules="666"
 	style="solid"
 	fill="outline"
 	width="0"
@@ -89,7 +89,7 @@ display {
 		x="14"
 		y="37"
 		width="650"
-		height="255"
+		height="257"
 		groupid="0"
 	}
 }
@@ -128,6 +128,28 @@ display {
 }
 "text" {
 	object {
+		x="22"
+		y="235"
+		width="167"
+		height="20"
+		groupid="0"
+	}
+	textix="PARAMETERS:"
+	align="horiz. left"
+}
+"text" {
+	object {
+		x="24"
+		y="52"
+		width="133"
+		height="20"
+		groupid="0"
+	}
+	textix="DIRECTIVE:"
+	align="horiz. left"
+}
+"text" {
+	object {
 		x="339"
 		y="48"
 		width="124"
@@ -140,7 +162,7 @@ display {
 "line" {
 	object {
 		x="14"
-		y="234"
+		y="228"
 		width="650"
 		height="0"
 		groupid="0"
@@ -148,11 +170,11 @@ display {
 	npoints="2"
 	point[0] {
 		x="14"
-		y="234"
+		y="228"
 	}
 	point[1] {
 		x="664"
-		y="234"
+		y="228"
 	}
 	orgpoint[0] {
 		x="0"
@@ -165,10 +187,10 @@ display {
 }
 "line" {
 	object {
-		x="331"
+		x="332"
 		y="38"
-		width="0"
-		height="117"
+		width="3"
+		height="118"
 		groupid="0"
 	}
 	npoints="2"
@@ -178,7 +200,7 @@ display {
 	}
 	point[1] {
 		x="331"
-		y="155"
+		y="156"
 	}
 	orgpoint[0] {
 		x="-1"
@@ -193,7 +215,7 @@ display {
 	object {
 		x="14"
 		y="156"
-		width="649"
+		width="650"
 		height="0"
 		groupid="0"
 	}
@@ -203,7 +225,7 @@ display {
 		y="156"
 	}
 	point[1] {
-		x="663"
+		x="664"
 		y="156"
 	}
 	orgpoint[0] {
@@ -217,7 +239,7 @@ display {
 }
 "text" {
 	object {
-		x="27"
+		x="28"
 		y="165"
 		width="67"
 		height="20"
@@ -228,7 +250,7 @@ display {
 }
 "text" {
 	object {
-		x="91"
+		x="92"
 		y="206"
 		width="80"
 		height="16"
@@ -239,7 +261,7 @@ display {
 }
 "text" {
 	object {
-		x="91"
+		x="92"
 		y="187"
 		width="81"
 		height="16"
@@ -250,7 +272,7 @@ display {
 }
 "text" {
 	object {
-		x="339"
+		x="340"
 		y="204"
 		width="169"
 		height="16"
@@ -261,7 +283,7 @@ display {
 }
 "text" {
 	object {
-		x="338"
+		x="339"
 		y="185"
 		width="154"
 		height="16"
@@ -272,25 +294,73 @@ display {
 }
 "text" {
 	object {
-		x="28"
-		y="48"
-		width="188"
-		height="13"
+		x="21"
+		y="266"
+		width="252"
+		height="16"
 		groupid="0"
 	}
-	textix="Oiwfs Top Level CAR:"
+	textix="INPUT (1:GMOS / 2:NIFS):"
 	align="horiz. left"
 }
 "text" {
 	object {
-		x="25"
-		y="248"
-		width="215"
-		height="14"
+		x="340"
+		y="267"
+		width="133"
+		height="16"
 		groupid="0"
 	}
-	textix="Oiwfs Software Switch:"
+	textix="OUTPUT (1):"
 	align="horiz. left"
+}
+"message button" {
+	object {
+		x="145"
+		y="49"
+		width="71"
+		height="24"
+		groupid="0"
+	}
+	control {
+		chan="$(top)$(cad).DIR"
+		clr="1"
+		bclr="6"
+		label="none"
+		clrmod="static"
+		rulechan[0] = ""
+		rulechan[1] = ""
+		rulechan[2] = ""
+		rulechan[3] = ""
+		rulechan[4] = ""
+		rulechan[5] = ""
+		rulechan[6] = ""
+		rulechan[7] = ""
+		rulechan[8] = ""
+		rulechan[9] = ""
+		rulechan[10] = ""
+		rulechan[11] = ""
+		rulechan[12] = ""
+		rulechan[13] = ""
+		rulechan[14] = ""
+		rulechan[15] = ""
+		clrrule="alarm"
+		clrargs=""
+		rulecolorbg="1"
+		rulecolorfg="1"
+		hdl="0"
+		ldl="0"
+		prec="-1"
+		newunits=""
+		units="none"
+		decorate="none"
+		convertFunc=""
+		convertParams=""
+	}
+	inactive_label="START"
+	pressed_label="START"
+	press_msg="MARK"
+	release_msg="START"
 }
 "text update" {
 	object {
@@ -522,9 +592,150 @@ display {
 	align="horiz. left"
 	format="decimal"
 }
+"message button" {
+	object {
+		x="145"
+		y="78"
+		width="71"
+		height="24"
+		groupid="0"
+	}
+	control {
+		chan="$(top)$(cad).DIR"
+		clr="1"
+		bclr="6"
+		label="none"
+		clrmod="static"
+		rulechan[0] = ""
+		rulechan[1] = ""
+		rulechan[2] = ""
+		rulechan[3] = ""
+		rulechan[4] = ""
+		rulechan[5] = ""
+		rulechan[6] = ""
+		rulechan[7] = ""
+		rulechan[8] = ""
+		rulechan[9] = ""
+		rulechan[10] = ""
+		rulechan[11] = ""
+		rulechan[12] = ""
+		rulechan[13] = ""
+		rulechan[14] = ""
+		rulechan[15] = ""
+		clrrule="alarm"
+		clrargs=""
+		rulecolorbg="1"
+		rulecolorfg="1"
+		hdl="0"
+		ldl="0"
+		prec="-1"
+		newunits=""
+		units="none"
+		decorate="none"
+		convertFunc=""
+		convertParams=""
+	}
+	inactive_label="PRESET"
+	pressed_label="PRESET"
+	press_msg="MARK"
+	release_msg="PRESET"
+}
+"message button" {
+	object {
+		x="231"
+		y="78"
+		width="71"
+		height="24"
+		groupid="0"
+	}
+	control {
+		chan="$(top)$(cad).DIR"
+		clr="1"
+		bclr="6"
+		label="none"
+		clrmod="static"
+		rulechan[0] = ""
+		rulechan[1] = ""
+		rulechan[2] = ""
+		rulechan[3] = ""
+		rulechan[4] = ""
+		rulechan[5] = ""
+		rulechan[6] = ""
+		rulechan[7] = ""
+		rulechan[8] = ""
+		rulechan[9] = ""
+		rulechan[10] = ""
+		rulechan[11] = ""
+		rulechan[12] = ""
+		rulechan[13] = ""
+		rulechan[14] = ""
+		rulechan[15] = ""
+		clrrule="alarm"
+		clrargs=""
+		rulecolorbg="1"
+		rulecolorfg="1"
+		hdl="0"
+		ldl="0"
+		prec="-1"
+		newunits=""
+		units="none"
+		decorate="none"
+		convertFunc=""
+		convertParams=""
+	}
+	inactive_label="DEFAULT"
+	pressed_label="(CLEAR)"
+	press_msg="MARK"
+	release_msg="CLEAR"
+}
+"text entry" {
+	object {
+		x="261"
+		y="258"
+		width="61"
+		height="25"
+		groupid="0"
+	}
+	control {
+		chan="$(top)$(cad).A"
+		clr="0"
+		bclr="6"
+		label="none"
+		clrmod="static"
+		rulechan[0] = ""
+		rulechan[1] = ""
+		rulechan[2] = ""
+		rulechan[3] = ""
+		rulechan[4] = ""
+		rulechan[5] = ""
+		rulechan[6] = ""
+		rulechan[7] = ""
+		rulechan[8] = ""
+		rulechan[9] = ""
+		rulechan[10] = ""
+		rulechan[11] = ""
+		rulechan[12] = ""
+		rulechan[13] = ""
+		rulechan[14] = ""
+		rulechan[15] = ""
+		clrrule="acceptReject"
+		clrargs="C=$(top)$(cad)"
+		rulecolorbg="1"
+		rulecolorfg="1"
+		hdl="0"
+		ldl="0"
+		prec="-1"
+		newunits=""
+		units="none"
+		decorate="outward"
+		convertFunc=""
+		convertParams=""
+	}
+	format="decimal"
+}
 "text update" {
 	object {
-		x="174"
+		x="175"
 		y="183"
 		width="150"
 		height="20"
@@ -570,7 +781,7 @@ display {
 }
 "text update" {
 	object {
-		x="174"
+		x="175"
 		y="203"
 		width="150"
 		height="20"
@@ -616,7 +827,7 @@ display {
 }
 "text update" {
 	object {
-		x="502"
+		x="503"
 		y="180"
 		width="150"
 		height="20"
@@ -662,7 +873,7 @@ display {
 }
 "text update" {
 	object {
-		x="502"
+		x="503"
 		y="200"
 		width="150"
 		height="20"
@@ -706,18 +917,18 @@ display {
 	align="horiz. left"
 	format="decimal"
 }
-"text update" {
+"text entry" {
 	object {
-		x="209"
-		y="45"
-		width="113"
-		height="32"
+		x="502"
+		y="257"
+		width="61"
+		height="25"
 		groupid="0"
 	}
-	monitor {
-		chan="oiwfs:activeC.VAL"
-		clr="12"
-		bclr="7"
+	control {
+		chan="$(top)$(cad).B"
+		clr="0"
+		bclr="6"
 		label="none"
 		clrmod="static"
 		rulechan[0] = ""
@@ -736,8 +947,8 @@ display {
 		rulechan[13] = ""
 		rulechan[14] = ""
 		rulechan[15] = ""
-		clrrule="alarm"
-		clrargs=""
+		clrrule="acceptReject"
+		clrargs="C=$(top)$(cad)"
 		rulecolorbg="1"
 		rulecolorfg="1"
 		hdl="0"
@@ -749,141 +960,7 @@ display {
 		convertFunc=""
 		convertParams=""
 	}
-	align="horiz. left"
 	format="decimal"
-}
-"execute script" {
-	object {
-		x="230"
-		y="244"
-		width="104"
-		height="23"
-		groupid="0"
-	}
-	script[0] {
-		label="To .."
-		path="/gemini/epics3.13.4/prm/prm/cd"
-		args=""
-	}
-	script[1] {
-		label=" GMOS"
-		path="/gemini/epics3.13.4/prm/prm/data/switchOiwfs.csh 1"
-		args=""
-	}
-	script[2] {
-		label=" NIFS"
-		path="/gemini/epics3.13.4/prm/prm/data/switchOiwfs.csh 2"
-		args=""
-	}
-	script[3] {
-		label=" NIRI"
-		path="/gemini/epics3.13.4/prm/prm/data/switchOiwfs.csh 3"
-		args=""
-	}
-	script[4] {
-		label=""
-		path=""
-		args=""
-	}
-	script[5] {
-		label=""
-		path=""
-		args=""
-	}
-	script[6] {
-		label=""
-		path=""
-		args=""
-	}
-	script[7] {
-		label=""
-		path=""
-		args=""
-	}
-	script[8] {
-		label=""
-		path=""
-		args=""
-	}
-	script[9] {
-		label=""
-		path=""
-		args=""
-	}
-	script[10] {
-		label=""
-		path=""
-		args=""
-	}
-	script[11] {
-		label=""
-		path=""
-		args=""
-	}
-	script[12] {
-		label=""
-		path=""
-		args=""
-	}
-	script[13] {
-		label=""
-		path=""
-		args=""
-	}
-	script[14] {
-		label=""
-		path=""
-		args=""
-	}
-	script[15] {
-		label=""
-		path=""
-		args=""
-	}
-	script[16] {
-		label=""
-		path=""
-		args=""
-	}
-	script[17] {
-		label=""
-		path=""
-		args=""
-	}
-	script[18] {
-		label=""
-		path=""
-		args=""
-	}
-	script[19] {
-		label=""
-		path=""
-		args=""
-	}
-	script[20] {
-		label=""
-		path=""
-		args=""
-	}
-	script[21] {
-		label=""
-		path=""
-		args=""
-	}
-	script[22] {
-		label=""
-		path=""
-		args=""
-	}
-	script[23] {
-		label=""
-		path=""
-		args=""
-	}
-	clr="1"
-	bclr="13"
-	menu_title=""
-	decorate="none"
 }
 "kill display" {
 	object {

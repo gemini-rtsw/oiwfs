@@ -174,25 +174,3 @@ V2-9 SEP 2005 AA:
  startup/
 	Tasks prmLib,prmControl and prmtest loaded (Status deleted)
  src/OiGmosSetDefCommandMK/CP.pv
-
----------------------------------------
-		V2-10 NOV 2005 AA:
----------------------------------------
-
-FR5027: FgDiagP2 channels renamed from fgDiag?P2 to fgDiag?Oi
-(Epics ch names and sname renamed)
-- capfast/wfsGensub.sch
-- adl/showFgDiagP2.adl removed
-- adl/showFgDiagOi.adl added with modified names
-- adl/sig_main.adl updated to call showFgDiagOi.dl
-- src/writeZernikes.c functions showFgDiag?P2 renamed accordingly
-
-- capfast/wfsGensub.sch: AoDiagP2 replaced by AoDiagOi
-- adl/showAoDiagP2.adl removed and replaced by showAoDiagOi.adl
-- adl/sig_main.adl updated to call showAoDiagOi.dl 
-- src/writeZernikes.c functions showAoDiagP2 replaced by showAoDiagOi
-
-wfs_switch dm screen copied from prm & different according to site
-- adl/wfs_switchMK/CP added
-- oiwfsGmosInstall 
-
