@@ -1,9 +1,9 @@
 [schematic2]
-uniq 136
+uniq 134
 [tools]
 [detail]
-w 1339 320 100 0 n#135 hwin.hwin#129.in 1312 256 1376 256 egenSub.initPort.INPJ
-w -382 -629 100 0 n#133 egenSubC.fgDiag1Oi.FLNK -416 128 -384 128 -384 -640 -320 -640 egenSubC.fgDiag2Oi.SLNK
+w -382 -629 100 0 n#133 egenSubC.fgDiag1P2.FLNK -416 128 -384 128 -384 -640 -320 -640 egenSubC.fgDiag2P2.SLNK
+w 1380 827 100 2 n#130 hwin.hwin#129.in 1376 832 1376 832 egenSub.initPort.INPA
 w 402 2123 100 0 n#127 egenSub.ttfZero.FLNK -416 1280 -256 1280 -256 2112 1120 2112 1120 1312 1376 1312 egenSub.optsensorState.SLNK
 w 1380 1979 100 2 n#126 hwin.hwin#125.in 1376 1984 1376 1984 egenSub.optsensorState.INPA
 w 114 939 100 0 n#122 egenSub.probeOffset.FLNK 992 1280 1088 1280 1088 928 -800 928 -800 1312 -704 1312 egenSub.ttfZero.SLNK
@@ -12,9 +12,9 @@ s -736 2080 100 0 port B selects a fudge angle
 s 2464 -704 500 512 wfsGensub.sch
 s 112 2224 500 0 PWFS2 - WFS genSub records
 [cell use]
-use egenSubC -320 -729 100 0 fgDiag2Oi
+use egenSubC -320 -729 100 0 fgDiag2P2
 xform 0 -176 -304
-p 0 -544 100 0 1 DESC:Display FG Diagnostics of OIWFS
+p 0 -544 100 0 1 DESC:Display FG Diagnostics of PWFS2
 p -543 -955 100 0 0 FTA:DOUBLE
 p -543 -955 100 0 0 FTB:DOUBLE
 p 0 64 100 0 1 FTVA:DOUBLE
@@ -42,10 +42,10 @@ p -543 -1595 100 0 0 NOVJ:1
 p 0 -704 100 0 1 PREC:15
 p 0 -672 100 0 1 PV:$(top)$(wfs)
 p 0 -640 100 0 1 SCAN:Passive
-p 0 -608 100 0 1 SNAM:showFgDiag2Oi
-use egenSubC -704 71 100 0 fgDiag1Oi
+p 0 -608 100 0 1 SNAM:showFgDiag2P2
+use egenSubC -704 71 100 0 fgDiag1P2
 xform 0 -560 496
-p -832 32 100 0 1 DESC:Display FG Diagnostics of OIWFS
+p -832 32 100 0 1 DESC:Display FG Diagnostics of PWFS2
 p -927 -155 100 0 0 FTA:DOUBLE
 p -927 -155 100 0 0 FTB:DOUBLE
 p -384 864 100 0 1 FTVA:LONG
@@ -73,7 +73,7 @@ p -927 -795 100 0 0 NOVJ:1
 p -832 -128 100 0 1 PREC:15
 p -832 -96 100 0 1 PV:$(top)$(wfs)
 p -832 -64 100 0 1 SCAN:.5 second
-p -832 -32 100 0 1 SNAM:showFgDiag1Oi
+p -832 -32 100 0 1 SNAM:showFgDiag1P2
 use egenSubC 704 71 100 0 cbDiag
 xform 0 848 496
 p 768 32 100 0 1 DESC:Display CB Diagnostics
@@ -97,9 +97,9 @@ p 416 622 100 0 0 PREC:4
 p 768 -96 100 0 1 PV:$(top)$(wfs)
 p 768 -64 100 0 1 SCAN:.5 second
 p 768 -32 100 0 1 SNAM:showCbDiag
-use egenSubC 160 71 100 0 aoDiagOi
+use egenSubC 160 71 100 0 aoDiagP2
 xform 0 304 496
-p 224 16 100 0 1 DESC:Display aO Diagnostics of OIWFS
+p 224 16 100 0 1 DESC:Display aO Diagnostics of PWFS2
 p -63 -155 100 0 0 FTA:DOUBLE
 p -63 -155 100 0 0 FTB:DOUBLE
 p 480 864 100 0 1 FTVA:LONG
@@ -128,16 +128,16 @@ p -63 -795 100 0 0 NOVJ:1
 p 224 -144 100 0 1 PREC:15
 p 224 -112 100 0 1 PV:$(top)$(wfs)
 p 224 -80 100 0 1 SCAN:.5 second
-p 224 -48 100 0 1 SNAM:showAoDiagOi
+p 224 -48 100 0 1 SNAM:showAoDiagP2
 use hwin 512 1367 100 0 hwin#119
 xform 0 608 1408
 p 515 1400 100 0 -1 val(in):ag:oi:probeOffset.VALJ
 use hwin 1184 1943 100 0 hwin#125
 xform 0 1280 1984
 p 1187 1976 100 0 -1 val(in):gm:cc:optsensorEnable
-use hwin 1120 215 100 0 hwin#129
-xform 0 1216 256
-p 1123 248 100 0 -1 val(in):ag:port:gmos
+use hwin 1184 791 100 0 hwin#129
+xform 0 1280 832
+p 1187 824 100 0 -1 val(in):ag:port:gmos
 use egenSub 704 1223 100 0 probeOffset
 xform 0 848 1648
 p 768 1184 100 0 1 DESC:Probe offsets
@@ -204,11 +204,11 @@ p 1440 1120 100 0 1 SNAM:getOptsensorState
 use egenSub 1376 71 100 0 initPort
 xform 0 1520 496
 p 1440 32 100 0 1 DESC:Init ISS port number
-p 1472 848 100 0 0 FTA:LONG
+p 1472 848 100 0 1 FTA:LONG
 p 1472 800 100 0 0 FTB:DOUBLE
 p 1472 752 100 0 0 FTC:DOUBLE
 p 1472 704 100 0 0 FTD:DOUBLE
-p 1472 288 100 0 1 FTJ:LONG
+p 1456 288 100 0 0 FTJ:DOUBLE
 p 1153 -155 100 0 0 FTVA:DOUBLE
 p 1696 288 100 0 0 FTVJ:DOUBLE
 p 1440 0 100 0 1 INAM:
@@ -216,17 +216,17 @@ p 1456 256 100 0 0 NOJ:1
 p 1456 224 100 0 0 NOVJ:1
 p 1088 622 100 0 0 PREC:0
 p 1440 -64 100 0 1 PV:$(top)$(wfs)
-p 1440 -96 100 0 1 SCAN:5 second
-p 1440 -32 100 0 1 SNAM:detPortGet
+p 1440 -96 100 0 1 SCAN:Passive
+p 1440 -32 100 0 1 SNAM:wfsInitPort
 use bd200tr -1024 -920 -100 0 frame
 xform 0 1616 784
 p 2608 -688 200 0 1 author:S.M.Beard
 p 3120 -720 100 0 0 border:D
 p 2608 -768 200 0 1 checked:B.Goodrich
-p 3120 -784 200 0 -1 date:$Date: 2005-11-08 20:32:44 $
-p 2592 2304 200 0 -1 id:$Id: wfsGensub.sch,v 1.4 2005-11-08 20:32:44 gemvx Exp $
+p 3120 -784 200 0 -1 date:$Date: 2002-02-08 20:30:08 $
+p 2592 2304 200 0 -1 id:$Id: wfsGensub.sch,v 1.2 2002-02-08 20:30:08 cboyer Exp $
 p 3120 -432 200 0 -1 project:Gemini PWFS2
-p 2592 -528 200 0 -1 revision:$Revision: 1.4 $
+p 2592 -528 200 0 -1 revision:$Revision: 1.2 $
 p 3120 -560 200 0 -1 title:Wavefront Sensor genSub Records
 use egenSubB 2048 1223 100 0 initModAst
 xform 0 2192 1648
