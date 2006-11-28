@@ -13,6 +13,8 @@
  *   *** THE SDSU CONTROLLERS AT YOUR SITE. SEE DEFINITIONS BELOW.
  *
  *INDENT-OFF*
+ *   02 Jan 2006: AA - Add updateAoThresh and aoMaxThreshold
+ *   02 Jan 2006: AA - Add pause between 2 aO commands
  *   31 Jan 2003: CB - Add aoThreshold
  *   19 Nov 2002: CB - Implement seeing computation according to FR's method
  *   14 Oct 2002: CB - Add detPowerOff
@@ -548,6 +550,9 @@ typedef   struct      /* Context structure used to describe an observation.   */
    int          updateAoScale;
                            /* Flag to indicate if the aO scale factors have   */
                            /* been updated                                    */
+   int          updateAoThresh;
+                           /* Flag to indicate if the aO thresholds have been */
+                           /* updated                                         */
    long         saveCentroids;
                            /* Flag to indicate if we want to save centroids   */
                            /* data when FG FOCUS and COADD mode               */
@@ -560,6 +565,8 @@ typedef   struct      /* Context structure used to describe an observation.   */
    long         sigMode;   /* Signal processing mode.                         */
    long         nCoaddFrames;
                            /* Number of frames to coadd.                      */
+   long         nPauseFrames;
+                           /* Number of frames to pause between 2 aO commands.*/
    long         methodThreshComp;    
                            /* Method for threshold computation                */
    long         nAverageDataThreshComp;    
@@ -598,6 +605,7 @@ typedef   struct      /* Context structure used to describe an observation.   */
    double       ggTime;    /* Time with GG only over the whole CCD in the     */
                            /* closed loop sequence                            */
    double       aoTime;    /* Time to average aO data                         */
+   double       aoPause;   /* Pause between 2 aO commands                     */
    double       saveCbFgCtrlClosedLoopTime;
                            /* Save FG control circular  buffer during closed  */
                            /* loop sequence every this time                   */
@@ -627,6 +635,8 @@ typedef   struct      /* Context structure used to describe an observation.   */
                            /* of the interaction matrix                       */
    double       aoThreshold;
                            /* Threshold for aO correction                     */
+   double       aoMaxThreshold;
+                           /* Maximum Threshold for aO correction             */
    AO_VECT      aoScaleVect;
                            /* Scale factor vector for aO modes                */
    char         pCoaddFileName[(EPICS_MAX_BYTES_STRING_ATTRIB + 1)*2];
@@ -925,6 +935,8 @@ enum
                                /* Init zero point model for coma off axis     */
    DET_CONTROL_CMD_SIG_INIT_FOCUS_MODEL,
                                /* Init zero point model for focus off axis    */
+   DET_CONTROL_CMD_SIG_INIT_AO_THRESH,
+                               /* Init aO thresholds                          */
    DET_CONTROL_CMD_SIG_INIT_PO,
                                /* Init probe offset scale factors             */
    DET_CONTROL_CMD_SIG_OUTPUT,

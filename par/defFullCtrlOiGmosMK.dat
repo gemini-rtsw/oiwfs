@@ -47,5 +47,3 @@ data/defSeeingCoeffMatOiGmosMK.dat
 data/defSeeingCoeffVectOiGmosMK.dat
 # Scale factor for seeing computation (double)
 1.02
-# Threshold above which the aO gain is increased (double)
-1.0

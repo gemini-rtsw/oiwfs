@@ -6,9 +6,9 @@ display {
 	majv="2"
 	mnrv="4"
 	ndyng="0"
-	npc="12"
-	nstr="52"
-	ndynamic="13"
+	npc="13"
+	nstr="57"
+	ndynamic="14"
 	nplot="0"
 	nrd="0"
 	nes="0"
@@ -19,27 +19,27 @@ display {
 		x="0"
 		y="0"
 		width="707"
-		height="327"
+		height="362"
 	}
 	clr="1"
 	bclr="13"
-	nwords_dspy="2188"
-	nwords_sta="580"
+	nwords_dspy="2374"
+	nwords_sta="616"
 	nwords_cmap="0"
 	nwords_crules="0"
-	odyng="1288"
-	osta="708"
-	odynamic="1288"
-	oplot="2176"
-	ord="2176"
-	oes="2176"
-	okd="2176"
-	opd="2188"
-	opo="2188"
+	odyng="1408"
+	osta="792"
+	odynamic="1408"
+	oplot="2362"
+	ord="2362"
+	oes="2362"
+	okd="2362"
+	opd="2374"
+	opo="2374"
 	opc="68"
-	ostr="226"
-	ocmap="708"
-	ocrules="708"
+	ostr="242"
+	ocmap="792"
+	ocrules="792"
 	style="solid"
 	fill="outline"
 	width="0"
@@ -78,7 +78,7 @@ display {
 		x="6"
 		y="38"
 		width="690"
-		height="276"
+		height="313"
 		groupid="0"
 	}
 }
@@ -269,6 +269,39 @@ display {
 		groupid="0"
 	}
 	textix="C: During Global Guide write Z to SCS:"
+	align="horiz. left"
+}
+"text" {
+	object {
+		x="677"
+		y="219"
+		width="14"
+		height="17"
+		groupid="0"
+	}
+	textix="s"
+	align="horiz. left"
+}
+"text" {
+	object {
+		x="13"
+		y="319"
+		width="384"
+		height="16"
+		groupid="0"
+	}
+	textix="D: Pause between 2 aO commands:"
+	align="horiz. left"
+}
+"text" {
+	object {
+		x="677"
+		y="321"
+		width="14"
+		height="17"
+		groupid="0"
+	}
+	textix="s"
 	align="horiz. left"
 }
 "message button" {
@@ -649,7 +682,7 @@ display {
 	object {
 		x="394"
 		y="249"
-		width="296"
+		width="277"
 		height="21"
 		groupid="0"
 	}
@@ -692,9 +725,9 @@ display {
 }
 "text entry" {
 	object {
-		x="394"
+		x="287"
 		y="215"
-		width="296"
+		width="384"
 		height="21"
 		groupid="0"
 	}
@@ -835,12 +868,57 @@ display {
 	object {
 		x="552"
 		y="279"
-		width="99"
+		width="116"
 		height="27"
 		groupid="0"
 	}
 	control {
 		chan="$(top)detSigModeGgAo.C"
+		clr="0"
+		bclr="6"
+		label="none"
+		clrmod="rule"
+		rulechan[0] = "$(top)detSigModeGgAo.VAL"
+		rulechan[1] = "$(top)detSigModeGgAo.VAL"
+		rulechan[2] = "$(top)detSigModeGgAo.VAL"
+		rulechan[3] = ""
+		rulechan[4] = ""
+		rulechan[5] = ""
+		rulechan[6] = ""
+		rulechan[7] = ""
+		rulechan[8] = ""
+		rulechan[9] = ""
+		rulechan[10] = ""
+		rulechan[11] = ""
+		rulechan[12] = ""
+		rulechan[13] = ""
+		rulechan[14] = ""
+		rulechan[15] = ""
+		clrrule="acceptReject"
+		clrargs="C=$(top)detSigModeGgAo"
+		rulecolorbg="1"
+		rulecolorfg="1"
+		hdl="0"
+		ldl="0"
+		prec="-1"
+		newunits=""
+		units="none"
+		decorate="none"
+		convertFunc=""
+		convertParams=""
+	}
+	format="decimal"
+}
+"text entry" {
+	object {
+		x="330"
+		y="317"
+		width="341"
+		height="21"
+		groupid="0"
+	}
+	control {
+		chan="$(top)detSigModeGgAo.D"
 		clr="0"
 		bclr="6"
 		label="none"
