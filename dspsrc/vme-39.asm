@@ -1,7 +1,7 @@
        COMMENT *
 Gemini WFS VME Interface Board Application Code
 Controller: SDSU2 
-Revision: 0.30b  (must agree with status word V_SW_ID in Y: memory)
+Revision: 0.30  (must agree with status word V_SW_ID in Y: memory)
 (This code is adapted from vme1.asm written by Dr. Bob Leach at SDSU)
 
 
@@ -108,14 +108,6 @@ Revision: 0.30b  (must agree with status word V_SW_ID in Y: memory)
          - removed TIM reply from command parsing
 	 - removed carry bit setting from CHK_FO routine
 
-30/06/00 - created version for commissioning of NIRI WFS
-         - fixed problem of infinite looping when extra data after the end of
-           the last frame is received
-         - commented clear of new FBA flag to disable requirement for a new
-           FBA for each frame
-         - added FIFO reset at end of readout
-
-17/7/00 - changed ABT timeout delay to accomodate NIRI WFS
 
 
 Assembler directives:
@@ -208,7 +200,7 @@ CHK_BUS	JSET	#HASBUS,X:PBD,XFR_PKT	; Transfer packet if VMEbus master
 CHK_EF	JSET	#EF,X:PCD,READ_FO	; Read the FO receiver data, if any
 
 ; Check if there is a packet in the buffer to send to the host
-CHK_PKT	JCLR	#REQBUS,X:PBD,CHK_BUS	; Skip check if already waiting for bus
+	JCLR	#REQBUS,X:PBD,CHK_BUS	; Skip check if already waiting for bus
 	MOVE	R7,A		; Get buffer content
 	MOVE	Y:<PSIZE,Y0
 	CMP	Y0,A		; Compare content to packet size
@@ -227,9 +219,7 @@ CHK_VME	JSR	<VME_TST	; Test for incoming VMEbus commands (boot code)
 ; that there is enough room in the internal buffer. Data is read a packet
 ; at a time, unless there is less than a packet reamining in the frame.
 
-READ_FO	JSET	#LST_FRM,Y:<FLAGS,CHK_PKT	; Ignore data if last frame rxd
-	JSET	#HD_WAIT,Y:<FLAGS,FRM_HDR	; Check if waiting for header
-
+READ_FO	JSET	#HD_WAIT,Y:<FLAGS,FRM_HDR	; Check if waiting for header
 
 ; Check if there is room for another packet in the buffer
 	MOVE	R7,X1			; Get content of buffer
@@ -451,9 +441,9 @@ CHG_HI	MOVE	Y:<FBAHISV,A	; Get high word of address
 ; the ID given in accumulator A
 
 GEN_INT	JCLR	#DONEVME,X:PBD,* ; Make sure the last VME operation has finished
-	MOVE	Y:<AM_16B,Y0	; Assume we are in 16-bit mode
-	OR	Y0,A		; Insert the interrupt ID number
-	MOVE	A,X:WRAM	; Set the address modifer register
+	MOVE	Y:<AM_16B,Y0
+	OR	Y0,A
+	MOVE	A,X:WRAM	; Set interrupt ID
 	MOVE	A,X:RQINTR	; Request interrupt
 	RTS
 
@@ -622,7 +612,6 @@ REC_FS	BCLR	#DSC_PXL,Y:<FLAGS	; Clear discard pixels flag
 	JNE	<NEW_HD			; Check if last frame (counter = 1)
 	JSET	#RD_SYNC,Y:<FLAGS,NEW_RDC	; Keep reading if synced RDC
 	BSET	#LST_FRM,Y:<FLAGS	; Set flag that last frame received
-	MOVE	A,X:RSTFIFO		; Reset FIFO
 	JMP	<PKT_RDY
 
 NEW_HD	BSET	#HD_WAIT,Y:<FLAGS	; Set flag to wait for new frame header
@@ -688,7 +677,6 @@ CLR_LF	BCLR	#LST_FRM,Y:<FLAGS	; Clear flag that last frame received
 
 RD_DONE	BCLR    #RD,X:<STATUS   ; Clear status to not reading out
 	BSET	#MODE,X:PBD	; Fiber optic shift register set for 24-bit 
-	MOVE	A,X:RSTFIFO	; Reset FIFO
 	BCLR	#LST_FRM,Y:<FLAGS	; Clear flag that last frame received
 
 ; Restore R1 for use as FIFO command buffer
@@ -749,7 +737,7 @@ CMP_NW	CMP	Y0,A  Y0,X:<NWORDS ; Y0 = NWORDS from above
 NOT_ALL	NOP
 L_TO
 	MOVE	(R5)+		; Increment R5 past header
-	JMP	<START		; Timeout - ignore command
+SND_TIM	JMP	<START		; Timeout - ignore command
 
 
 ; *****  Abort  *****
@@ -858,7 +846,6 @@ L_GBGDSC
 ; Cleanup and return
 ABT_DON	BCLR    #RD,X:<STATUS   ; Clear status to not reading out
 	BSET	#MODE,X:PBD	; Fiber optic shift register set for 24-bit 
-	MOVE	A,X:RSTFIFO	; Reset FIFO
 	BCLR	#FBA_VLD,Y:<FLAGS	; Clear flag: FBA is no longer valid
 	BCLR	#LST_FRM,Y:<FLAGS	; Clear flag that last frame received
 
@@ -891,7 +878,7 @@ CHK_FO	DO	Y:FO_TO,L_FTO	; Check FO_TO times for data
 	JCLR	#EF,X:PCD,FO_MT	; Wait for the datum to be ready
 	ENDDO			; Abort loop
 	RTS
-FO_MT	DO	#2500,DLY	; Wait 200 usec
+FO_MT	DO	#250,DLY	 ; Wait 20 usec
 	NOP
 	NOP
 DLY	NOP
@@ -949,19 +936,19 @@ IDLE	JMP	<FINISH		; send DON
 
 ; *****  Status values  *****
 
-V_SW_ID	DC	$00300b	; Software version number (00.30b)
+V_SW_ID	DC	$003000	; Software version number (00.30)
 
 
 ; *****  Readout parameters  *****
 
-V_PSIZE	DC	32	; packet size
+V_PSIZE	DC	$20	; packet size
 
 V_INT_EN	DC	$000000	; Interrupt enable flags
 PI_EN		EQU	0	; Packet interrupt enable
 FI_EN		EQU	1	; Frame interrupt enable
 
-V_PIID	DC	$F10000	; Packet interrupt ID
-V_FIID	DC	$F20000	; Frame interrupt ID
+V_PIID		DC	$F10000	; Packet interrupt ID
+V_FIID		DC	$F20000	; Frame interrupt ID
 
 V_FBAHI	DC	0	; Frame Buffer address high word
 V_FBALO	DC	0	; Frame Buffer address low word
@@ -970,7 +957,7 @@ V_FBALO	DC	0	; Frame Buffer address low word
 
 ; *************************   Y Data (Internal)   *************************
 
-PSIZE	DC	32	; Packet size (in use copy)
+PSIZE	DC	$20	; Packet size (in use copy)
 
 PIXELC	DC	0	; Pixel counter
 PKTC	DC	0	; Packet counter
@@ -1019,7 +1006,7 @@ CS_SAVE	DC	0	; Temporary storage of checksum
 
 HDR_MSK	DC	$FFFCF8	; Mask to check command header
 
-FO_TO	DC	50000	; Timeout: number of times to look for data in FIFO
+FO_TO	DC	$2710	; Timeout: number of times to look for data in FIFO
 
 MAX_LP	DC	$FFFE	; Maximum loop counter value
 

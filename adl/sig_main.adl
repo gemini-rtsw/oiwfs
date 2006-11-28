@@ -2237,12 +2237,12 @@ display {
 	selfkill="off"
 	display[0] {
 		label="SHOW FG CENTROIDS"
-		name="showFgDiagOi.dl"
+		name="showFgDiagP2.dl"
 		args="top=$(top),sensor=$(sensor)"
 	}
 	display[1] {
 		label="SHOW AO CENTROIDS"
-		name="showAoDiagOi.dl"
+		name="showAoDiagP2.dl"
 		args="top=$(top),sensor=$(sensor)"
 	}
 	display[2] {
