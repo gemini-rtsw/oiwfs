@@ -7410,9 +7410,9 @@ STATUS aoCtrlFileRead (
 
       *(pFgGain + i) = value;
 
-      /* AAG #ifdef DEBUG */
+#ifdef DEBUG
       printf ( "aoCtrlFileRead(): FG gain [%d] = %f\n", i, *(pFgGain + i) );
-      /*#endif*/
+#endif
    }
 
    /* Skip the next line of comment */

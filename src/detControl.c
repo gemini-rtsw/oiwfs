@@ -1,5 +1,5 @@
 static struct {void *v; char *c;} rcsid = {&rcsid,
-   "$Id: detControl.c,v 1.13 2005-08-03 16:10:58 gemvx Exp $"};
+   "$Id: detControl.c,v 1.12 2004-02-11 02:46:57 cboyer Exp $"};
 
 /*+
  *   MODULE NAME:
@@ -31,7 +31,6 @@ static struct {void *v; char *c;} rcsid = {&rcsid,
  *   Steven Beard
  *
  *INDENT-OFF*
- *   02 Aug 2005: AA - Added detInitSigModeSeqDark
  *   23 Jan 2004: CB - implement detInitSigInitFgGain and detInitSigModeSeq
  *   31 Jan 2003: CB - Modify aoModeCompute to include aoThreshold
  *   19 Nov 2002: CB - Implement seeing computation according to FR's method
@@ -8297,7 +8296,7 @@ uint32 detInit
     * Init the AO control context structure
     */
 
-   /*wfsGetPort (&obsId->aoCtrlId->port);*/
+   wfsGetPort (&obsId->aoCtrlId->port);
 
 #if (MK)
    if ( obsId->aoCcdId->binningFlag == FALSE )
@@ -24450,60 +24449,6 @@ STATUS detInitSigModeSeq
 
    return (OK);
 }
-
-/* -------------------------------------------------------------------------- */
-
-/*+
- *   FUNCTION NAME:
- *   detInitSigModeSeqDark
- *
- *   INVOCATION:
- *   detInitSigModeSeqDark (struct genSubRecord *pgsub)
- *
- *   PARAMETERS: (">" input, "!" modified, "<" output)
- *   (<) pgsub (struct genSubRecord *) Pointer to initSigModeSeqDark gsub record
- *
- *   FUNCTION VALUE:
- *   (STATUS)   OK if command successful, ERROR if unsuccessful
- *
- *   PURPOSE:
- *   Init the detSigModeSeqDark input fields
- *
- *   DESCRIPTION:
- *   For this record, I have decided to use Epics facilities and not
- *   epToVxLib.
- *
- *
- *   EXTERNAL VARIABLES:
- *   None.
- *
- *   PRIOR REQUIREMENTS:
- *   external variables: detObsIdP2
- *
- *   INCLUDE FILES:
- *   detControl.h
- *
- *   DEFICIENCIES:
- *   None
- *-
- */
-STATUS detInitSigModeSeqDark
-   (
-   struct genSubRecord * pgsub   /* Pointer to "initSigModeSeqDark" gensub record */
-   )
-
-{
-   *(long *)pgsub->vala = *(long *)pgsub->a;
-   strcpy ( (char *)pgsub->valb, (char *)pgsub->b );
-   strcpy ( (char *)pgsub->valc, (char *)pgsub->c );
-   *(long *)pgsub->vald = *(long *)pgsub->d;
-   *(double *)pgsub->vale = *(double *)pgsub->e;
-
-   return (OK);
-}
-
-
-
 
 /* -------------------------------------------------------------------------- */
 
