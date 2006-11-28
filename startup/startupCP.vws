@@ -1,4 +1,4 @@
-# $Id: startupCP.vws,v 1.8 2005-09-13 00:39:22 gemvx Exp $
+# $Id: startupCP.vws,v 1.7 2005-05-09 18:39:21 gemvx Exp $
 #
 # VxWorks startup script to load and execute system (iocCore) software.
 #
@@ -78,15 +78,6 @@ dbLoadDatabase "$(version)/dbd/gemini$(dbname).dbd"
 
 dbLoadRecords "$(version)/data/pwfs2Top.db"
 dbLoadRecords "$(version)/data/pwfs2SadTop.db"
-
-# PRM specific - for tests purposes only
-dbLoadRecords "/gemini/epics3.13.4/prm/prm/data/oiwfsPrmTop.db"
-dbLoadRecords "/gemini/epics3.13.4/prm/prm/data/oiwfsPrmSadTop.db"
-
-# PRM specific - for tests purposes only
-ld < /gemini/epics3.13.4/prm/prm/bin/$(arch)/prmLib
-ld < /gemini/epics3.13.4/prm/prm/bin/$(arch)/prmControl
-ld < /gemini/epics3.13.4/prm/prm/bin/$(arch)/prmtest
 
 # This turns off logging
 # iocLogDisable=1
