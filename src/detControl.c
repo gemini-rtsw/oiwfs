@@ -1,5 +1,5 @@
 static struct {void *v; char *c;} rcsid = {&rcsid,
-   "$Id: detControl.c,v 1.13 2005-08-03 16:10:58 gemvx Exp $"};
+   "$Id: detControl.c,v 1.8 2002-11-19 07:57:20 cboyer Exp $"};
 
 /*+
  *   MODULE NAME:
@@ -31,10 +31,6 @@ static struct {void *v; char *c;} rcsid = {&rcsid,
  *   Steven Beard
  *
  *INDENT-OFF*
- *   02 Aug 2005: AA - Added detInitSigModeSeqDark
- *   23 Jan 2004: CB - implement detInitSigInitFgGain and detInitSigModeSeq
- *   31 Jan 2003: CB - Modify aoModeCompute to include aoThreshold
- *   19 Nov 2002: CB - Implement seeing computation according to FR's method
  *   14 Oct 2002: CB - detObserveStart modified when start directive received
  *                     and observation already in progress.
  *                   - add detPowerOff
@@ -230,10 +226,6 @@ int     readTempReadyFlag=FALSE;
                               /* Flag used by detHeadTempGet() to check       */
                               /* if we are ready to read temperature from     */
                               /* SDSU controller                              */
-
-int     readPortReadyFlag=FALSE;
-                              /* Flag used by detPortGet() to check if we are */
-                              /* ready to read port from ag database          */
 
 /***************************************************** External global data ***/
 
@@ -1382,7 +1374,29 @@ STATUS   detControl
     * Init the AO control context structure
     */
 
-   aoCtrlId->port = 0; /* First time init the port from the file */
+   wfsGetPort (&aoCtrlId->port);
+
+
+/*
+   if ( issPortSem == NULL )
+   {
+      ERROR_LOG ("issPortSem not initialized");
+      aoCtrlId->port = 0;
+   }
+   else
+   {
+      if (semTake (issPortSem,100) != OK )
+      {
+         ERROR_LOG ("Timeout to get the issPortSem during startup");
+         aoCtrlId->port = 0;
+      }
+      else
+      {
+         MESSAGE_LOG ( MSG_LOG, "Get the issPort semaphore" );
+         wfsUpdatePort (&aoCtrlId->port);
+      }
+   }
+*/
 
 #if (MK)
    if ( obsId->aoCcdId->binningFlag == FALSE )
@@ -1498,16 +1512,6 @@ STATUS   detControl
          {
             ERROR_LOG (
             "Failed to init DET_CONTROL_SEEING_COEFF_MAT_INIT_SIR_NAME record");
-         }
-      }
-
-      if ( aoCtrlId->seeingCoeffVectInitFlag == TRUE )
-      {
-         if (epToVxPipeWrite (NULL, aoCtrlId->seeingCoeffVectFileName,
-                              obsId->pSeeingCoeffVectInitContext) == ERROR)
-         {
-            ERROR_LOG (
-            "Failed to init DET_CONTROL_SEEING_COEFF_VECT_INIT_SIR_NAME record");
          }
       }
 
@@ -1882,10 +1886,6 @@ STATUS   detControl
    {
       ERROR_LOG ("Failed to set state to RUNNING");
    }
-
-   /* Now we are ready to read the port and change config if necessary */
-
-   readPortReadyFlag = TRUE ;
 
    /*
     * The task has been successfully initialised, so it can now go into a loop 
@@ -2958,122 +2958,7 @@ STATUS detReadDefaultDspCcdGeometry
          ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
          return (ERROR);
       }
-/*
 
-      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_XSIZE", &xSdsuChip) ==
-          ERROR) 
-      {
-         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
-         return (ERROR);
-      }
-      sdsuPrintRepBuf (sdsuId);
-      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_YSIZE", &ySdsuChip) ==
-          ERROR)
-      {
-         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
-         return (ERROR);
-      }
-      sdsuPrintRepBuf (sdsuId);
-      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_XSUBAP", &xSdsuSubap) ==
-          ERROR) 
-      {
-         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
-         return (ERROR);
-      }
-      sdsuPrintRepBuf (sdsuId);
-      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_YSUBAP", &ySdsuSubap) ==
-          ERROR) 
-      {
-         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
-         return (ERROR);
-      }
-      sdsuPrintRepBuf (sdsuId);
-      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_XRAS", &xSdsuRas) == 
-          ERROR) 
-      {
-         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
-         return (ERROR);
-      }
-      sdsuPrintRepBuf (sdsuId);
-      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_YRAS", &ySdsuRas) == 
-          ERROR) 
-      {
-         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
-         return (ERROR);
-      }
-      sdsuPrintRepBuf (sdsuId);
-      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_OUTPUTS", &sdsuOutputs) ==
-          ERROR) 
-      {
-         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
-         return (ERROR);
-      }
-      sdsuPrintRepBuf (sdsuId);
-      if (sdsuParamRead (sdsuId, SDSU_IDENT_VME, "V_PSIZE", &pSizeSdsu) ==
-         ERROR) 
-      {
-         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
-         return (ERROR);
-      }
-      sdsuPrintRepBuf (sdsuId);
-      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_USCAN", &uscanSdsu) == 
-          ERROR) 
-      {
-         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
-         return (ERROR);
-      }
-      sdsuPrintRepBuf (sdsuId);
-      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_XSTART", &xSdsuStart) ==
-          ERROR) 
-      {
-         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
-         return (ERROR);
-      }
-      sdsuPrintRepBuf (sdsuId);
-      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_YSTART", &ySdsuStart) ==
-          ERROR)
-      {
-         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
-         return (ERROR);
-      }
-      sdsuPrintRepBuf (sdsuId);
-      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_XBIN", &xSdsuBin) == 
-          ERROR) 
-      {
-         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
-         return (ERROR);
-      }
-      sdsuPrintRepBuf (sdsuId);
-      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_YBIN", &ySdsuBin) == 
-          ERROR) 
-      {
-         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
-         return (ERROR);
-      }
-      sdsuPrintRepBuf (sdsuId);
-      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_XSPACE", &xSdsuSpace) ==
-          ERROR)
-      {
-         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
-         return (ERROR);
-      }
-      sdsuPrintRepBuf (sdsuId);
-      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_YSPACE", &ySdsuSpace) ==
-          ERROR) 
-      {
-         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
-         return (ERROR);
-      }
-      sdsuPrintRepBuf (sdsuId);
-      if (sdsuParamRead (sdsuId, SDSU_IDENT_TIM, "T_XTAIL", &xSdsuTail) ==
-          ERROR)
-      {
-         ERROR_SET (0, "Failed to read SDSU parameters", ERROR_LOG_SAVE);
-         return (ERROR);
-      }
-      sdsuPrintRepBuf (sdsuId);
-*/
-         
       aoCcdId->xSize = xSdsuChip;
       aoCcdId->ySize = ySdsuChip;
       aoCcdId->outputsNb = sdsuOutputs;
@@ -7493,10 +7378,9 @@ uint32 detInit
       return (errorNumber);
    }
 
-   /* Set to FALSE the temperature Flag and port Flag */
+   /* Set to FALSE the temperature Flag */
 
    readTempReadyFlag = FALSE;
-   readPortReadyFlag = FALSE;
 
    /* Set the initialisation state to BUSY. */
 
@@ -7599,13 +7483,7 @@ uint32 detInit
       ERROR_LOG (
       "Failed to init DET_CONTROL_SEEING_COEFF_MAT_INIT_SIR_NAME record");
    }
-   obsId->aoCtrlId->seeingCoeffVectInitFlag = FALSE;
-   if (epToVxPipeWrite (NULL, "Not initialized",
-                        obsId->pSeeingCoeffVectInitContext) == ERROR)
-   {
-      ERROR_LOG (
-      "Failed to init DET_CONTROL_SEEING_COEFF_VECT_INIT_SIR_NAME record");
-   }
+
 
    /*
     * If an SDSU context structure already exists, delete it.
@@ -8297,7 +8175,7 @@ uint32 detInit
     * Init the AO control context structure
     */
 
-   /*wfsGetPort (&obsId->aoCtrlId->port);*/
+   wfsGetPort (&obsId->aoCtrlId->port);
 
 #if (MK)
    if ( obsId->aoCcdId->binningFlag == FALSE )
@@ -8332,6 +8210,7 @@ uint32 detInit
 
       if ( obsId->aoCtrlId->initFlag == TRUE )
       {
+
          if ( obsId->aoCcdId->binningFlag == FALSE )
             expTime = 0.01 ;  /* 10ms */
          else
@@ -8411,17 +8290,6 @@ uint32 detInit
          {
             ERROR_LOG (
             "Failed to init DET_CONTROL_SEEING_COEFF_MAT_INIT_SIR_NAME record");
-         }
-      }
-
-      if ( obsId->aoCtrlId->seeingCoeffVectInitFlag == TRUE )
-      {
-         if (epToVxPipeWrite (NULL, obsId->aoCtrlId->seeingCoeffVectFileName,
-                              obsId->pSeeingCoeffVectInitContext) == ERROR)
-         {
-            ERROR_LOG (
-            "Failed to init DET_CONTROL_SEEING_COEFF_VECT_INIT_SIR_NAME record")
-;
          }
       }
 
@@ -8714,10 +8582,9 @@ uint32 detInit
          ERROR_LOG ("Failed to set initialisation state to IDLE");
       }
 
-      /* Set to TRUE the temperature flag and port flag */
+      /* Set to TRUE the temperature Flag */
 
       readTempReadyFlag = TRUE;
-      readPortReadyFlag = TRUE;
    }
    else
    {
@@ -8860,10 +8727,9 @@ uint32 detReset
       return (errorNumber);
    }
 
-   /* Set to FLASE the temperature and port flags */
+   /* Set to FLASE the temperature Flag */
 
    readTempReadyFlag = FALSE ;
-   readPortReadyFlag = FALSE ;
 
    /*
     * Reset the signal processing
@@ -8917,13 +8783,6 @@ uint32 detReset
    {
       ERROR_LOG (
       "Failed to init DET_CONTROL_SEEING_COEFF_MAT_INIT_SIR_NAME record");
-   }
-   obsId->aoCtrlId->seeingCoeffVectInitFlag = FALSE;
-   if (epToVxPipeWrite (NULL, "Not initialized",
-                        obsId->pSeeingCoeffVectInitContext) == ERROR)
-   {
-      ERROR_LOG (
-      "Failed to init DET_CONTROL_SEEING_COEFF_VECT_INIT_SIR_NAME record");
    }
 
    /*
@@ -9241,7 +9100,6 @@ uint32 detReset
       /* Set to TRUE the temperature Flag */
 
       readTempReadyFlag = TRUE ;
-      readPortReadyFlag = TRUE ;
    }
    else
    {
@@ -11549,27 +11407,27 @@ void detObserveEnd
    {
       if ((pRawFrame->header.status & SDSU_FSTAT_TIMEOUT) != 0)
       {
-         MESSAGE_LOG1 (MSG_MINDEBUG, 
+         MESSAGE_LOG1 (MSG_WARNING, 
                        "Timeout in frame %lu - frame ignored", frameCount);
       }
       else if ((pRawFrame->header.status & SDSU_FSTAT_OVERRUN) != 0)
       {
-         MESSAGE_LOG1 (MSG_MINDEBUG, 
+         MESSAGE_LOG1 (MSG_WARNING, 
                        "Data overrun in frame %lu - frame ignored", frameCount);
       }
       else if ((pRawFrame->header.status & SDSU_FSTAT_FRAMESYNC) != 0)
       {
-         MESSAGE_LOG1 (MSG_MINDEBUG, 
+         MESSAGE_LOG1 (MSG_WARNING, 
                        "Sync error in frame %lu - ignored", frameCount);
       }
       else if ((pRawFrame->header.status & SDSU_FSTAT_CHECKSUM) != 0)
       {
-         MESSAGE_LOG1 (MSG_MINDEBUG, 
+         MESSAGE_LOG1 (MSG_WARNING, 
                        "Checksum error in frame %lu - ignored", frameCount);
       }
       else if ((pRawFrame->header.status & SDSU_FSTAT_NOK) != 0)
       {
-         MESSAGE_LOG1 (MSG_MINDEBUG, 
+         MESSAGE_LOG1 (MSG_WARNING, 
                        "Overwritten error in frame %lu - ignored", frameCount);
       }
    }
@@ -12102,7 +11960,6 @@ void detObserveEnd
                      ERROR_SET (0, "Failed to update aO scale factors",
                                 ERROR_LOG_NOW);
                   }
-                  obsId->aoCtrlId->aoThreshold = obsId->aoThreshold;
                   obsId->updateAoScale = FALSE ;
                } ;
 
@@ -12150,7 +12007,6 @@ void detObserveEnd
                      ERROR_SET (0, "Failed to update aO scale factors",
                                 ERROR_LOG_NOW);
                   }
-                  obsId->aoCtrlId->aoThreshold = obsId->aoThreshold;
                   obsId->updateAoScale = FALSE ;
                } ;
 
@@ -12564,7 +12420,6 @@ void detObserveEnd
                      ERROR_SET (0, "Failed to update aO scale factors",
                                 ERROR_LOG_NOW);
                   }
-                  obsId->aoCtrlId->aoThreshold = obsId->aoThreshold;
                   obsId->updateAoScale = FALSE ;
                } ;
 
@@ -12779,7 +12634,6 @@ void detObserveEnd
                      ERROR_SET (0, "Failed to update aO scale factors",
                                 ERROR_LOG_NOW);
                   }
-                  obsId->aoCtrlId->aoThreshold = obsId->aoThreshold;
                   obsId->updateAoScale = FALSE ;
                } ;
 
@@ -12933,9 +12787,9 @@ void detObserveEnd
 
                   if ( obsId->seeingFlag == TRUE )
                   {
-                     if ( aoNewSeeingCompute (pCentroids, pWfsStatus,
-                                              obsId->aoCcdId, obsId->aoCtrlId,
-                                              nCoadds) == ERROR )
+                     if ( aoSeeingCompute (pCentroids, pWfsStatus,
+                                           obsId->aoCcdId, obsId->aoCtrlId,
+                                           nCoadds) == ERROR )
                      {
                         ERROR_LOG ("Failed to compute seeing correction");
                      }
@@ -12945,20 +12799,6 @@ void detObserveEnd
                      {
                         ERROR_LOG (
                         "Failed to init DET_CONTROL_SEEING_SIR_NAME record");
-                     }
-                     if (epToVxPipeWrite (NULL,
-                                   (char *)(int)& (obsId->aoCtrlId->r0),
-                                   obsId->pR0Context) == ERROR)
-                     {
-                        ERROR_LOG (
-                        "Failed to init DET_CONTROL_R0_SIR_NAME record");
-                     }
-                     if (epToVxPipeWrite (NULL,
-                                   (char *)(int)& (obsId->aoCtrlId->jitter),
-                                   obsId->pJitterContext) == ERROR)
-                     {
-                        ERROR_LOG (
-                        "Failed to init DET_CONTROL_JITTER_SIR_NAME record");
                      }
                   }
                }
@@ -14589,8 +14429,6 @@ uint32 detFrameSize
    char         fullFgCmFileName[STRING_SIZE];
    char         seeingCmFileName[STRING_SIZE];
    char         fullSeeingCmFileName[STRING_SIZE];
-   char         seeingCvFileName[STRING_SIZE];
-   char         fullSeeingCvFileName[STRING_SIZE];
    char         defFileName[STRING_SIZE];
    char         aoInitFileName[STRING_SIZE];
    char         poInitFileName[STRING_SIZE];
@@ -14606,15 +14444,11 @@ uint32 detFrameSize
    double       thresh;
    double       totalThresh;
    double       seeingGain;
-   double       aoThreshold;
    double       scaleX;
    double       scaleY;
    double       scaleZ;
    double       PAangle;
    double       CRangle;
-   double       fgGain[3];
-   double       slidingFocusGain;
-
 
    /*
     * Parameters to update the ADC offset 
@@ -14757,13 +14591,6 @@ uint32 detFrameSize
          ERROR_LOG (
          "Failed to init DET_CONTROL_SEEING_COEFF_MAT_INIT_SIR_NAME record");
       }
-      obsId->aoCtrlId->seeingCoeffVectInitFlag = FALSE;
-      if (epToVxPipeWrite (NULL, "Not initialized",
-                           obsId->pSeeingCoeffVectInitContext) == ERROR)
-      {
-         ERROR_LOG (
-         "Failed to init DET_CONTROL_SEEING_COEFF_VECT_INIT_SIR_NAME record");
-      }
 
       /* Read default parameters from par files */
 
@@ -14782,11 +14609,10 @@ uint32 detFrameSize
          if ( aoCtrlFileRead ( aoInitFileName, path, darkFileName, flatFileName,
                                refFileName, &refX, &refY, aoImFileName,
                                aoCmFileName, fgCmFileName, seeingCmFileName,
-                               seeingCvFileName, &rms, &thresh, &totalThresh, 
+                               &rms, &thresh, &totalThresh, 
                                obsId->aoCtrlId->port, 
                                &angleM2, &flipXM2, &flipYM2, 
-                               &angleM1, &flipXM1, &flipYM1, &seeingGain, 
-                               &aoThreshold, fgGain, &slidingFocusGain ) 
+                               &angleM1, &flipXM1, &flipYM1, &seeingGain ) 
               == ERROR )
          {
             ERROR_LOG ("Failed to read ao control file parameters");
@@ -14799,7 +14625,6 @@ uint32 detFrameSize
          sprintf ( fullAoCmFileName, "%s/%s", path, aoCmFileName );
          sprintf ( fullFgCmFileName, "%s/%s", path, fgCmFileName );
          sprintf ( fullSeeingCmFileName, "%s/%s", path, seeingCmFileName );
-         sprintf ( fullSeeingCvFileName, "%s/%s", path, seeingCvFileName );
 
          updateAoCtrlFlag = TRUE;
       }
@@ -14936,13 +14761,6 @@ uint32 detFrameSize
          ERROR_LOG (
          "Failed to init DET_CONTROL_SEEING_COEFF_MAT_INIT_SIR_NAME record");
       }
-      obsId->aoCtrlId->seeingCoeffVectInitFlag = FALSE;
-      if (epToVxPipeWrite (NULL, "Not initialized",
-                           obsId->pSeeingCoeffVectInitContext) == ERROR)
-      {
-         ERROR_LOG (
-         "Failed to init DET_CONTROL_SEEING_COEFF_VECT_INIT_SIR_NAME record");
-      }
 
       /* Read default parameters from par files */
 
@@ -14961,11 +14779,10 @@ uint32 detFrameSize
          if ( aoCtrlFileRead ( aoInitFileName, path, darkFileName, flatFileName,
                                refFileName, &refX, &refY, aoImFileName,
                                aoCmFileName, fgCmFileName, seeingCmFileName,
-                               seeingCvFileName, &rms, &thresh, &totalThresh, 
+                               &rms, &thresh, &totalThresh, 
                                obsId->aoCtrlId->port, 
                                &angleM2, &flipXM2, &flipYM2,
-                               &angleM1, &flipXM1, &flipYM1, &seeingGain, 
-                               &aoThreshold, fgGain, &slidingFocusGain) 
+                               &angleM1, &flipXM1, &flipYM1, &seeingGain ) 
               == ERROR )
          {
             ERROR_LOG ("Failed to read ao control file parameters");
@@ -14978,7 +14795,6 @@ uint32 detFrameSize
          sprintf ( fullAoCmFileName, "%s/%s", path, aoCmFileName );
          sprintf ( fullFgCmFileName, "%s/%s", path, fgCmFileName );
          sprintf ( fullSeeingCmFileName, "%s/%s", path, seeingCmFileName );
-         sprintf ( fullSeeingCvFileName, "%s/%s", path, seeingCvFileName );
 
          updateAoCtrlFlag = TRUE;
       }
@@ -15267,12 +15083,10 @@ uint32 detFrameSize
       if (aoCtrlContextUpdate ( fullDarkFileName, fullFlatFileName,
                                 fullRefFileName, fullAoImFileName, 
                                 fullAoCmFileName, fullFgCmFileName,
-                                fullSeeingCmFileName, fullSeeingCvFileName,
-                                refX, refY, 
+                                fullSeeingCmFileName, refX, refY, 
                                 angleM2, flipXM2, flipYM2, 
                                 angleM1, flipXM1, flipYM1, 
-                                seeingGain, aoThreshold,
-                                obsId->aoCcdId, obsId->aoCtrlId ) 
+                                seeingGain, obsId->aoCcdId, obsId->aoCtrlId ) 
           == ERROR )
       {
          ERROR_SET (0, "Failed to update AO control context", ERROR_LOG_NOW);
@@ -15381,16 +15195,6 @@ uint32 detFrameSize
          {
             ERROR_LOG (
             "Failed to init DET_CONTROL_SEEING_COEFF_MAT_INIT_SIR_NAME record");
-         }
-      }
-
-      if ( obsId->aoCtrlId->seeingCoeffVectInitFlag == TRUE )
-      {
-         if (epToVxPipeWrite (NULL, obsId->aoCtrlId->seeingCoeffVectFileName,
-                              obsId->pSeeingCoeffVectInitContext) == ERROR)
-         {
-            ERROR_LOG (
-           "Failed to init DET_CONTROL_SEEING_COEFF_VECT_INIT_SIR_NAME record");
          }
       }
 
@@ -15800,10 +15604,10 @@ STATUS detHeadTempGet
    struct sirRecord *       psir /* Pointer to "headTemp" sir record       */
    )
 {
+#ifdef TEMP_CTRL
    uint32   value ;
 
    int      sample ;
-   int      sampleNb=1 ;
 
    double   meanValue6, meanValue7;
    double   sdsuTemp6, sdsuTemp7, sdsuTemp;
@@ -15822,7 +15626,7 @@ STATUS detHeadTempGet
    {
 
       meanValue6 = meanValue7 = 0.0;
-      for ( sample = 0 ; sample < sampleNb ; sample ++ )
+      for ( sample=0; sample<1; sample++)
       {
          if (sdsuParamRead (detSdsuIdP2, SDSU_IDENT_UTL, "U_ADC6", &value) == 
              ERROR)
@@ -15847,8 +15651,8 @@ STATUS detHeadTempGet
          }
       }
 
-      meanValue6 /= (double)sampleNb;
-      meanValue7 /= (double)sampleNb;
+      /*meanValue6 /= 20.0;
+      meanValue7 /= 20.0;*/
 
       sdsuTemp6 = meanValue6 * (-0.01545); 
                                       /* 0.01545 is not quite SDSU_TEMP_UNIT*/
@@ -15860,7 +15664,6 @@ STATUS detHeadTempGet
 #ifdef DEBUG
       printf ( "detHeadTempGet() : not observing -> val = %f\n" , sdsuTemp ) ;
 #endif
-
       *(double *)psir->val = sdsuTemp ;
    }
 #ifdef DEBUG
@@ -15870,6 +15673,7 @@ STATUS detHeadTempGet
    }
 #endif
 
+#endif
    return (OK) ;
 }
 
@@ -16275,7 +16079,6 @@ STATUS detObsShow
    printf ("Default focus scale 100Hz        : %f\n",
            obsId->defFocusScale100Hz);
    printf ("Sliding Focus gain               : %f\n", obsId->slidingFocusGain);
-   printf ("aO threshold                     : %f\n", obsId->aoThreshold);
    printf ("aoScaleVect                      : %p\n", obsId->aoScaleVect);
    printf ("Coadd file name                  : %s\n", obsId->pCoaddFileName);
    printf ("Centroids file name              : %s\n", obsId->pCentFileName);
@@ -16373,34 +16176,32 @@ uint32 detSigInit
    OBS_ID          obsId                  /* Observation context structure    */
    )
 {
-   uint32  errorNumber;      /* Error number reported by task.           */
+   uint32   errorNumber;      /* Error number reported by task.           */
 
-   char    pFilePath [EPICS_MAX_BYTES_STRING_ATTRIB + 1];
+   char     pFilePath [EPICS_MAX_BYTES_STRING_ATTRIB + 1];
                               /* Path name for files.                         */
-   char    pDarkFileName [EPICS_MAX_BYTES_STRING_ATTRIB + 1];
-   char    pFlatFileName [EPICS_MAX_BYTES_STRING_ATTRIB + 1];
-   char    pRefFileName [EPICS_MAX_BYTES_STRING_ATTRIB + 1];
-   char    pAoIntMatFileName [EPICS_MAX_BYTES_STRING_ATTRIB + 1];
-   char    pAoContMatFileName [EPICS_MAX_BYTES_STRING_ATTRIB + 1];
-   char    pFgContMatFileName [EPICS_MAX_BYTES_STRING_ATTRIB + 1];
-   char    pSeeingCoeffMatFileName [EPICS_MAX_BYTES_STRING_ATTRIB + 1];
-   char    pSeeingCoeffVectFileName [EPICS_MAX_BYTES_STRING_ATTRIB + 1];
-   char    pFullDarkFileName [(EPICS_MAX_BYTES_STRING_ATTRIB + 1)*2];
-   char    pFullFlatFileName [(EPICS_MAX_BYTES_STRING_ATTRIB + 1)*2];
-   char    pFullRefFileName [(EPICS_MAX_BYTES_STRING_ATTRIB + 1)*2];
-   char    pFullAoIntMatFileName [(EPICS_MAX_BYTES_STRING_ATTRIB + 1)*2];
-   char    pFullAoContMatFileName [(EPICS_MAX_BYTES_STRING_ATTRIB + 1)*2];
-   char    pFullFgContMatFileName [(EPICS_MAX_BYTES_STRING_ATTRIB + 1)*2];
-   char    pFullSeeingCoeffMatFileName [(EPICS_MAX_BYTES_STRING_ATTRIB + 1)*2];
-   char    pFullSeeingCoeffVectFileName [(EPICS_MAX_BYTES_STRING_ATTRIB + 1)*2];
-   double  refX, refY;
-   double  angleM2;
-   double  angleM1;
-   double  flipXWithM2;
-   double  flipYWithM2;
-   double  flipXWithM1;
-   double  flipYWithM1;
-   double  seeingGain;
+   char     pDarkFileName [EPICS_MAX_BYTES_STRING_ATTRIB + 1];
+   char     pFlatFileName [EPICS_MAX_BYTES_STRING_ATTRIB + 1];
+   char     pRefFileName [EPICS_MAX_BYTES_STRING_ATTRIB + 1];
+   char     pAoIntMatFileName [EPICS_MAX_BYTES_STRING_ATTRIB + 1];
+   char     pAoContMatFileName [EPICS_MAX_BYTES_STRING_ATTRIB + 1];
+   char     pFgContMatFileName [EPICS_MAX_BYTES_STRING_ATTRIB + 1];
+   char     pSeeingCoeffMatFileName [EPICS_MAX_BYTES_STRING_ATTRIB + 1];
+   char     pFullDarkFileName [(EPICS_MAX_BYTES_STRING_ATTRIB + 1)*2];
+   char     pFullFlatFileName [(EPICS_MAX_BYTES_STRING_ATTRIB + 1)*2];
+   char     pFullRefFileName [(EPICS_MAX_BYTES_STRING_ATTRIB + 1)*2];
+   char     pFullAoIntMatFileName [(EPICS_MAX_BYTES_STRING_ATTRIB + 1)*2];
+   char     pFullAoContMatFileName [(EPICS_MAX_BYTES_STRING_ATTRIB + 1)*2];
+   char     pFullFgContMatFileName [(EPICS_MAX_BYTES_STRING_ATTRIB + 1)*2];
+   char     pFullSeeingCoeffMatFileName [(EPICS_MAX_BYTES_STRING_ATTRIB + 1)*2];
+   double   refX, refY;
+   double   angleWithM2;
+   double   angleWithM1;
+   double   flipXWithM2;
+   double   flipYWithM2;
+   double   flipXWithM1;
+   double   flipYWithM1;
+   double   seeingGain;
 
    /*
     * Initialise the error number and get the attributes provided with this
@@ -16412,11 +16213,11 @@ uint32 detSigInit
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 1, pDarkFileName);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 2, pFlatFileName);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 3, 
-                          (char *)&angleM2);
+                          (char *)&angleWithM2);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 4, (char *)&refX);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 5, (char *)&refY);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 6, 
-                          (char *)&angleM1);
+                          (char *)&angleWithM1);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 7, pRefFileName);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 8, pAoIntMatFileName);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 9, pAoContMatFileName);
@@ -16433,8 +16234,6 @@ uint32 detSigInit
                           (char *)&seeingGain);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 16,
                           pSeeingCoeffMatFileName);
-   EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 17,
-                          pSeeingCoeffVectFileName);
 
    /*
     * Check there are valid context structures.
@@ -16544,8 +16343,6 @@ uint32 detSigInit
                EPICS_MAX_BYTES_STRING_ATTRIB);
       strncpy (pFullSeeingCoeffMatFileName, pSeeingCoeffMatFileName,
                EPICS_MAX_BYTES_STRING_ATTRIB);
-      strncpy (pFullSeeingCoeffVectFileName, pSeeingCoeffVectFileName,
-               EPICS_MAX_BYTES_STRING_ATTRIB);
    }
    else
    {
@@ -16557,8 +16354,6 @@ uint32 detSigInit
       sprintf (pFullFgContMatFileName, "%s/%s", pFilePath, pFgContMatFileName);
       sprintf (pFullSeeingCoeffMatFileName, "%s/%s", pFilePath,
                pSeeingCoeffMatFileName);
-      sprintf (pFullSeeingCoeffVectFileName, "%s/%s", pFilePath,
-               pSeeingCoeffVectFileName);
    }
 
    MESSAGE_LOG (MSG_LOG, "Initialising signal processing ...");
@@ -16570,12 +16365,10 @@ uint32 detSigInit
    if (aoCtrlContextUpdate ( pFullDarkFileName, pFullFlatFileName,
                              pFullRefFileName, pFullAoIntMatFileName,
                              pFullAoContMatFileName, pFullFgContMatFileName,
-                             pFullSeeingCoeffMatFileName, 
-                             pFullSeeingCoeffVectFileName, refX, refY, 
-                             angleM2, flipXWithM2, flipYWithM2,
-                             angleM1, flipXWithM1, flipYWithM1, 
-                             seeingGain, obsId->aoCtrlId->aoThreshold,
-                             obsId->aoCcdId, obsId->aoCtrlId ) 
+                             pFullSeeingCoeffMatFileName, refX, refY, 
+                             angleWithM2, flipXWithM2, flipYWithM2,
+                             angleWithM1, flipXWithM1, flipYWithM1, 
+                             seeingGain, obsId->aoCcdId, obsId->aoCtrlId ) 
        == ERROR )
    {
       ERROR_SET (0, "Failed to update AO control context", ERROR_LOG_NOW);
@@ -16718,25 +16511,6 @@ uint32 detSigInit
       }
    }
 
-   if ( obsId->aoCtrlId->seeingCoeffVectInitFlag == TRUE )
-   {
-      if (epToVxPipeWrite (NULL, obsId->aoCtrlId->seeingCoeffVectFileName,
-                           obsId->pSeeingCoeffVectInitContext) == ERROR)
-      {
-         ERROR_LOG (
-         "Failed to init DET_CONTROL_SEEING_COEFF_VECT_INIT_SIR_NAME record");
-      }
-   }
-   else
-   {
-      if (epToVxPipeWrite (NULL, "Not initialized",
-                           obsId->pSeeingCoeffVectInitContext) == ERROR)
-      {
-         ERROR_LOG (
-         "Failed to init DET_CONTROL_SEEING_COEFF_VECT_INIT_SIR_NAME record");
-      }
-   }
-
    if (epToVxPipeWrite (NULL,
                         (char *)(int)& (obsId->aoCtrlId->seeingScaleFactor),
                         obsId->pSeeingGainContext) == ERROR)
@@ -16797,8 +16571,6 @@ uint32 detSigInitAoGain
    uint32       errorNumber;      /* Error number reported by task.           */
 
    AO_VECT      aoScaleVect;
-
-   double       aoThreshold;
 
    /*
     * Initialise the error number 
@@ -16884,8 +16656,6 @@ uint32 detSigInitAoGain
                              (char *)&(obsId->aoScaleVect[17]));
       EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 18,
                              (char *)&(obsId->aoScaleVect[18]));
-      EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 19,
-                             (char *)&(obsId->aoThreshold));
       obsId->updateAoScale = TRUE ;
    }
    else /* observation not in progress */
@@ -16938,8 +16708,6 @@ uint32 detSigInitAoGain
                              (char *)&(aoScaleVect[17]));
       EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 18, 
                              (char *)&(aoScaleVect[18]));
-      EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 19,
-                             (char *)&aoThreshold);
 
       if ( aoScaleUpdate (aoScaleVect, obsId->aoCtrlId) == ERROR )
       {
@@ -16948,9 +16716,6 @@ uint32 detSigInitAoGain
          errorNumber = S_detControl_INTERNAL;
          return (errorNumber);
       }
-
-     obsId->aoCtrlId->aoThreshold = aoThreshold;
-     obsId->aoThreshold = aoThreshold;
    }
 
    return (errorNumber);
@@ -20509,7 +20274,6 @@ STATUS detInitSigInit
    char aoCmFileName[STRING_SIZE];
    char fgCmFileName[STRING_SIZE];
    char seeingCmFileName[STRING_SIZE];
-   char seeingCvFileName[STRING_SIZE];
    char defFileName[STRING_SIZE];
    char aoInitFileName[STRING_SIZE];
    double angleM2;
@@ -20524,10 +20288,6 @@ STATUS detInitSigInit
    double rms;
    double totalThresh;
    double seeingGain;
-   double aoThreshold;
-   double fgGain[3];
-   double slidingFocusGain;
-
 
    if ( detObsIdP2 == NULL )
    {
@@ -20559,10 +20319,9 @@ STATUS detInitSigInit
          if ( aoCtrlFileRead ( aoInitFileName, path, darkFileName, flatFileName,
                                refFileName, &refX, &refY, aoImFileName, 
                                aoCmFileName, fgCmFileName, seeingCmFileName,
-                               seeingCvFileName, &rms, &thresh, &totalThresh, 
-                               port, &angleM2, &flipXM2, &flipYM2, 
-                               &angleM1, &flipXM1, &flipYM1, &seeingGain,
-                               &aoThreshold, fgGain, &slidingFocusGain) 
+                               &rms, &thresh, &totalThresh, port, 
+                               &angleM2, &flipXM2, &flipYM2, 
+                               &angleM1, &flipXM1, &flipYM1, &seeingGain) 
               == ERROR )
          {
             printf ("Failed to read ao control file parameters\n");
@@ -20586,7 +20345,6 @@ STATUS detInitSigInit
          *(double *)pgsub->valo = flipYM1;
          *(double *)pgsub->valp = seeingGain;
          strcpy ( (char *)pgsub->valq, seeingCmFileName );
-         strcpy ( (char *)pgsub->valr, seeingCvFileName );
 
 
          *(long *)pgsub->valu = 0; /* no binning: 0 */
@@ -20611,10 +20369,9 @@ STATUS detInitSigInit
          if ( aoCtrlFileRead ( aoInitFileName, path, darkFileName, flatFileName,
                                refFileName, &refX, &refY, aoImFileName, 
                                aoCmFileName, fgCmFileName, seeingCmFileName,
-                               seeingCvFileName, &rms, &thresh, &totalThresh, 
-                               port, &angleM2, &flipXM2, &flipYM2, 
-                               &angleM1, &flipXM1, &flipYM1, &seeingGain,
-                               &aoThreshold, fgGain, &slidingFocusGain) 
+                               &rms, &thresh, &totalThresh, port, 
+                               &angleM2, &flipXM2, &flipYM2, 
+                               &angleM1, &flipXM1, &flipYM1, &seeingGain) 
               == ERROR )
          {
             ERROR_LOG ("Failed to read ao control file parameters");
@@ -20638,7 +20395,6 @@ STATUS detInitSigInit
          *(double *)pgsub->valo = flipYM1;
          *(double *)pgsub->valp = seeingGain;
          strcpy ( (char *)pgsub->valq, seeingCmFileName );
-         strcpy ( (char *)pgsub->valr, seeingCvFileName );
 
          *(long *)pgsub->valu = 1; /* binning: 1 */
       }
@@ -21959,18 +21715,6 @@ uint32 detGetSirContext
       errorNumber = ERROR;
    }
 
-   /* Get the context of the "seeingCoeffVectInit" sir record */
-
-   sprintf (pRecordName, "%s:%s", pRecordPrefix,
-            DET_CONTROL_SEEING_COEFF_VECT_INIT_SIR_NAME);
-   if (epToVxRecContextGet (pRecordName, & (obsId->pSeeingCoeffVectInitContext),
-                            NULL) == ERROR)
-   {
-      ERROR_LOG (
-      "Failed to get DET_CONTROL_SEEING_COEFF_VECT_INIT_SIR_NAME SIR context");
-      errorNumber = ERROR;
-   }
-
    /* Get the context of the "seeingGain" sir record */
 
    sprintf (pRecordName, "%s:%s", pRecordPrefix,
@@ -21992,30 +21736,6 @@ uint32 detGetSirContext
    {
       ERROR_LOG (
       "Failed to get DET_CONTROL_SEEING_SIR_NAME SIR context");
-      errorNumber = ERROR;
-   }
-
-   /* Get the context of the "r0" sir record */
-
-   sprintf (pRecordName, "%s:%s", pRecordPrefix,
-            DET_CONTROL_R0_SIR_NAME);
-   if (epToVxRecContextGet (pRecordName, & (obsId->pR0Context),
-                            NULL) == ERROR)
-   {
-      ERROR_LOG (
-      "Failed to get DET_CONTROL_R0_SIR_NAME SIR context");
-      errorNumber = ERROR;
-   }
-
-   /* Get the context of the "jitter" sir record */
-
-   sprintf (pRecordName, "%s:%s", pRecordPrefix,
-            DET_CONTROL_JITTER_SIR_NAME);
-   if (epToVxRecContextGet (pRecordName, & (obsId->pJitterContext),
-                            NULL) == ERROR)
-   {
-      ERROR_LOG (
-      "Failed to get DET_CONTROL_JITTER_SIR_NAME SIR context");
       errorNumber = ERROR;
    }
 
@@ -22563,16 +22283,6 @@ uint32 detWriteDefSirContext
    {
       ERROR_LOG (
       "Failed to init DET_CONTROL_SEEING_COEFF_MAT_INIT_SIR_NAME record");
-      errorNumber = ERROR;
-   }
-
-   /* Init the "seeingCoeffVectInit" sir record */
-
-   if (epToVxPipeWrite (NULL, "Not initialized",
-                        obsId->pSeeingCoeffVectInitContext) == ERROR)
-   {
-      ERROR_LOG (
-      "Failed to init DET_CONTROL_SEEING_COEFF_VECT_INIT_SIR_NAME record");
       errorNumber = ERROR;
    }
 
@@ -24383,536 +24093,3 @@ uint32 detPowerOff
 
    return (errorNumber);
 }
-
-/* -------------------------------------------------------------------------- */
-
-/*+
- *   FUNCTION NAME:
- *   detInitSigModeSeq
- *
- *   INVOCATION:
- *   detInitSigModeSeq (struct genSubRecord *pgsub)
- *
- *   PARAMETERS: (">" input, "!" modified, "<" output)
- *   (<) pgsub (struct genSubRecord *) Pointer to initSigModeSeq gsub record
- *
- *   FUNCTION VALUE:
- *   (STATUS)   OK if command successful, ERROR if unsuccessful
- *
- *   PURPOSE:
- *   Init the detSigModeSeq input fields
- *
- *   DESCRIPTION:
- *   For this record, I have decided to use Epics facilities and not
- *   epToVxLib.
- *
- *
- *   EXTERNAL VARIABLES:
- *   None.
- *
- *   PRIOR REQUIREMENTS:
- *   external variables: detObsIdP2
- *
- *   INCLUDE FILES:
- *   detControl.h
- *
- *   DEFICIENCIES:
- *   None
- *-
- */
-
-STATUS detInitSigModeSeq
-   (
-   struct genSubRecord * pgsub   /* Pointer to "initSigModeSeq" gensub record */
-   )
-
-{
-   *(double *)pgsub->vala = *(double *)pgsub->a;
-   *(long *)pgsub->valb = *(long *)pgsub->b;
-   *(long *)pgsub->valc = *(long *)pgsub->c;
-   *(double *)pgsub->vald = *(double *)pgsub->d;
-   *(long *)pgsub->vale = *(long *)pgsub->e;
-   *(long *)pgsub->valf = *(long *)pgsub->f;
-   *(double *)pgsub->valg = *(double *)pgsub->g;
-   *(long *)pgsub->valh = *(long *)pgsub->h;
-   *(double *)pgsub->vali = *(double *)pgsub->i;
-   *(long *)pgsub->valj = *(long *)pgsub->j;
-   *(double *)pgsub->valk = *(double *)pgsub->k;
-   *(long *)pgsub->vall = *(long *)pgsub->l;
-   *(double *)pgsub->valm = *(double *)pgsub->m;
-   strcpy ( (char *)pgsub->valn, (char *)pgsub->n );
-   *(long *)pgsub->valo = *(long *)pgsub->o;
-   *(long *)pgsub->valp = *(long *)pgsub->p;
-   *(long *)pgsub->valq = *(long *)pgsub->q;
-   *(double *)pgsub->valr = *(double *)pgsub->r;
-   *(double *)pgsub->vals = *(double *)pgsub->s;
-   *(long *)pgsub->valt = *(long *)pgsub->t;
-
-   return (OK);
-}
-
-/* -------------------------------------------------------------------------- */
-
-/*+
- *   FUNCTION NAME:
- *   detInitSigModeSeqDark
- *
- *   INVOCATION:
- *   detInitSigModeSeqDark (struct genSubRecord *pgsub)
- *
- *   PARAMETERS: (">" input, "!" modified, "<" output)
- *   (<) pgsub (struct genSubRecord *) Pointer to initSigModeSeqDark gsub record
- *
- *   FUNCTION VALUE:
- *   (STATUS)   OK if command successful, ERROR if unsuccessful
- *
- *   PURPOSE:
- *   Init the detSigModeSeqDark input fields
- *
- *   DESCRIPTION:
- *   For this record, I have decided to use Epics facilities and not
- *   epToVxLib.
- *
- *
- *   EXTERNAL VARIABLES:
- *   None.
- *
- *   PRIOR REQUIREMENTS:
- *   external variables: detObsIdP2
- *
- *   INCLUDE FILES:
- *   detControl.h
- *
- *   DEFICIENCIES:
- *   None
- *-
- */
-STATUS detInitSigModeSeqDark
-   (
-   struct genSubRecord * pgsub   /* Pointer to "initSigModeSeqDark" gensub record */
-   )
-
-{
-   *(long *)pgsub->vala = *(long *)pgsub->a;
-   strcpy ( (char *)pgsub->valb, (char *)pgsub->b );
-   strcpy ( (char *)pgsub->valc, (char *)pgsub->c );
-   *(long *)pgsub->vald = *(long *)pgsub->d;
-   *(double *)pgsub->vale = *(double *)pgsub->e;
-
-   return (OK);
-}
-
-
-
-
-/* -------------------------------------------------------------------------- */
-
-/*+
- *   FUNCTION NAME:
- *   detInitSigInitFgGain
- *
- *   INVOCATION:
- *   detInitSigInitFgGain (struct genSubRecord *pgsub)
- *
- *   PARAMETERS: (">" input, "!" modified, "<" output)
- *   (<) pgsub (struct genSubRecord *) Pointer to initSigInitFgGain gsub record
- *
- *   FUNCTION VALUE:
- *   (STATUS)   OK if command successful, ERROR if unsuccessful
- *
- *   PURPOSE:
- *   Init the detSigInitFgGain input fields according to the binning status
- *
- *   DESCRIPTION:
- *
- *   EXTERNAL VARIABLES:
- *   None.
- *
- *   PRIOR REQUIREMENTS:
- *   external variables: detObsIdP2
- *
- *   INCLUDE FILES:
- *   detControl.h
- *
- *   DEFICIENCIES:
- *   None
- *-
- */
-
-STATUS detInitSigInitFgGain
-   (
-   struct genSubRecord * pgsub /* Pointer to "initSigInitFgGain" gensub record*/
-   )
-{
-   long xbin;
-   long ybin;
-   int  port;
-   char path[STRING_SIZE];
-   char darkFileName[STRING_SIZE];
-   char flatFileName[STRING_SIZE];
-   char refFileName[STRING_SIZE];
-   char aoImFileName[STRING_SIZE];
-   char aoCmFileName[STRING_SIZE];
-   char fgCmFileName[STRING_SIZE];
-   char seeingCmFileName[STRING_SIZE];
-   char seeingCvFileName[STRING_SIZE];
-   char defFileName[STRING_SIZE];
-   char aoInitFileName[STRING_SIZE];
-   double angleM2;
-   double flipXM2;
-   double flipYM2;
-   double angleM1;
-   double flipXM1;
-   double flipYM1;
-   double refX;
-   double refY;
-   double thresh;
-   double rms;
-   double totalThresh;
-   double seeingGain;
-   double aoThreshold;
-   double fgGain[3];
-   double slidingFocusGain;
-
-
-   if ( aoCcdIdP2 == NULL )
-   {
-      return (ERROR);
-   }
-
-   port = detObsIdP2->aoCtrlId->port;
-
-   xbin = aoCcdIdP2->xBin;
-
-   ybin = aoCcdIdP2->yBin;
-
-   if ( (xbin == 1) && (ybin == 1) )
-   {
-      /* Read default parameters from par file */
-
-#if (MK)
-      strcpy ( defFileName, DET_CONTROL_PWFS2_AO_FULL_CTRL_MK_INIT_FILE );
-#else
-      strcpy ( defFileName, DET_CONTROL_PWFS2_AO_FULL_CTRL_CP_INIT_FILE );
-#endif
-
-      if ( strcmp (defFileName, "NONE") != 0 )
-      {
-         strcpy ( aoInitFileName , DET_CONTROL_PAR_FILE_PATH ) ;
-         strcat ( aoInitFileName , "/" ) ;
-         strcat ( aoInitFileName , defFileName ) ;
-
-         if ( aoCtrlFileRead ( aoInitFileName, path, darkFileName, flatFileName,
-                               refFileName, &refX, &refY, aoImFileName, 
-                               aoCmFileName, fgCmFileName, seeingCmFileName,
-                               seeingCvFileName, &rms, &thresh, &totalThresh, 
-                               port, &angleM2, &flipXM2, &flipYM2, 
-                               &angleM1, &flipXM1, &flipYM1, &seeingGain,
-                               &aoThreshold, fgGain, &slidingFocusGain) 
-              == ERROR )
-         {
-            printf ("Failed to read ao control file parameters\n");
-            return (ERROR);
-         }
-
-         *(double *)pgsub->vala = fgGain[0];
-         *(double *)pgsub->valb = fgGain[1];
-         *(double *)pgsub->valc = fgGain[2];
-         *(double *)pgsub->vald = slidingFocusGain;
-      }
-   }
-   else if ( (xbin == 2) && (ybin == 2) )
-   {
-      /* Read default parameters from par file */
-
-#if (MK)
-      strcpy ( defFileName , DET_CONTROL_PWFS2_AO_BIN_CTRL_MK_INIT_FILE );
-#else
-      strcpy ( defFileName , DET_CONTROL_PWFS2_AO_BIN_CTRL_CP_INIT_FILE );
-#endif
-
-      if ( strcmp (defFileName, "NONE") != 0 )
-      {
-         strcpy ( aoInitFileName , DET_CONTROL_PAR_FILE_PATH ) ;
-         strcat ( aoInitFileName , "/" ) ;
-         strcat ( aoInitFileName , defFileName ) ;
-
-         if ( aoCtrlFileRead ( aoInitFileName, path, darkFileName, flatFileName,
-                               refFileName, &refX, &refY, aoImFileName, 
-                               aoCmFileName, fgCmFileName, seeingCmFileName,
-                               seeingCvFileName, &rms, &thresh, &totalThresh, 
-                               port, &angleM2, &flipXM2, &flipYM2, 
-                               &angleM1, &flipXM1, &flipYM1, &seeingGain,
-                               &aoThreshold, fgGain, &slidingFocusGain) 
-              == ERROR )
-         {
-            ERROR_LOG ("Failed to read ao control file parameters");
-            return (ERROR);
-         }
-
-         *(double *)pgsub->vala = fgGain[0];
-         *(double *)pgsub->valb = fgGain[1];
-         *(double *)pgsub->valc = fgGain[2];
-         *(double *)pgsub->vald = slidingFocusGain;
-      }
-   }
-   else
-   {
-#ifdef DEBUG
-      ERROR_LOG ( "xbin and ybin sir records should contain 1 or 2" );
-#endif
-   }
-
-   return (OK) ;
-}
-
-
-/* -------------------------------------------------------------------------- */
-
-/*+
- *   FUNCTION NAME:
- *   detPortGet
- *
- *   INVOCATION:
- *   detPortGet (pgensub)
- *
- *   PARAMETERS: (">" input, "!" modified, "<" output)
- *   None
- *
- *   FUNCTION VALUE:
- *   (STATUS)   OK if successful, or ERROR if unsuccessful
- *
- *   PURPOSE:
- *   Init the ISS port on which GMOS OIWFS is installed
- *
- *   DESCRIPTION:
- *   This routine is called ones during the initialization process and inits the
- *   ISS port on which GMOS OIWFS is installed
- *
- *   EXTERNAL VARIABLES:
- *
- *   PRIOR REQUIREMENTS:
- *
- *   INCLUDE FILES:
- *
- *   DEFICIENCIES:
- *
- *   BUGS:
- *-
- */
-
-STATUS detPortGet
-   (
-   struct genSubRecord * pgensub /* Pointer to "initPort" gensub record*/
-   )
-{
-
-   long value;  
-   long xbin;
-   long ybin;
-   char path[STRING_SIZE];
-   char darkFileName[STRING_SIZE];
-   char flatFileName[STRING_SIZE];
-   char refFileName[STRING_SIZE];
-   char aoImFileName[STRING_SIZE];
-   char aoCmFileName[STRING_SIZE];
-   char fgCmFileName[STRING_SIZE];
-   char seeingCmFileName[STRING_SIZE];
-   char seeingCvFileName[STRING_SIZE];
-   char defFileName[STRING_SIZE];
-   char aoInitFileName[STRING_SIZE];
-   double angleM2;
-   double flipXM2;
-   double flipYM2;
-   double angleM1;
-   double flipXM1;
-   double flipYM1;
-   double refX;
-   double refY;
-   double thresh;
-   double rms;
-   double totalThresh;
-   double seeingGain;
-   double aoThreshold;
-   double fgGain[3];
-   double slidingFocusGain;
-   
-
-   if ( ( detObsIdP2->observing != TRUE ) && ( readPortReadyFlag != FALSE ) )
-   {
-      value = *((long *)pgensub->j ) ; 
-      if ( (value != 1) && (value != 3) && (value !=5) )
-         value = 0;
-
-#ifdef DEBUG
-      printf ( "detPortGet(): value = %d\n", (int)value );
-#endif
-
-      if ( aoCtrlIdP2->port != value )
-      {
-         /* port has been changed - update the lookup table */
-
-         printf ("port has changed new port = %d - update the lookup table\n", 
-                 (int)value);
-
-         if ( value != 0 )
-         {
-             aoCtrlIdP2->port = value;
-
-             if (epToVxPipeWrite (NULL, (char *)(int)& (aoCtrlIdP2->port),
-                           detObsIdP2->pPortContext) == ERROR)
-             {
-                ERROR_LOG (
-                "Failed to initialise DET_CONTROL_PORT_SIR_NAME record");
-             }
-         }
-
-         xbin = aoCcdIdP2->xBin;
-         ybin = aoCcdIdP2->yBin;
-
-         if ( (xbin == 1) && (ybin == 1) )
-         {
-            /* Read default parameters from par file */
-
-#if (MK)
-            strcpy ( defFileName, DET_CONTROL_PWFS2_AO_FULL_CTRL_MK_INIT_FILE );
-#else
-            strcpy ( defFileName, DET_CONTROL_PWFS2_AO_FULL_CTRL_CP_INIT_FILE );
-#endif
-
-            if ( strcmp (defFileName, "NONE") != 0 )
-            {
-               strcpy ( aoInitFileName , DET_CONTROL_PAR_FILE_PATH ) ;
-               strcat ( aoInitFileName , "/" ) ;
-               strcat ( aoInitFileName , defFileName ) ;
-
-               if ( aoCtrlFileRead ( aoInitFileName, path, darkFileName, 
-                                     flatFileName, refFileName, &refX, &refY, 
-                                     aoImFileName, aoCmFileName, fgCmFileName, 
-                                     seeingCmFileName, seeingCvFileName, &rms, 
-                                     &thresh, &totalThresh,
-                                     value, &angleM2, &flipXM2, &flipYM2,
-                                     &angleM1, &flipXM1, &flipYM1, &seeingGain,
-                                     &aoThreshold, fgGain, &slidingFocusGain)
-                    == ERROR )
-               {
-                  printf ("Failed to read ao control file parameters\n");
-                  return (ERROR);
-               }
-
-               aoCtrlIdP2->angleWithM2 = angleM2;
-               aoCtrlIdP2->cosAngleWithM2 = cos ( aoCtrlIdP2->angleWithM2 );
-               aoCtrlIdP2->sinAngleWithM2 = sin ( aoCtrlIdP2->angleWithM2 );
-
-               aoCtrlIdP2->flipXWithM2 = flipXM2;
-               aoCtrlIdP2->flipYWithM2 = flipYM2;
-
-               aoCtrlIdP2->angleWithM1 = angleM1;
-
-               aoCtrlIdP2->cosAngleWithM1 = cos ( aoCtrlIdP2->angleWithM1 );
-               aoCtrlIdP2->sinAngleWithM1 = sin ( aoCtrlIdP2->angleWithM1 );
-
-               aoCtrlIdP2->cos2AngleWithM1 = 
-               cos ( 2*(aoCtrlIdP2->angleWithM1) );
-               aoCtrlIdP2->sin2AngleWithM1 = 
-               sin ( 2*(aoCtrlIdP2->angleWithM1) );
-
-               aoCtrlIdP2->cos3AngleWithM1 = 
-               cos ( 3*(aoCtrlIdP2->angleWithM1) );
-               aoCtrlIdP2->sin3AngleWithM1 = 
-               sin ( 3*(aoCtrlIdP2->angleWithM1) );
-
-               aoCtrlIdP2->cos4AngleWithM1 = 
-               cos ( 4*(aoCtrlIdP2->angleWithM1) );
-               aoCtrlIdP2->sin4AngleWithM1 = 
-               sin ( 4*(aoCtrlIdP2->angleWithM1) );
-
-               aoCtrlIdP2->flipXWithM1 = flipXM1;
-               aoCtrlIdP2->flipYWithM1 = flipYM1;
-            }
-         }
-         else if ( (xbin == 2) && (ybin == 2) )
-         {
-            /* Read default parameters from par file */
-#if (MK)
-            strcpy ( defFileName, DET_CONTROL_PWFS2_AO_BIN_CTRL_MK_INIT_FILE );
-#else
-            strcpy ( defFileName, DET_CONTROL_PWFS2_AO_BIN_CTRL_CP_INIT_FILE );
-#endif
-
-            if ( strcmp (defFileName, "NONE") != 0 )
-            {
-               strcpy ( aoInitFileName , DET_CONTROL_PAR_FILE_PATH ) ;
-               strcat ( aoInitFileName , "/" ) ;
-               strcat ( aoInitFileName , defFileName ) ;
-
-               if ( aoCtrlFileRead ( aoInitFileName, path, darkFileName, 
-                                     flatFileName, refFileName, &refX, &refY, 
-                                     aoImFileName, aoCmFileName, fgCmFileName, 
-                                     seeingCmFileName, seeingCvFileName, &rms, 
-                                     &thresh, &totalThresh,
-                                     value, &angleM2, &flipXM2, &flipYM2,
-                                     &angleM1, &flipXM1, &flipYM1, &seeingGain,
-                                     &aoThreshold, fgGain, &slidingFocusGain)
-                    == ERROR )
-               {
-                  printf ("Failed to read ao control file parameters\n");
-                  return (ERROR);
-               }
-
-               aoCtrlIdP2->angleWithM2 = angleM2;
-               aoCtrlIdP2->cosAngleWithM2 = cos ( aoCtrlIdP2->angleWithM2 );
-               aoCtrlIdP2->sinAngleWithM2 = sin ( aoCtrlIdP2->angleWithM2 );
-
-               aoCtrlIdP2->flipXWithM2 = flipXM2;
-               aoCtrlIdP2->flipYWithM2 = flipYM2;
-
-               aoCtrlIdP2->angleWithM1 = angleM1;
-               aoCtrlIdP2->cosAngleWithM1 = cos ( aoCtrlIdP2->angleWithM1 );
-               aoCtrlIdP2->sinAngleWithM1 = sin ( aoCtrlIdP2->angleWithM1 );
-
-               aoCtrlIdP2->cos2AngleWithM1 = 
-               cos ( 2*(aoCtrlIdP2->angleWithM1) );
-               aoCtrlIdP2->sin2AngleWithM1 = 
-               sin ( 2*(aoCtrlIdP2->angleWithM1) );
-
-               aoCtrlIdP2->cos3AngleWithM1 = 
-               cos ( 3*(aoCtrlIdP2->angleWithM1) );
-               aoCtrlIdP2->sin3AngleWithM1 = 
-               sin ( 3*(aoCtrlIdP2->angleWithM1) );
-
-               aoCtrlIdP2->cos4AngleWithM1 = 
-               cos ( 4*(aoCtrlIdP2->angleWithM1) );
-               aoCtrlIdP2->sin4AngleWithM1 = 
-               sin ( 4*(aoCtrlIdP2->angleWithM1) );
-
-               aoCtrlIdP2->flipXWithM1 = flipXM1;
-               aoCtrlIdP2->flipYWithM1 = flipYM1;
-            }
-         }
-         else
-         {
-#ifdef DEBUG
-            ERROR_LOG ( "xbin and ybin sir records should contain 1 or 2" );
-#endif
-         }
-      }
-      else
-      {
-         /* port has not changed - do nothing */
-#ifdef DEBUG
-         printf ("port has not changed \n");
-#endif
-      }
-
-   }
-#ifdef DEBUG
-   else
-   {
-      printf ( "detPortGet() observing then wait...\n" ) ;
-   }
-#endif
-
-   return (OK) ;
-}
-

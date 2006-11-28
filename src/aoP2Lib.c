@@ -79,13 +79,8 @@
  *   aoPoScaleContextShow() - Display a probe offset scale context structure
  *   aoSeeingCompute () - Compute the seeing
  *   aoSeeingCoeffMatRead() - Read a seeing coefficient matrix from a file
- *   aoNewMatRead() - Read an interaction or control matrix from a file
- *   aoNewSeeingCompute () - Compute the seeing according to FR's method
  * 
  *INDENT-OFF*
- *   23 Jan 2004: CB - Read FG gain from default file
- *   31 Jan 2003: CB - Implement proportional law for aO
- *   18 Nov 2002: CB - Implement seeing computation according FR's method
  *   17 Sep 2002: CB - Add outGuide to aoGlobalGuide and aoGuideAndFocus
  *   16 Sep 2002: CB - Implement seeing computation
  *                     aoModeCompute(): add imageStatus in invocation to check
@@ -2321,24 +2316,15 @@ STATUS aoCtrlContextInit (
             fileName );
 #endif
 
-   if ( aoNewMatRead ( fileName, AO_INT_MAT_TYPE, aoCcdId->centroidsNb, 
-                       aoCtrlId->aoModeNb, aoCtrlId->aoIntMat ) == ERROR )
+   if ( aoMatRead ( fileName, AO_INT_MAT_TYPE, aoCcdId, aoCtrlId ) == ERROR )
    {
       ERROR_SET1 ( 0,
                    "Failed when reading the interaction matrix file %s" ,
                    ERROR_LOG_SAVE, fileName );
-      aoCtrlId->aoIntMatInitFlag = FALSE;
       aoCtrlId->initFlag = FALSE;
       fclose (pFile);
       return (ERROR);
    }
-   else
-   {
-      strcpy ( aoCtrlId->aoIntMatFileName, fileName );
-      aoCtrlId->aoIntMatInitFlag = TRUE;
-      aoCtrlId->aoContMatInitFlag = FALSE;
-   }
-
 
    /* Skip the next line of comment */
 
@@ -2382,21 +2368,14 @@ STATUS aoCtrlContextInit (
             fileName );
 #endif
 
-   if ( aoNewMatRead ( fileName, AO_CONT_MAT_TYPE, aoCtrlId->aoModeNb,
-                       aoCcdId->centroidsNb, aoCtrlId->aoContMat ) == ERROR )
+   if ( aoMatRead ( fileName, AO_CONT_MAT_TYPE, aoCcdId, aoCtrlId ) == ERROR )
    {
       ERROR_SET1 ( 0,
                    "Failed when reading the control matrix file %s" ,
                    ERROR_LOG_SAVE, fileName );
       aoCtrlId->initFlag = FALSE;
-      aoCtrlId->aoContMatInitFlag = FALSE;
       fclose (pFile);
       return (ERROR);
-   }
-   else
-   {
-      strcpy ( aoCtrlId->aoContMatFileName, fileName );
-      aoCtrlId->aoContMatInitFlag = TRUE;
    }
 
    /* Skip the next line of comment */
@@ -2441,21 +2420,14 @@ STATUS aoCtrlContextInit (
             fileName );
 #endif
 
-   if ( aoNewMatRead ( fileName, AO_CONT_MAT_TYPE, aoCtrlId->fgModeNb,
-                       aoCcdId->centroidsNb, aoCtrlId->fgContMat ) == ERROR )
+   if ( aoFgContMatRead ( fileName, aoCcdId, aoCtrlId ) == ERROR )
    {
       ERROR_SET1 ( 0,
                    "Failed when reading the FG control matrix file %s" ,
                    ERROR_LOG_SAVE, fileName );
       aoCtrlId->initFlag = FALSE;
-      aoCtrlId->fgContMatInitFlag = FALSE;
       fclose (pFile);
       return (ERROR);
-   }
-   else
-   {
-      strcpy ( aoCtrlId->fgContMatFileName, fileName );
-      aoCtrlId->fgContMatInitFlag = TRUE;
    }
 
    /* Read the FG scaleFactorVect from the init file */
@@ -2698,7 +2670,6 @@ STATUS aoCtrlContextInit (
       return (ERROR);
    }
 
-   printf ("aoCtrlContextInit: port =%d\n", aoCtrlId->port);
    if ( (aoCtrlId->port != 1) && (aoCtrlId->port != 3) &&
         (aoCtrlId->port != 5) )
       aoCtrlId->port = usedPort;
@@ -2736,13 +2707,11 @@ STATUS aoCtrlContextInit (
       }
    }
 
-#ifdef DEBUG
    for ( i = 0 ; i < PORT_NB ; i ++ )
    {
        printf ( "%d %f %f %f %f %f %f\n", port[i], angleM2[i], flipXM2[i], 
                 flipYM2[i], angleM1[i], flipXM1[i], flipYM1[i] );
    }
-#endif
 
    index = 0;
    for ( i = 0 ; i < PORT_NB ; i ++ )
@@ -2751,9 +2720,7 @@ STATUS aoCtrlContextInit (
          index = i;
    }
 
-/*
    printf ( "index = %d\n" , index );
-*/
 
    aoCtrlId->angleWithM2 = angleM2[index];
 
@@ -2851,82 +2818,14 @@ STATUS aoCtrlContextInit (
             fileName );
 #endif
 
-   if ( aoNewMatRead ( fileName, AO_CONT_MAT_TYPE, SEEING_ROW_NB,
-                       aoCcdId->centroidsNb, aoCtrlId->seeingCoeffMat ) 
-        == ERROR )
+   if ( aoSeeingCoeffMatRead ( fileName, aoCcdId, aoCtrlId ) == ERROR )
    {
       ERROR_SET1 ( 0,
                    "Failed when reading the seeing coeff matrix file %s" ,
                    ERROR_LOG_SAVE, fileName );
-      aoCtrlId->seeingCoeffMatInitFlag = FALSE;
       aoCtrlId->initFlag = FALSE;
       fclose (pFile);
       return (ERROR);
-   }
-   else
-   {
-      strcpy ( aoCtrlId->seeingCoeffMatFileName, fileName );
-      aoCtrlId->seeingCoeffMatInitFlag = TRUE;
-   }
-
-   /* Skip the next line of comment */
-
-   if ( fgets (comment, STRING_SIZE, pFile) == (char *)NULL )
-   {
-      ERROR_SET1 ( 0,
-      "Failed to read the next line of comments from the AO init file %s",
-      ERROR_LOG_SAVE, pInitFileName );
-      fclose (pFile);
-      aoCtrlId->initFlag = FALSE;
-      return (ERROR);
-   }
-
-#ifdef DEBUG
-   printf ( "aoCtrlContextInit(): %s\n", comment );
-#endif
-
-   /* Read the name of the seeing coefficient vector file */
-
-   if ( fgets (fileName, STRING_SIZE, pFile) == (char *)NULL )
-   {
-      ERROR_SET1 ( 0,
-      "Failed to read the seeing coeff vect file name from the AO init file %s",
-      ERROR_LOG_SAVE, pInitFileName );
-      fclose (pFile);
-      aoCtrlId->initFlag = FALSE;
-      return (ERROR);
-   }
-
-   if ( fileName[strlen(fileName) - 1] == '\n' )
-   {
-      fileName[strlen(fileName) - 1] = '\0';
-#ifdef DEBUG
-      printf ( "aoCtrlContextInit(): last character of %s was return\n",
-               fileName );
-#endif
-   }
-
-#ifdef DEBUG
-   printf ( "aoCtrlContextInit(): seeing coefficient vector file name: %s\n",
-            fileName );
-#endif
-
-   if ( aoNewMatRead ( fileName, AO_CONT_MAT_TYPE, SEEING_ROW_NB, 1,
-                       aoCtrlId->seeingCoeffVect )
-        == ERROR )
-   {
-      ERROR_SET1 ( 0,
-                   "Failed when reading the seeing coeff vector file %s" ,
-                   ERROR_LOG_SAVE, fileName );
-      aoCtrlId->seeingCoeffVectInitFlag = FALSE;
-      aoCtrlId->initFlag = FALSE;
-      fclose (pFile);
-      return (ERROR);
-   }
-   else
-   {
-      strcpy ( aoCtrlId->seeingCoeffVectFileName, fileName );
-      aoCtrlId->seeingCoeffVectInitFlag = TRUE;
    }
 
    /* Skip the next line of comment */
@@ -2964,42 +2863,6 @@ STATUS aoCtrlContextInit (
             aoCtrlId->seeingScaleFactor );
 #endif
 
-   /* Skip the next line of comment */
-
-   if ( fgets (comment, STRING_SIZE, pFile) == (char *)NULL )
-   {
-      ERROR_SET1 ( 0,
-      "Failed to read the next line of comments from the AO init file %s",
-      ERROR_LOG_SAVE, pInitFileName );
-      fclose (pFile);
-      aoCtrlId->initFlag = FALSE;
-      return (ERROR);
-   }
-
-#ifdef DEBUG
-   printf ( "aoCtrlContextInit(): %s\n", comment );
-#endif
-
-   /* Read aO threshold above which the aO gain is increased */
-
-   if ( (fscanf (pFile, "%lf\n", &value)) == EOF )
-   {
-      ERROR_SET1 ( 0,
-            "Failed to read aO threshold from the AO init file %s",
-            ERROR_LOG_SAVE, pInitFileName );
-      fclose (pFile);
-      aoCtrlId->initFlag = FALSE;
-      return (ERROR);
-   }
-
-   aoCtrlId->aoThreshold = value;
-
-#ifdef DEBUG
-   printf ( "aoCtrlContextInit(): aoThreshold = %f\n",
-            aoCtrlId->aoThreshold );
-#endif
-
-
    /* End - close and return */
 
    aoCtrlId->initFlag = TRUE;
@@ -3015,11 +2878,11 @@ STATUS aoCtrlContextInit (
    for ( i = 0 ; i < (2 * SUBAP_NB) ; i ++ )
        aoCtrlId->averageThreshVect[i] = 0.0;
 
-   for ( i = 0 ; i < SEEING_ROW_NB ; i ++ )
-   {
-       aoCtrlId->averageSeeingVect[i] = 0.0;
-       aoCtrlId->varianceSeeingVect[i] = 0.0;
-   }
+   for ( i = 0 ; i < (2 * SUBAP_NB) ; i ++ )
+       aoCtrlId->averageCentroidsVect[i] = 0.0;
+
+   for ( i = 0 ; i < (4 * SUBAP_NB * SUBAP_NB) ; i ++ )
+       aoCtrlId->averageCentroidsMat[i] = 0.0;
 
    fclose (pFile);
 
@@ -3036,39 +2899,36 @@ STATUS aoCtrlContextInit (
  *   aoCtrlContextUpdate (pDarkFileName, pFlatFileName, pRefFileName, 
  *                        pAoIntMatFileName, pAoContMatFileName, 
  *                        pFgContMatFileName, pSeeingCoeffMatFileName,
- *                        pSeeingCoeffVectFileName, xCenter, yCenter, 
+ *                        xCenter, yCenter, 
  *                        angleWithM2, flipXWithM2, flipYWithM2, 
  *                        angleWithM1, flipXWithM1, flipYWithM1,
- *                        seeingScaleFactor, aoThreshold, aoCcdId, aoCtrlId)
+ *                        seeingScaleFactor, aoCcdId, aoCtrlId)
  *
  *   PARAMETERS: (">" input, "!" modified, "<" output)
- *   (>) pDarkFileName      (char *)       Pointer to the dark file name 
- *   (>) pFlatFileName      (char *)       Pointer to the flat file name 
- *   (>) pRefFileName       (char *)       Pointer to the reference file name 
- *   (>) pAoIntMatFileName  (char *)       Pointer to the aO interaction matrix 
- *                                         file name
- *   (>) pAoContMatFileName (char *)       Pointer to the aO control matrix file
- *                                         name
- *   (>) pFgContMatFileName (char *)       Pointer to the FG control matrix file
- *                                         name
- *   (>) pSeeingCoeffMatFileName (char *)  Pointer to the seeing coeff matrix
- *                                         file name
- *   (>) pSeeingCoeffVectFileName (char *) Pointer to the seeing coeff
- *                                         vector file name
- *   (>) xCenter            (double)       New xCenter value for whole CCD
- *   (>) yCenter            (double)       New yCenter value for whole CCD
- *   (>) angleWithM2        (double)       New angle between M2 and Oi 
- *   (>) flipXWithM2        (double)       New Flip X between M2 and Oi
- *   (>) flipYWithM2        (double)       New Flip Y between M2 and Oi
- *   (>) angleWithM1        (double)       New angle between M1 and Oi 
- *   (>) flipXWithM1        (double)       New Flip X between M1 and Oi
- *   (>) flipYWithM1        (double)       New Flip Y between M1 and Oi
- *   (>) seeingScaleFactor  (double)       Seeing Scale factor
- *   (>) aoThreshold        (double)       aO threshold 
- *   (>) aoCcdId            (AO_CCD_ID)    Pointer to the AO CCD geometry 
- *                                         context structure 
- *   (<) aoCtrlId           (AO_CTRL_ID)   Pointer to the AO control context 
- *                                         structure
+ *   (>) pDarkFileName      (char *)     Pointer to the dark file name 
+ *   (>) pFlatFileName      (char *)     Pointer to the flat file name 
+ *   (>) pRefFileName       (char *)     Pointer to the reference file name 
+ *   (>) pAoIntMatFileName  (char *)     Pointer to the aO interaction matrix 
+ *                                       file name
+ *   (>) pAoContMatFileName (char *)     Pointer to the aO control matrix file 
+ *                                       name
+ *   (>) pFgContMatFileName (char *)     Pointer to the FG control matrix file
+ *                                       name
+ *   (>) pSeeingCoeffMatFileName (char *) Pointer to the seeing coeff matrix
+ *                                        file name
+ *   (>) xCenter            (double)     New xCenter value for whole CCD
+ *   (>) yCenter            (double)     New yCenter value for whole CCD
+ *   (>) angleWithM2        (double)     New angle between M2 and Oi 
+ *   (>) flipXWithM2        (double)     New Flip X between M2 and Oi
+ *   (>) flipYWithM2        (double)     New Flip Y between M2 and Oi
+ *   (>) angleWithM1        (double)     New angle between M1 and Oi 
+ *   (>) flipXWithM1        (double)     New Flip X between M1 and Oi
+ *   (>) flipYWithM1        (double)     New Flip Y between M1 and Oi
+ *   (>) seeingScaleFactor  (double)      Seeing Scale factor
+ *   (>) aoCcdId            (AO_CCD_ID)  Pointer to the AO CCD geometry context 
+ *                                       structure 
+ *   (<) aoCtrlId           (AO_CTRL_ID) Pointer to the AO control context 
+ *                                       structure
  *
  *   FUNCTION VALUE:
  *   (STATUS)   OK if successful, ERROR if unsuccessful
@@ -3091,8 +2951,6 @@ STATUS aoCtrlContextInit (
  *   The pFgContMatFileName is the full name of the file including the path.
  *   The pSeeingCoeffMatFileName is the full name of the file including
  *   the path.
- *   The pSeeingCoeffVectFileName is the full name of the file including
- *   the path.
  *
  *   INCLUDE FILES:
  *   aoP2Lib.h
@@ -3111,7 +2969,6 @@ STATUS aoCtrlContextUpdate (
    char *     pAoContMatFileName,
    char *     pFgContMatFileName,
    char *     pSeeingCoeffMatFileName,
-   char *     pSeeingCoeffVectFileName,
    double     xCenter,
    double     yCenter, 
    double     angleWithM2,
@@ -3121,7 +2978,6 @@ STATUS aoCtrlContextUpdate (
    double     flipXWithM1,
    double     flipYWithM1,
    double     seeingScaleFactor,
-   double     aoThreshold,
    AO_CCD_ID  aoCcdId,
    AO_CTRL_ID aoCtrlId
    )
@@ -3201,22 +3057,14 @@ STATUS aoCtrlContextUpdate (
             pAoIntMatFileName );
 #endif
 
-   if ( aoNewMatRead ( pAoIntMatFileName, AO_INT_MAT_TYPE, aoCcdId->centroidsNb,
-                       aoCtrlId->aoModeNb, aoCtrlId->aoIntMat )
+   if ( aoMatRead ( pAoIntMatFileName, AO_INT_MAT_TYPE, aoCcdId, aoCtrlId )
         == ERROR )
    {
       ERROR_SET1 ( 0,
                    "Failed when reading the interaction matrix file %s" ,
                    ERROR_LOG_SAVE, pAoIntMatFileName );
-      aoCtrlId->aoIntMatInitFlag = FALSE;
       aoCtrlId->initFlag = FALSE;
       return (ERROR);
-   }
-   else
-   {
-      strcpy ( aoCtrlId->aoIntMatFileName, pAoIntMatFileName );
-      aoCtrlId->aoIntMatInitFlag = TRUE;
-      aoCtrlId->aoContMatInitFlag = FALSE;
    }
 
    /* Init the new aO control matrix */
@@ -3226,21 +3074,14 @@ STATUS aoCtrlContextUpdate (
             pAoContMatFileName );
 #endif
 
-   if ( aoNewMatRead ( pAoContMatFileName, AO_CONT_MAT_TYPE, aoCtrlId->aoModeNb,
-                       aoCcdId->centroidsNb, aoCtrlId->aoContMat )
+   if ( aoMatRead ( pAoContMatFileName, AO_CONT_MAT_TYPE, aoCcdId, aoCtrlId )
         == ERROR )
    {
       ERROR_SET1 ( 0,
                    "Failed when reading the control matrix file %s" ,
                    ERROR_LOG_SAVE, pAoContMatFileName );
-      aoCtrlId->aoContMatInitFlag = FALSE;
       aoCtrlId->initFlag = FALSE;
       return (ERROR);
-   }
-   else
-   {
-      strcpy ( aoCtrlId->aoContMatFileName, pAoContMatFileName );
-      aoCtrlId->aoContMatInitFlag = TRUE;
    }
 
    /* Init the new FG control matrix */
@@ -3250,20 +3091,13 @@ STATUS aoCtrlContextUpdate (
             pFgContMatFileName );
 #endif
 
-   if ( aoNewMatRead ( pFgContMatFileName, AO_CONT_MAT_TYPE, aoCtrlId->fgModeNb,
-                       aoCcdId->centroidsNb, aoCtrlId->fgContMat ) == ERROR )
+   if ( aoFgContMatRead ( pFgContMatFileName, aoCcdId, aoCtrlId ) == ERROR )
    {
       ERROR_SET1 ( 0,
                    "Failed when reading the FG control matrix file %s" ,
                    ERROR_LOG_SAVE, pFgContMatFileName );
-      aoCtrlId->fgContMatInitFlag = FALSE;
       aoCtrlId->initFlag = FALSE;
       return (ERROR);
-   }
-   else
-   {
-      strcpy ( aoCtrlId->fgContMatFileName, pFgContMatFileName );
-      aoCtrlId->fgContMatInitFlag = TRUE;
    }
 
    /* Init the new seeing coeff matrix */
@@ -3273,45 +3107,14 @@ STATUS aoCtrlContextUpdate (
             pSeeingCoeffMatFileName );
 #endif
 
-   if ( aoNewMatRead ( pSeeingCoeffMatFileName, AO_CONT_MAT_TYPE, SEEING_ROW_NB,
-                       aoCcdId->centroidsNb, aoCtrlId->seeingCoeffMat )
+   if ( aoSeeingCoeffMatRead ( pSeeingCoeffMatFileName, aoCcdId, aoCtrlId )
         == ERROR )
    {
       ERROR_SET1 ( 0,
                    "Failed when reading the seeing coeff matrix file %s" ,
                    ERROR_LOG_SAVE, pSeeingCoeffMatFileName );
-      aoCtrlId->seeingCoeffMatInitFlag = FALSE;
       aoCtrlId->initFlag = FALSE;
       return (ERROR);
-   }
-   else
-   {
-      strcpy ( aoCtrlId->seeingCoeffMatFileName, pSeeingCoeffMatFileName );
-      aoCtrlId->seeingCoeffMatInitFlag = TRUE;
-   }
-
-   /* Init the new seeing coeff vector */
-
-#ifdef DEBUG
-   printf ( "aoCtrlContextUpdate(): seeing coeff vector file name: %s\n",
-            pSeeingCoeffVectFileName );
-#endif
-
-   if ( aoNewMatRead ( pSeeingCoeffVectFileName, AO_CONT_MAT_TYPE,
-                       SEEING_ROW_NB, 1, aoCtrlId->seeingCoeffVect )
-        == ERROR )
-   {
-      ERROR_SET1 ( 0,
-                   "Failed when reading the seeing coeff vector file %s" ,
-                   ERROR_LOG_SAVE, pSeeingCoeffVectFileName );
-      aoCtrlId->seeingCoeffVectInitFlag = FALSE;
-      aoCtrlId->initFlag = FALSE;
-      return (ERROR);
-   }
-   else
-   {
-      strcpy ( aoCtrlId->seeingCoeffVectFileName, pSeeingCoeffVectFileName );
-      aoCtrlId->seeingCoeffVectInitFlag = TRUE;
    }
 
    /* Init the new xcenter for the whole CCD */
@@ -3424,15 +3227,6 @@ STATUS aoCtrlContextUpdate (
             aoCtrlId->seeingScaleFactor );
 #endif
 
-   /* Init the aO threshold */
-
-   aoCtrlId->aoThreshold = aoThreshold;
-
-#ifdef DEBUG
-   printf ( "aoCtrlContextInit(): aoThreshold = %f\n",
-            aoCtrlId->aoThreshold );
-#endif
-
    /* End */
 
    aoCtrlId->initFlag = TRUE;
@@ -3520,8 +3314,6 @@ STATUS aoCtrlContextShow (
             (aoCtrlId->fgContMatInitFlag ? "TRUE" : "FALSE") );
    printf ( "Seeing coefficient matrix init flag: %s\n" ,
             (aoCtrlId->seeingCoeffMatInitFlag ? "TRUE" : "FALSE") );
-   printf ( "Seeing coefficient vector init flag: %s\n" ,
-            (aoCtrlId->seeingCoeffVectInitFlag ? "TRUE" : "FALSE") );
 
    printf ( "Dark file name: %s\n", aoCtrlId->darkFileName );
    printf ( "Flat file name: %s\n", aoCtrlId->flatFileName );
@@ -3533,8 +3325,6 @@ STATUS aoCtrlContextShow (
    printf ( "FG Control matrix file name: %s\n" , aoCtrlId->fgContMatFileName );
    printf ( "Seeing coefficient matrix file name: %s\n" ,
             aoCtrlId->seeingCoeffMatFileName );
-   printf ( "Seeing coefficient vector file name: %s\n" ,
-            aoCtrlId->seeingCoeffVectFileName );
 
    if ( verbose == TRUE )
    {
@@ -3624,18 +3414,11 @@ STATUS aoCtrlContextShow (
       }
 
       printf ( "Seeing Coeff matrix: \n" );
-      for ( i = 0 ; i < SEEING_ROW_NB ; i ++ )
+      for ( i = 0 ; i < aoCcdId->centroidsNb ; i ++ )
       {
           for ( j = 0 ; j < aoCcdId->centroidsNb ; j ++ )
               printf ( "%f " ,
                        aoCtrlId->seeingCoeffMat[i*aoCcdId->centroidsNb + j] );
-          printf ( "\n" );
-      }
-
-      printf ( "Seeing Coeff vector: \n" );
-      for ( i = 0 ; i < SEEING_ROW_NB ; i ++ )
-      {
-          printf ( "%f " , aoCtrlId->seeingCoeffVect[i] );
           printf ( "\n" );
       }
    }
@@ -3655,7 +3438,6 @@ STATUS aoCtrlContextShow (
    printf ( "Average total counts: %f\n" , aoCtrlId->averageTotal );
    printf ( "Threshold for total counts: %f\n" , aoCtrlId->totalThreshold );
    printf ( "Total mult coeff : %f\n" , aoCtrlId->multCoeffTotal );
-   printf ( "Port number : %d\n" , aoCtrlId->port );
    printf ( "Angle with M2 (rad): %f\n" , aoCtrlId->angleWithM2 );
    printf ( "Cos Angle with M2: %f\n" , aoCtrlId->cosAngleWithM2 );
    printf ( "Sin Angle with M2: %f\n" , aoCtrlId->sinAngleWithM2 );
@@ -3679,10 +3461,7 @@ STATUS aoCtrlContextShow (
    printf ( "Allowed subapertures to be off: %d\n", aoCtrlId->allowedSubapOff);
    printf ( "seeingCounter: %d\n" , aoCtrlId->seeingCounter );
    printf ( "Seeing: %f\n" , aoCtrlId->seeing );
-   printf ( "r0: %f\n" , aoCtrlId->r0 );
-   printf ( "jitter: %f\n" , aoCtrlId->jitter );
    printf ( "seeingScaleFactor: %f\n" , aoCtrlId->seeingScaleFactor );
-   printf ( "aoThreshold: %f\n" , aoCtrlId->aoThreshold );
 
    return (OK);
 }
@@ -6930,11 +6709,9 @@ STATUS aoDarkUpdate (
  *   INVOCATION:
  *   aoCtrlFileRead (pInitFileName, pPath, pDarkFileName, pFlatFileName, 
  *                   pRefFileName, pRefX, pRefY, pAoImFileName, pAoCmFileName,
- *                   pFgCmFileName, pSeeingCmFileName, pSeeingCvFileName,
- *                   pRms, pThresh, pTotalThresh, currentPort, 
- *                   pAngleM2, pFlipXM2, pFlipYM2, 
- *                   pAngleM1, pFlipXM1, pFlipYM1, pSeeingGain, pAoThreshold,
- *                   pFgGain, pSlidingFocusGain)
+ *                   pFgCmFileName, pSeeingCmFileName, pRms, pThresh, 
+ *                   pTotalThresh, currentPort, pAngleM2, pFlipXM2, pFlipYM2, 
+ *                   pAngleM1, pFlipXM1, pFlipYM1, pSeeingGain)
  *
  *   PARAMETERS: (">" input, "!" modified, "<" output)
  *   (>) pInitFileName     (char *)   Pointer to the AO init file name 
@@ -6950,8 +6727,6 @@ STATUS aoDarkUpdate (
  *   (<) pFgCmFileName     (char *)   Pointer to the FG control matrix file name
  *   (<) pSeeingCmFileName (char *)   Pointer to the seeing Coeff matrix file
  *                                    name
- *   (<) pSeeingCvFileName (char *)   Pointer to the seeing Coeff vector file
- *                                    name
  *   (<) pRms              (double *) Pointer to the RMS
  *   (<) pThresh           (double *) Pointer to the threshold
  *   (<) pTotalThresh      (double *) Pointer to the total flux threshold
@@ -6963,9 +6738,6 @@ STATUS aoDarkUpdate (
  *   (<) pFlipXM1          (double *) Pointer to the flip X with M1
  *   (<) pFlipYM1          (double *) Pointer to the flip Y with M1
  *   (<) pSeeingGain       (double *) Pointer to the seeing scale factor
- *   (<) pAoThreshold      (double *) Pointer to the aO threshold
- *   (<) pFgGain           (double *) Pointer to array of gain (TTF)
- *   (<) pSlidingFocusGain (double *) Pointer to the focus sliding gain
  *
  *   FUNCTION VALUE:
  *   (STATUS)   OK if successful, ERROR if unsuccessful
@@ -7002,7 +6774,6 @@ STATUS aoCtrlFileRead (
    char *   pAoCmFileName,
    char *   pFgCmFileName,
    char *   pSeeingCmFileName,
-   char *   pSeeingCvFileName,
    double * pRms,
    double * pThresh,
    double * pTotalThresh,
@@ -7013,10 +6784,7 @@ STATUS aoCtrlFileRead (
    double * pAngleM1,
    double * pFlipXM1,
    double * pFlipYM1,
-   double * pSeeingGain,
-   double * pAoThreshold,
-   double * pFgGain,
-   double * pSlidingFocusGain
+   double * pSeeingGain
    )
 {
    FILE *     pFile;
@@ -7031,7 +6799,6 @@ STATUS aoCtrlFileRead (
    double     angleM1[PORT_NB];
    double     flipXM1[PORT_NB];
    double     flipYM1[PORT_NB];
-   double     value;
 
    /* Open the file in read mode */
 
@@ -7378,12 +7145,10 @@ STATUS aoCtrlFileRead (
    printf ( "aoCtrlFileRead(): FG CM file name: %s\n", pFgCmFileName );
 #endif
 
-   /* Read the FG gains */
+   /* Skip the next lines of comments */
 
-   for ( i = 0 ; i < 3 ; i ++ )
+   for ( i = 0 ; i < 8 ; i ++ )
    {
-      /* Skip the next line of comment */
-
       if ( fgets (comment, STRING_SIZE, pFile) == (char *)NULL )
       {
          printf (
@@ -7397,53 +7162,7 @@ STATUS aoCtrlFileRead (
       printf ( "aoCtrlFileRead(): %s\n", comment );
 #endif
 
-      /* Read FG gain */
-
-      if ( (fscanf (pFile, "%lf\n", &value)) == EOF )
-      {
-         ERROR_SET2 ( 0,
-               "Failed to read FG gain [%d] from the AO init file %s",
-               ERROR_LOG_SAVE, i, pInitFileName );
-         fclose (pFile);
-         return (ERROR);
-      }
-
-      *(pFgGain + i) = value;
-
-      /* AAG #ifdef DEBUG */
-      printf ( "aoCtrlFileRead(): FG gain [%d] = %f\n", i, *(pFgGain + i) );
-      /*#endif*/
    }
-
-   /* Skip the next line of comment */
-
-   if ( fgets (comment, STRING_SIZE, pFile) == (char *)NULL )
-   {
-      printf (
-      "Failed to read the next line of comments from the AO init file %s\n",
-      pInitFileName );
-      fclose (pFile);
-      return (ERROR);
-   }
-
-#ifdef DEBUG
-   printf ( "aoCtrlFileRead(): %s\n", comment );
-#endif
-
-   /* Read sliding focus gain */
-
-   if ( (fscanf (pFile, "%lf\n", pSlidingFocusGain)) == EOF )
-   {
-      ERROR_SET1 ( 0,
-            "Failed to read sliding focus gain from the AO init file %s",
-            ERROR_LOG_SAVE, pInitFileName );
-      fclose (pFile);
-      return (ERROR);
-   }
-
-#ifdef DEBUG
-   printf ( "aoCtrlFileRead(): sliding focus gain = %f\n", *pSlidingFocusGain );
-#endif
 
    /* Skip the next line of comment */
 
@@ -7590,13 +7309,11 @@ STATUS aoCtrlFileRead (
       }
    }
 
-#ifdef DEBUG
    for ( i = 0 ; i < PORT_NB ; i ++ )
    {
        printf ( "%d %f %f %f %f %f %f\n", port[i], angleM2[i], flipXM2[i], 
                 flipYM2[i], angleM1[i], flipXM1[i], flipYM1[i] );
    }
-#endif
 
    index = 0;
    for ( i = 0 ; i < PORT_NB ; i ++ )
@@ -7604,6 +7321,8 @@ STATUS aoCtrlFileRead (
       if ( port[i] == usedPort )
          index = i;
    }
+
+   printf ( "index = %d\n" , index );
 
    *pAngleM2 = angleM2[index];
 
@@ -7679,46 +7398,6 @@ STATUS aoCtrlFileRead (
    printf ( "aoCtrlFileRead(): %s\n", comment );
 #endif
 
-  /* Read the name of the seeing coeff vector file */
-
-   if ( fgets (pSeeingCvFileName, STRING_SIZE, pFile) == (char *)NULL )
-   {
-      printf (
-  "Failed to read the name of the seeing coeff vect from the AO init file %s\n",
-      pInitFileName );
-      fclose (pFile);
-      return (ERROR);
-   }
-
-   if ( pSeeingCvFileName[strlen(pSeeingCvFileName) - 1] == '\n' )
-   {
-      pSeeingCvFileName[strlen(pSeeingCvFileName) - 1] = '\0';
-#ifdef DEBUG
-      printf ( "aoCtrlFileRead(): last character of %s was return\n",
-               pSeeingCvFileName );
-#endif
-   }
-
-#ifdef DEBUG
-   printf ( "aoCtrlFileRead(): Seeing coeff vector file name: %s\n",
-            pSeeingCvFileName );
-#endif
-
-   /* Skip the next line of comment */
-
-   if ( fgets (comment, STRING_SIZE, pFile) == (char *)NULL )
-   {
-      printf (
-      "Failed to read the next line of comments from the AO init file %s\n",
-      pInitFileName );
-      fclose (pFile);
-      return (ERROR);
-   }
-
-#ifdef DEBUG
-   printf ( "aoCtrlFileRead(): %s\n", comment );
-#endif
-
    /* Read seeing scale factor */
 
    if ( (fscanf (pFile, "%lf\n", pSeeingGain)) == EOF )
@@ -7731,35 +7410,6 @@ STATUS aoCtrlFileRead (
 
 #ifdef DEBUG
    printf ( "aoCtrlFileRead(): seeing scale factor = %f\n", *pSeeingGain );
-#endif
-
-   /* Skip the next line of comment */
-
-   if ( fgets (comment, STRING_SIZE, pFile) == (char *)NULL )
-   {
-      printf (
-      "Failed to read the next line of comments from the AO init file %s\n",
-      pInitFileName );
-      fclose (pFile);
-      return (ERROR);
-   }
-
-#ifdef DEBUG
-   printf ( "aoCtrlFileRead(): %s\n", comment );
-#endif
-
-   /* Read aO threshold */
-
-   if ( (fscanf (pFile, "%lf\n", pAoThreshold)) == EOF )
-   {
-      printf ( "Failed to read aO threshold from the AO init file %s\n",
-               pInitFileName );
-      fclose (pFile);
-      return (ERROR);
-   }
-
-#ifdef DEBUG
-   printf ( "aoCtrlFileRead(): aoThreshold = %f\n", *pAoThreshold );
 #endif
 
    /* End - close and return */
@@ -10029,7 +9679,6 @@ STATUS aoPoScaleContextShow (
  *-
  */
 
-#ifdef SEEING_METHOD_BE
 STATUS aoSeeingCompute (
    double *     pCentroidsVect,
    int *        pWfsStatus,
@@ -10138,7 +9787,6 @@ STATUS aoSeeingCompute (
 
    return (OK);
 }
-#endif /*SEEING_METHOD_BE*/
 
 /* -------------------------------------------------------------------------- */
 
@@ -10187,7 +9835,6 @@ STATUS aoSeeingCompute (
  *-
  */
 
-#ifdef SEEING_METHOD_BE
 STATUS aoSeeingCoeffMatRead (
    char *     pSeeingCoeffMatFileName,
    AO_CCD_ID  aoCcdId,
@@ -10351,485 +9998,6 @@ STATUS aoSeeingCoeffMatRead (
        printf ( "\n" );
    }
 #endif
-
-   return (OK);
-}
-#endif /*SEEING_METHOD_BE*/
-
-/* -------------------------------------------------------------------------- */
-
-/*+
- *   FUNCTION NAME:
- *   aoNewMatRead
- *
- *   INVOCATION:
- *   aoNewMatRead (pMatFileName, typeExpected, rowNbExpected, colNbExpected, 
- *                 pMat)
- *
- *   PARAMETERS: (">" input, "!" modified, "<" output)
- *   (>) pMatFileName  (char *)   Pointer to the matrix file name
- *   (>) typeExpected  (int)      Expected matrix type AO_INT_MAT_TYPE or
- *                                AO_CONT_MAT_TYPE
- *   (>) rowNbExpected (int)      Expected row number
- *   (>) colNbExpected (int)      Expected column number
- *   (<) pMat          (* double) Pointer to the matrix to read
- *
- *   FUNCTION VALUE:
- *   (STATUS)   OK if successful, ERROR if unsuccessful
- *
- *   PURPOSE:
- *   Read a matrix from a file
- *
- *   DESCRIPTION:
- *   This function reads a matrix of various dimensions from a file given by 
- *   pMatFileName and stores the matrix into pMat.
- *   Note: The first comment line indicates if it is an interaction or a
- *   control matrix, the second line indicates the dimension.
- *   If the type and the dimensions of the matrix are not equivalent to the 
- *   typeExpected and rowNbExpected, colNbExpected, no matrix is read and the 
- *   routine exit with an error.
- *
- *   EXTERNAL VARIABLES:
- *   None.
- *
- *   PRIOR REQUIREMENTS:
- *   The pMatFilename is the full name of the file including the path.
- *   pMat buffer is big enough to contain the matrix to read.
- *
- *   INCLUDE FILES:
- *   aoP2Lib.h
- *
- *   DEFICIENCIES:
- *   None known
- *-
- */
-
-
-STATUS aoNewMatRead (
-   char *   pMatFileName,
-   int      typeExpected,
-   int      rowNbExpected,
-   int      colNbExpected,
-   double * pMat
-   )
-{
-
-   int        type;                 /* Type of the matrix         */
-   int        row, col;             /* Dimension of the matrix    */
-   int        i, j;                 /* Index                      */
-   float      value;                /* Element of the matrix      */
-   char       comment[STRING_SIZE]; /* First line of comments     */
-   FILE *     pFile;                /* File Id                    */
-
-   /* Open the file in read mode */
-
-   pFile = fopen ( pMatFileName, "r" );
-
-   if ( pFile == (FILE *)NULL )
-   {
-      ERROR_SET1 ( 0, "Failed to open the matrix file %s",
-                   ERROR_LOG_SAVE, pMatFileName );
-      return (ERROR);
-   }
-
-   /* Read the first line: should be a comment line */
-
-   if ( fgets (comment, STRING_SIZE, pFile) == (char *)NULL )
-   {
-      ERROR_SET1 ( 0,
-                   "Failed to read line of comments from the matrix file %s",
-                   ERROR_LOG_SAVE, pMatFileName );
-
-      fclose (pFile);
-      return (ERROR);
-   }
-
-#ifdef DEBUG
-   printf ( "aoNewMatRead(): %s\n" , comment );
-#endif
-
-   /* The next line contains the type of the matrix */
-
-   if ( (fscanf (pFile, "%d\n", &type)) == EOF )
-   {
-      ERROR_SET1 ( 0,
-                   "Failed to read the type of the matrix in the file %s",
-                   ERROR_LOG_SAVE, pMatFileName );
-      fclose (pFile);
-      return (ERROR);
-   }
-
-   if ( (type != AO_INT_MAT_TYPE) && (type != AO_CONT_MAT_TYPE) )
-   {
-      ERROR_SET1 ( 0,
-            "Type of the matrix is unrecognized: %d (should be 0 or 1)",
-            ERROR_LOG_SAVE, type );
-      fclose (pFile);
-      return (ERROR);
-   }
-
-   if ( type != typeExpected )
-   {
-      ERROR_SET2 ( 0,
-            "Type of the matrix is not the one expected: %d (should be %d)",
-            ERROR_LOG_SAVE, type, typeExpected);
-      fclose (pFile);
-      return (ERROR);
-   }
-
-#ifdef DEBUG
-   printf ( "aoNewMatRead(): type of the matrix %s\n" ,
-            (type ? "CONTROL" : "INTERACTION") );
-#endif
-
-   /* Read the next line of comments */
-
-   if ( fgets (comment, STRING_SIZE, pFile) == (char *)NULL )
-   {
-      ERROR_SET1 ( 0,
-                   "Failed to read line of comments from the matrix file %s",
-                   ERROR_LOG_SAVE, pMatFileName );
-      fclose (pFile);
-      return (ERROR);
-   }
-
-#ifdef DEBUG
-   printf ( "aoNewMatRead(): %s\n", comment );
-#endif
-
-   /* The next line contains the dimensions of the matrix */
-
-   if ( (fscanf (pFile, "%d %d\n", &row, &col)) == EOF )
-   {
-      ERROR_SET1 ( 0,
-                   "Failed to read the dimension of the matrix in the file %s",
-                   ERROR_LOG_SAVE, pMatFileName );
-      fclose (pFile);
-      return (ERROR);
-   }
-
-   if ( (row != rowNbExpected) || (col != colNbExpected) )
-   {
-      ERROR_SET4 ( 0,
-         "Dimension of the matrix (%d,%d) are not the ones expected %d,%d)",
-         ERROR_LOG_SAVE, row, col, rowNbExpected, colNbExpected);
-         fclose (pFile);
-         return (ERROR);
-   }
-
-#ifdef DEBUG
-   printf ( "aoNewMatRead(): dimensions of the matrix %d, %d\n", row, col );
-#endif
-
-   /* Read the next line of comments */
-
-   if ( fgets (comment, STRING_SIZE, pFile) == (char *)NULL )
-   {
-      ERROR_SET1 ( 0,
-                   "Failed to read line of comments from the matrix file %s",
-                   ERROR_LOG_SAVE, pMatFileName );
-      fclose (pFile);
-      return (ERROR);
-   }
-
-#ifdef DEBUG
-   printf ( "aoNewMatRead(): %s\n", comment );
-#endif
-
-   /* Now read the matrix */
-
-   for ( i = 0 ; i < row ; i ++ )
-   {
-       for ( j = 0 ; j < col ; j ++ )
-       {
-           if ( (fscanf (pFile, "%f", &value)) != EOF )
-           {
-              *(pMat + i*col + j) = (double)(value);
-           }
-           else
-           {
-              ERROR_SET1 ( 0, "Failed to read matrix from file %s",
-                           ERROR_LOG_SAVE, pMatFileName );
-              fclose (pFile);
-              return (ERROR);
-           }
-       }
-   }
-
-#ifdef DEBUG
-   printf ( "aoNewMatRead(): matrix\n" );
-   for ( i = 0 ; i < row ; i ++ )
-   {
-       for ( j = 0 ; j < col ; j ++ )
-           printf ( "%f ", *(pMat + i*col + j) );
-       printf ( "\n" );
-   }
-#endif
-
-   /* Close the file */
-
-   fclose (pFile);
-
-   return (OK);
-}
-
-/* -------------------------------------------------------------------------- */
-
-/*+
- *   FUNCTION NAME:
- *   aoNewSeeingCompute
- *
- *   INVOCATION:
- *   aoNewSeeingCompute (pCentroidVect, pWfsStatus, aoCcdId, aoCtrlId, framesNb)
- *
- *   PARAMETERS: (">" input, "!" modified, "<" output)
- *   (>) pCentroidsVect (double *)         Pointer to the centroids vector
- *   (>) pWfsStatus     (int *)            Status of the centroids vector 
- *                                         to be coadded
- *   (>) aoCcdId        (AO_CCD_ID)        Pointer to the CCD geometry context
- *   (!) aoCtrlId       (AO_CTRL_ID)       Pointer to the AO control structure
- *                                         buffer
- *   (>) framesNb       (int)              Number of vectors to average
- *
- *   FUNCTION VALUE:
- *   (STATUS) OK if successful, ERROR if unsuccessful
- *
- *   PURPOSE:
- *   To compute the seeing
- *
- *   DESCRIPTION:
- *   First this routine computes the mode coefficients and accumulate them 
- *   to compute the average and variance. Let's call :
- *   - |C> the vector of centroids
- *   - |m> the vector of modes
- *   - for each frame: |m>=seeingCoeffMat*|C>, |avm> += |m>, |vm>+=|m>^2
- *   - after framesNb iterations:
- *     |v>=sqrt(|vm>/framesNb - (|avm>/framesNb)^2) 
- *   - Then subtract the noise and computes mean defocus/astigmatism coeff as
- *     well as estimate of the XY residual jitter.
- *   - seeing proportional to lambda/r0
- *
- *   EXTERNAL VARIABLES:
- *   None.
- *
- *   PRIOR REQUIREMENTS:
- *
- *   INCLUDE FILES:
- *   aoP2Lib.h
- *   fitsio.h
- *
- *   DEFICIENCIES:
- *   None known
- *-
- */
-
-STATUS aoNewSeeingCompute (
-   double *     pCentroidsVect,
-   int *        pWfsStatus,
-   AO_CCD_ID    aoCcdId,
-   AO_CTRL_ID   aoCtrlId,
-   int          framesNb
-   )
-{
-   int         i;
-   int         j;
-   double      mean;
-   double      variance;
-   double      noise;
-   double      meanTipTilt;
-   double      meanFocAst;
-   double      mode;
-   double *    pCent;
-   double *    pMaxCent;
-   double *    pMode;
-   double *    pMaxMode;
-   double *    pAv;
-   double *    pMaxAv;
-   double *    pVar;
-   double *    pMaxVar;
-   double *    pCoeffMat;
-   double *    pCoeffVect;
-   double *    pVarMod;
-   SEEING_VECT modeVect;
-   SEEING_VECT varianceModeVect;
-
-   /* Some initialisations */
-
-   pCent = pCentroidsVect;
-   pMaxCent = pCent + aoCcdId->centroidsNb;
-   pMode = modeVect;
-   pMaxMode = pMode + SEEING_ROW_NB;
-   pAv = aoCtrlId->averageSeeingVect;
-   pMaxAv = pAv + SEEING_ROW_NB;
-   pVar = aoCtrlId->varianceSeeingVect;
-   pMaxVar = pVar + SEEING_ROW_NB;
-   pCoeffMat = aoCtrlId->seeingCoeffMat;
-   pCoeffVect = aoCtrlId->seeingCoeffVect;
-
-   /* Compute the seeing */
-
-   if ( (*pWfsStatus != AO_SH_OFF) && (aoCtrlId->seeingCounter < framesNb) )
-   {
-      /* Compute |m>, |avm>, |vm> */
-
-      for ( i = 0 ; i < SEEING_ROW_NB ; i ++ )
-      {   
-          modeVect[i] =0.0;
-          for ( j = 0 ; j < aoCcdId->centroidsNb ; j ++ )
-             modeVect[i] += ( (*(pCoeffMat + i*aoCcdId->centroidsNb + j)) *
-                              ( *(pCent + j)) );
-      }
-
-#ifdef DEBUG_SEEING
-      printf ( "seeing counter=%d\n", aoCtrlId->seeingCounter );
-      for ( i = 0 ; i < aoCcdId->centroidsNb ; i ++ )
-          printf ( "pCent[%d]=%f\n", i , *(pCentroidsVect + i)) ;
-
-      for ( i = 0 ; i < SEEING_ROW_NB ; i ++ )
-          printf ( "pMode[%d]=%f\n", i , *(modeVect + i));
-#endif
-      
-      if ( aoCtrlId->seeingCounter == 0 )
-      {
-         pMode = modeVect; 
-         pVar = aoCtrlId->varianceSeeingVect;
-         for ( pAv = aoCtrlId->averageSeeingVect; pAv < pMaxAv ; 
-               pAv ++ ) 
-         {
-             *pAv = *pMode;
-             *pVar = (*pMode) * (*pMode);
-             pMode ++;
-             pVar ++;
-         }
-      }
-      else
-      {
-         pMode = modeVect;
-         pVar = aoCtrlId->varianceSeeingVect;
-         for ( pAv = aoCtrlId->averageSeeingVect; pAv < pMaxAv ; 
-               pAv ++ ) 
-         {
-             if ( aoCcdId->binningFlag == TRUE )
-                mode = 2.0 * (*pMode);
-             else
-                mode = *pMode;
-                
-             *pAv += mode;
-             *pVar += (mode * mode);
-             pMode ++;
-             pVar ++;
-         }
-      }
-
-#ifdef DEBUG_SEEING
-      for ( i = 0 ; i < SEEING_ROW_NB ; i ++ )
-          printf ( "pAv[%d]=%f, pVar[%d]=%f\n", 
-                   i , aoCtrlId->averageSeeingVect[i],
-                   i , aoCtrlId->varianceSeeingVect[i]);
-#endif
-
-      /* Increment the counter */
-
-      aoCtrlId->seeingCounter ++;
-
-      /* Now compute r0, seeing and jitter */
-
-      if ( aoCtrlId->seeingCounter == framesNb )
-      {
-         aoCtrlId->seeingCounter = 0;
-
-         /* Compute the variance of the mode coefficients */
-
-         pVarMod = varianceModeVect;
-         pVar = aoCtrlId->varianceSeeingVect;
-         for ( pAv = aoCtrlId->averageSeeingVect; pAv < pMaxAv ;
-               pAv ++ )
-         {
-             mean = (*pAv) / (double)(framesNb);
-             variance = (*pVar) / (double)(framesNb);
-             *pVarMod = variance - (mean*mean);
-             pVarMod ++;
-             pVar ++;
-         }
-
-#ifdef DEBUG_SEEING
-         for ( i = 0 ; i < SEEING_ROW_NB ; i ++ )
-             printf ( "pVarMod[%d]=%f\n", 
-                      i , varianceModeVect[i]);
-#endif
-
-         /* Subtract noise estimate from 5 modal coefficients */
-
-         noise = varianceModeVect[5];
-         for ( i = 0 ; i < (SEEING_ROW_NB - 1) ; i ++ )
-         {
-             varianceModeVect[i] -= ( (*(pCoeffVect + i)) * noise );
-             if ( varianceModeVect[i] < 0.0 ) 
-                varianceModeVect[i] = 0.0;
-         }
-
-#ifdef DEBUG_SEEING
-         for ( i = 0 ; i < SEEING_ROW_NB ; i ++ )
-             printf ( "pVarMod[%d]=%f\n", 
-                      i , varianceModeVect[i]);
-#endif
-
-         /* Compute mean defocus/astigmatism coefficients */
-
-         meanFocAst = 0.0;
-         for ( i = 2 ; i < (SEEING_ROW_NB - 1) ; i ++ )
-            meanFocAst += sqrt ( varianceModeVect[i] ) ;
-
-         meanFocAst /= 3.0;
-#ifdef DEBUG_SEEING
-         printf ( "meanFocAst=%f\n", meanFocAst);
-#endif
-
-         /* Compute r0 estimate in meter */
-
-         if ( meanFocAst <= 0.0 )
-            aoCtrlId->r0 = 99999.99;
-         else
-            aoCtrlId->r0 = 
-            (aoCtrlId->seeingScaleFactor * SEEING_FOCUS_KOLMO * 
-             TELESCOPE_DIAMETER) / pow (meanFocAst , 1.2);
-
-#ifdef DEBUG_SEEING
-         printf ( "r0=%f\n", aoCtrlId->r0);
-#endif
-
-         /* Compute seeing estimate in arcsec */
-
-         if ( ( aoCtrlId->r0 > 0.0 ) && ( aoCtrlId->r0 != 99999.99) )
-            aoCtrlId->seeing = (SEEING_LAMBDA * MICRON_TO_METER) / 
-                               (aoCtrlId->r0 * RADIAN_TO_ARCSEC);
-         else
-            aoCtrlId->seeing = 99999.99; 
-
-#ifdef DEBUG_SEEING
-         printf ( "seeing=%f\n", aoCtrlId->seeing);
-#endif
-
-         /* Simple estimate of XY average residual jitter in arcsec*/
-
-         meanTipTilt = 0.0;
-         for ( i = 0 ; i <= 1  ; i ++ )
-            meanTipTilt += sqrt ( varianceModeVect[i] ) ;
-
-#ifdef DEBUG_SEEING
-         printf ( "meanTipTilt=%f\n", meanTipTilt);
-#endif
-
-         aoCtrlId->jitter = (2.0 * meanTipTilt * MICRON_TO_METER) / 
-                            (TELESCOPE_DIAMETER * 4.848e-6);
-#ifdef DEBUG_SEEING
-         printf ( "jitter=%f\n", aoCtrlId->jitter);
-#endif
-    
-      }
-   }
-
-   /* return */
 
    return (OK);
 }

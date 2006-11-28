@@ -23,11 +23,11 @@
  * dfilter           - low pass filter
  * ttfZero           - Receive ttfZero array from TCS
  * aoZero            - Receive aoZero array from TCS
- * showFgDiag1Oi     - Write diagnostic data from OIWFS FG structure to gensub
+ * showFgDiag1P2     - Write diagnostic data from PWFS2 FG structure to gensub
  *                     outputs for display
- * showFgDiag2Oi     - Write diagnostic data from OIWFS FG structure to gensub
+ * showFgDiag2P2     - Write diagnostic data from PWFS2 FG structure to gensub
  *                     outputs for display
- * showAoDiagOi      - Write diagnostic data from OIWFS aO structure to gensub
+ * showAoDiagP2      - Write diagnostic data from PWFS2 aO structure to gensub
  *                     outputs for display
  * showCbDiag        - Write diagnostic data from cb structure to gensub
  *                     outputs for display 
@@ -184,15 +184,6 @@ typedef struct
    double  cos3ThetaPA;
    double  sin4ThetaPA;
    double  cos4ThetaPA;
-   double  theta;       /* Composite Angle */
-   double  sinTheta;
-   double  cosTheta;
-   double  sin2Theta;
-   double  cos2Theta;
-   double  sin3Theta;
-   double  cos3Theta;
-   double  sin4Theta;
-   double  cos4Theta;
    double  null[AO_ZERO_ARRAY_SIZE];
    double  probe[PROBE_ARRAY_SIZE];
    SEM_ID  access;
@@ -682,15 +673,6 @@ long gensubToTcsInit
           ag2tcs->cos3ThetaPA = cos(0.0);
           ag2tcs->sin4ThetaPA = sin(0.0);
           ag2tcs->cos4ThetaPA = cos(0.0);
-          ag2tcs->theta = 0.0;
-          ag2tcs->sinTheta = sin(0.0);
-          ag2tcs->cosTheta = cos(0.0);
-          ag2tcs->sin2Theta = sin(0.0);
-          ag2tcs->cos2Theta = cos(0.0);
-          ag2tcs->sin3Theta = sin(0.0);
-          ag2tcs->cos3Theta = cos(0.0);
-          ag2tcs->sin4Theta = sin(0.0);
-          ag2tcs->cos4Theta = cos(0.0);
        }
    }
 
@@ -732,15 +714,6 @@ long gensubToTcsInit
           ag2m2->cos3ThetaPA = cos(0.0);
           ag2m2->sin4ThetaPA = sin(0.0);
           ag2m2->cos4ThetaPA = cos(0.0);
-          ag2m2->theta = 0.0;
-          ag2m2->sinTheta = sin(0.0);
-          ag2m2->cosTheta = cos(0.0);
-          ag2m2->sin2Theta = sin(0.0);
-          ag2m2->cos2Theta = cos(0.0);
-          ag2m2->sin3Theta = sin(0.0);
-          ag2m2->cos3Theta = cos(0.0);
-          ag2m2->sin4Theta = sin(0.0);
-          ag2m2->cos4Theta = cos(0.0);
        }
    }
 
@@ -1023,64 +996,38 @@ STATUS writeWfsToTcs
    double    astig45=0.0;
    double    g0;
    double    g45;
-   double    posThresh = (aoCtrlId->aoThreshold);
-   double    negThresh = (aoCtrlId->aoThreshold) * -1.0;
-
    double    z2AfterPARot; 
    double    z3AfterPARot;
    double    z2AfterM1Rot;
    double    z3AfterM1Rot;
-   double    z2AfterCRRot;
-   double    z3AfterCRRot;
-
    double    z5AfterPARot;
    double    z6AfterPARot;
    double    z5AfterM1Rot;
    double    z6AfterM1Rot;
-   double    z5AfterCRRot;
-   double    z6AfterCRRot;
-
    double    z7AfterPARot;
    double    z8AfterPARot;
    double    z7AfterM1Rot;
    double    z8AfterM1Rot;
-   double    z7AfterCRRot;
-   double    z8AfterCRRot;
-
    double    z10AfterPARot;
    double    z11AfterPARot;
    double    z10AfterM1Rot;
    double    z11AfterM1Rot;
-   double    z10AfterCRRot;
-   double    z11AfterCRRot;
-
    double    z12AfterPARot;
    double    z13AfterPARot;
    double    z12AfterM1Rot;
    double    z13AfterM1Rot;
-   double    z12AfterCRRot;
-   double    z13AfterCRRot;
-
    double    z14AfterPARot;
    double    z15AfterPARot;
    double    z14AfterM1Rot;
    double    z15AfterM1Rot;
-   double    z14AfterCRRot;
-   double    z15AfterCRRot;
-
    double    z17AfterPARot;
    double    z18AfterPARot;
    double    z17AfterM1Rot;
    double    z18AfterM1Rot;
-   double    z17AfterCRRot;
-   double    z18AfterCRRot;
-
    double    z19AfterPARot;
    double    z20AfterPARot;
    double    z19AfterM1Rot;
    double    z20AfterM1Rot;
-   double    z19AfterCRRot;
-   double    z20AfterCRRot;
 
    /* check that array counts are within limits */
 
@@ -1113,41 +1060,12 @@ STATUS writeWfsToTcs
                         ((aoCtrlId->cosAngleWithM1 * z3AfterPARot) - 
                          (aoCtrlId->sinAngleWithM1 * z2AfterPARot));
 
-         z2AfterCRRot = ((f->cosThetaCR * z2AfterM1Rot) + 
-                        (f->sinThetaCR * z3AfterM1Rot)); 
-         z3AfterCRRot = ((f->cosThetaCR * z3AfterM1Rot) - 
-                        (f->sinThetaCR * z2AfterM1Rot)); 
-
-         if ( z2AfterCRRot >= posThresh)
-            result.z2 = 
-            (z2AfterCRRot*3.0 - posThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[0];
-         else if ( z2AfterCRRot <= negThresh )
-            result.z2 = 
-            (z2AfterCRRot*3.0 - negThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[0];
-         else
-            result.z2 = z2AfterCRRot*aoCtrlId->aoScaleFactorVect[0];
-
-         if ( z3AfterCRRot >= posThresh )
-            result.z3 = 
-            (z3AfterCRRot*3.0 - posThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[1];
-         else if ( z3AfterCRRot <= negThresh )
-            result.z3 = 
-            (z3AfterCRRot*3.0 - negThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[1];
-         else
-            result.z3 = z3AfterCRRot*aoCtrlId->aoScaleFactorVect[1];
-
-/*
          result.z2 = ((f->cosThetaCR * z2AfterM1Rot) + 
                       (f->sinThetaCR * z3AfterM1Rot)) * 
                      aoCtrlId->aoScaleFactorVect[0];
          result.z3 = ((f->cosThetaCR * z3AfterM1Rot) - 
                       (f->sinThetaCR * z2AfterM1Rot)) * 
                      aoCtrlId->aoScaleFactorVect[1];
-*/
 
          /* focus : 2*r^2 -1 */
 
@@ -1170,44 +1088,6 @@ STATUS writeWfsToTcs
                         ((aoCtrlId->cos2AngleWithM1 * z6AfterPARot) -
                          (aoCtrlId->sin2AngleWithM1 * z5AfterPARot));
 
-         z5AfterCRRot = ((g0 * f->cos2ThetaCR * z5AfterM1Rot) + 
-                         (g0 * f->sin2ThetaCR * z6AfterM1Rot)) 
-                        - ((f->null[8])*1000.0)
-                        - (astigModel.astig0);
-
-         z6AfterCRRot = ((g45 * f->cos2ThetaCR * z6AfterM1Rot) - 
-                         (g45 * f->sin2ThetaCR * z5AfterM1Rot)) 
-                        - ((f->null[9])*1000.0)
-                        - (astigModel.astig45);
-
-/*
-         printf ( "z5AfterCRRot=%f, z6AfterCRRot=%f\n",
-                  z5AfterCRRot, z6AfterCRRot);
-*/
-
-         if ( z5AfterCRRot >= posThresh )
-            result.z5 = 
-            (z5AfterCRRot*3.0 - posThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[3];
-         else if ( z5AfterCRRot <= negThresh )
-            result.z5 =
-            (z5AfterCRRot*3.0 - negThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[3];
-         else
-            result.z5 = z5AfterCRRot*aoCtrlId->aoScaleFactorVect[3];
-
-         if ( z6AfterCRRot >= posThresh )
-            result.z6 = 
-            (z6AfterCRRot*3.0 - posThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[4];
-         else if ( z6AfterCRRot <= negThresh )
-            result.z6 = 
-            (z6AfterCRRot*3.0 - negThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[4];
-         else
-            result.z6 = z6AfterCRRot*aoCtrlId->aoScaleFactorVect[4];
-         
-/*
          result.z5 = ( ((g0 * f->cos2ThetaCR * z5AfterM1Rot) + 
                         (g0 * f->sin2ThetaCR * z6AfterM1Rot)) 
                        - ((f->null[8])*1000.0)
@@ -1218,7 +1098,6 @@ STATUS writeWfsToTcs
                        - ((f->null[9])*1000.0)
                        - (astigModel.astig45) ) 
                      * (aoCtrlId->aoScaleFactorVect[4]);
-*/
 
          /* comaX and comaY: (3*r^2 - 2) * r * cos(t) and 
          (3*r^2 - 2) * r * sin(t) */
@@ -1235,43 +1114,12 @@ STATUS writeWfsToTcs
                         ((aoCtrlId->cosAngleWithM1 * z8AfterPARot) - 
                          (aoCtrlId->sinAngleWithM1 * z7AfterPARot));
  
-         z7AfterCRRot = ((f->cosThetaCR * z7AfterM1Rot) + 
-                         (f->sinThetaCR * z8AfterM1Rot))
-                        - (comaModel.comaX);
-         z8AfterCRRot = ((f->cosThetaCR * z8AfterM1Rot) - 
-                         (f->sinThetaCR * z7AfterM1Rot))
-                        - (comaModel.comaY);
-
-         if ( z7AfterCRRot >= posThresh )
-            result.z7 = 
-            (z7AfterCRRot*3.0 - posThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[5];
-         else if ( z7AfterCRRot <= negThresh )
-            result.z7 = 
-            (z7AfterCRRot*3.0 - negThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[5];
-         else
-            result.z7 = z7AfterCRRot*aoCtrlId->aoScaleFactorVect[5];
-
-         if ( z8AfterCRRot >= posThresh )
-            result.z8 = 
-            (z8AfterCRRot*3.0 - posThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[6];
-         else if ( z8AfterCRRot <= negThresh )
-            result.z8 = 
-            (z8AfterCRRot*3.0 - negThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[6];
-         else
-            result.z8 = z8AfterCRRot*aoCtrlId->aoScaleFactorVect[6];
-         
-/*
          result.z7 = ( ((f->cosThetaCR * z7AfterM1Rot) + 
                         (f->sinThetaCR * z8AfterM1Rot))
                        - (comaModel.comaX) ) * (aoCtrlId->aoScaleFactorVect[5]);
          result.z8 = ( ((f->cosThetaCR * z8AfterM1Rot) - 
                         (f->sinThetaCR * z7AfterM1Rot))
                        - (comaModel.comaY) ) * (aoCtrlId->aoScaleFactorVect[6]);
-*/
 
          /* spherical: 6*r^4 - 6*r^2 + 1 */
 
@@ -1291,37 +1139,6 @@ STATUS writeWfsToTcs
                          ((aoCtrlId->cos3AngleWithM1 * z11AfterPARot) -
                           (aoCtrlId->sin3AngleWithM1 * z10AfterPARot));
 
-         z10AfterCRRot = ((f->cos3ThetaCR * z10AfterM1Rot) + 
-                          (f->sin3ThetaCR * z11AfterM1Rot))
-                         - (trefoilModel.costref); 
-
-         z11AfterCRRot = ((f->cos3ThetaCR * z11AfterM1Rot) - 
-                          (f->sin3ThetaCR * z10AfterM1Rot))
-                         - (trefoilModel.sintref); 
-
-         if ( z10AfterCRRot >= posThresh )
-            result.z10 = 
-            (z10AfterCRRot*3.0 - posThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[8];
-         else if ( z10AfterCRRot <= negThresh )
-            result.z10 = 
-            (z10AfterCRRot*3.0 - negThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[8];
-         else
-            result.z10 = z10AfterCRRot*aoCtrlId->aoScaleFactorVect[8];
-
-         if ( z11AfterCRRot >= posThresh )
-            result.z11 = 
-            (z11AfterCRRot*3.0 - posThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[9];
-         else if ( z11AfterCRRot <= negThresh )
-            result.z11 = 
-            (z11AfterCRRot*3.0 - negThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[9];
-         else
-            result.z11 = z11AfterCRRot*aoCtrlId->aoScaleFactorVect[9];
-
-/*
          result.z10 = ( ((f->cos3ThetaCR * z10AfterM1Rot) + 
                          (f->sin3ThetaCR * z11AfterM1Rot))
                         - (trefoilModel.costref) ) * 
@@ -1331,7 +1148,6 @@ STATUS writeWfsToTcs
                          (f->sin3ThetaCR * z10AfterM1Rot))
                         - (trefoilModel.sintref) ) * 
                       (aoCtrlId->aoScaleFactorVect[9]);
-*/
 
          /* (4*r^2-3) * r^2 * cos(2t) and (4*r^2-3) * r^2 * sin(2t) */
 
@@ -1347,35 +1163,6 @@ STATUS writeWfsToTcs
                          ((aoCtrlId->cos2AngleWithM1 * z13AfterPARot) -
                           (aoCtrlId->sin2AngleWithM1 * z12AfterPARot));
 
-         z12AfterCRRot = (f->cos2ThetaCR * z12AfterM1Rot) +
-                         (f->sin2ThetaCR * z13AfterM1Rot); 
-
-         z13AfterCRRot = (f->cos2ThetaCR * z13AfterM1Rot) -
-                         (f->sin2ThetaCR * z12AfterM1Rot);
-
-         if ( z12AfterCRRot >= posThresh )
-            result.z12 = 
-            (z12AfterCRRot*3.0 - posThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[10];
-         else if ( z12AfterCRRot <= negThresh )
-            result.z12 = 
-            (z12AfterCRRot*3.0 - negThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[10];
-         else
-            result.z12 = z12AfterCRRot*aoCtrlId->aoScaleFactorVect[10];
-
-         if ( z13AfterCRRot >= posThresh )
-            result.z13 = 
-            (z13AfterCRRot*3.0 - posThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[11];
-         else if ( z13AfterCRRot <= negThresh )
-            result.z13 = 
-            (z13AfterCRRot*3.0 - negThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[11];
-         else
-            result.z13 = z13AfterCRRot*aoCtrlId->aoScaleFactorVect[11];
-
-/*
          result.z12 = ( (f->cos2ThetaCR * z12AfterM1Rot) +
                         (f->sin2ThetaCR * z13AfterM1Rot) ) *
                       (aoCtrlId->aoScaleFactorVect[10]);
@@ -1383,7 +1170,6 @@ STATUS writeWfsToTcs
          result.z13 = ( (f->cos2ThetaCR * z13AfterM1Rot) -
                         (f->sin2ThetaCR * z12AfterM1Rot) ) *
                       (aoCtrlId->aoScaleFactorVect[11]);
-*/
 
          /* (10*r^4 -12*r^3 + 3) * r * cos(t) and 
             (10*r^4 -12*r^3 + 3) * r * sin(t) */
@@ -1400,35 +1186,6 @@ STATUS writeWfsToTcs
                          ((aoCtrlId->cosAngleWithM1 * z15AfterPARot) -
                           (aoCtrlId->sinAngleWithM1 * z14AfterPARot));
 
-         z14AfterCRRot = (f->cosThetaCR * z14AfterM1Rot) +
-                         (f->sinThetaCR * z15AfterM1Rot);
-
-         z15AfterCRRot = (f->cosThetaCR * z15AfterM1Rot) -
-                         (f->sinThetaCR * z14AfterM1Rot);
-
-         if ( z14AfterCRRot >= posThresh )
-            result.z14 = 
-            (z14AfterCRRot*3.0 - posThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[12];
-         else if ( z14AfterCRRot <= negThresh )
-            result.z14 = 
-            (z14AfterCRRot*3.0 - negThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[12];
-         else
-            result.z14 = z14AfterCRRot*aoCtrlId->aoScaleFactorVect[12];
-
-         if ( z15AfterCRRot >= posThresh )
-            result.z15 = 
-            (z15AfterCRRot*3.0 - posThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[13];
-         else if ( z15AfterCRRot <= negThresh )
-            result.z15 = 
-            (z15AfterCRRot*3.0 - negThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[13];
-         else
-            result.z15 = z15AfterCRRot*aoCtrlId->aoScaleFactorVect[13];
-
-/*
          result.z14 = ( (f->cosThetaCR * z14AfterM1Rot) +
                         (f->sinThetaCR * z15AfterM1Rot) ) *
                       (aoCtrlId->aoScaleFactorVect[12]);
@@ -1436,7 +1193,6 @@ STATUS writeWfsToTcs
          result.z15 = ( (f->cosThetaCR * z15AfterM1Rot) -
                         (f->sinThetaCR * z14AfterM1Rot) ) *
                       (aoCtrlId->aoScaleFactorVect[13]);
-*/
 
          /* 20*r^6 - 30*r^4 + 12*r^2 - 1 */
 
@@ -1456,36 +1212,6 @@ STATUS writeWfsToTcs
                          ((aoCtrlId->cos4AngleWithM1 * z18AfterPARot) -
                           (aoCtrlId->sin4AngleWithM1 * z17AfterPARot));
 
-         z17AfterCRRot = (f->cos4ThetaCR * z17AfterM1Rot) +
-                         (f->sin4ThetaCR * z18AfterM1Rot);
-
-         z18AfterCRRot = (f->cos4ThetaCR * z18AfterM1Rot) -
-                         (f->sin4ThetaCR * z17AfterM1Rot);
-
-         if ( z17AfterCRRot >= posThresh )
-            result.z17 = 
-            (z17AfterCRRot*3.0 - posThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[15];
-         else if ( z17AfterCRRot <= negThresh )
-            result.z17 = 
-            (z17AfterCRRot*3.0 - negThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[15];
-         else
-            result.z17 = z17AfterCRRot*aoCtrlId->aoScaleFactorVect[15];
-
-         if ( z18AfterCRRot >= posThresh )
-            result.z18 = 
-            (z18AfterCRRot*3.0 - posThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[16];
-         else if ( z18AfterCRRot <= negThresh )
-            result.z18 = 
-            (z18AfterCRRot*3.0 - negThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[16];
-         else
-            result.z18 = z18AfterCRRot*aoCtrlId->aoScaleFactorVect[16];
-
-
-/*
          result.z17 = ( (f->cos4ThetaCR * z17AfterM1Rot) +
                         (f->sin4ThetaCR * z18AfterM1Rot) ) *
                       (aoCtrlId->aoScaleFactorVect[15]);
@@ -1493,7 +1219,6 @@ STATUS writeWfsToTcs
          result.z18 = ( (f->cos4ThetaCR * z18AfterM1Rot) -
                         (f->sin4ThetaCR * z17AfterM1Rot) ) *
                       (aoCtrlId->aoScaleFactorVect[16]);
-*/
 
          /* (5*r^2 - 4) * r^3 * cos(3t) and (5*r^2 - 4) * r^3 * cos(3t) */
 
@@ -1509,35 +1234,6 @@ STATUS writeWfsToTcs
                          ((aoCtrlId->cos3AngleWithM1 * z20AfterPARot) -
                           (aoCtrlId->sin3AngleWithM1 * z19AfterPARot));
 
-         z19AfterCRRot = (f->cos3ThetaCR * z19AfterM1Rot) +
-                         (f->sin3ThetaCR * z20AfterM1Rot);
-
-         z20AfterCRRot = (f->cos3ThetaCR * z20AfterM1Rot) -
-                         (f->sin3ThetaCR * z19AfterM1Rot);
-
-         if ( z19AfterCRRot >= posThresh )
-            result.z19 = 
-            (z19AfterCRRot*3.0 - posThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[17];
-         else if ( z19AfterCRRot <= negThresh )
-            result.z19 = 
-            (z19AfterCRRot*3.0 - negThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[17];
-         else
-            result.z19 = z19AfterCRRot*aoCtrlId->aoScaleFactorVect[17];
-
-         if ( z20AfterCRRot >= posThresh )
-            result.z20 = 
-            (z20AfterCRRot*3.0 - posThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[18];
-         else if ( z20AfterCRRot <= negThresh )
-            result.z20 = 
-            (z20AfterCRRot*3.0 - negThresh*2.0)*
-            aoCtrlId->aoScaleFactorVect[18];
-         else
-            result.z20 = z20AfterCRRot*aoCtrlId->aoScaleFactorVect[18];
-
-/*
          result.z19 = ( (f->cos3ThetaCR * z19AfterM1Rot) +
                         (f->sin3ThetaCR * z20AfterM1Rot) ) *
                       (aoCtrlId->aoScaleFactorVect[17]);
@@ -1545,7 +1241,6 @@ STATUS writeWfsToTcs
          result.z20 = ( (f->cos3ThetaCR * z20AfterM1Rot) -
                         (f->sin3ThetaCR * z19AfterM1Rot) ) *
                       (aoCtrlId->aoScaleFactorVect[18]);
-*/
       }
       else
       {
@@ -1968,7 +1663,6 @@ long ttfZero
    frame   *f;
    double  *ptr;
    double  fudgeAngle = 0.0; 
-   double  CRAngle = 0.0; 
    double  compositeAngle = 0.0;
 
    ptr = (double *) pgsub->j;
@@ -1996,10 +1690,10 @@ long ttfZero
       /* calculate composite correction angle */
       /* null[3] corresponds to the cass rotator angle */
 
-      CRAngle = ((f->CRAngleSign * (f->null[3])) - fudgeAngle)
-                *DEGS2RADS;
+      compositeAngle = ((f->CRAngleSign * (f->null[3])) - fudgeAngle)
+                       *DEGS2RADS;
 
-      f->thetaCR = CRAngle;
+      f->thetaCR = compositeAngle;
       f->sinThetaCR = sin(f->thetaCR);
       f->cosThetaCR = cos(f->thetaCR);
       f->sin2ThetaCR = sin(2*f->thetaCR);
@@ -2018,25 +1712,6 @@ long ttfZero
       f->cos3ThetaPA = cos(3*f->thetaPA);
       f->sin4ThetaPA = sin(4*f->thetaPA);
       f->cos4ThetaPA = cos(4*f->thetaPA);
-
-      if ( aoCtrlIdP2->flipXWithM2 == aoCtrlIdP2->flipYWithM2 )
-      {
-         compositeAngle = f->thetaCR + aoCtrlIdP2->angleWithM2 + f->thetaPA;
-      }
-      else
-      {
-         compositeAngle = aoCtrlIdP2->angleWithM2 + f->thetaPA - f->thetaCR;
-      }
-
-      f->theta = compositeAngle;
-      f->sinTheta = sin(f->theta);
-      f->cosTheta = cos(f->theta);
-      f->sin2Theta = sin(2*f->theta);
-      f->cos2Theta = cos(2*f->theta);
-      f->sin3Theta = sin(3*f->theta);
-      f->cos3Theta = cos(3*f->theta);
-      f->sin4Theta = sin(4*f->theta);
-      f->cos4Theta = cos(4*f->theta);
 
       semGive(f->access);
    }
@@ -2080,7 +1755,7 @@ long ttfZero
    *(double *) pgsub->valb = f->null[1];         /* tAppl */
    *(double *) pgsub->valc = f->null[2];         /* trackId */
    *(double *) pgsub->vald = f->null[3];         /* tcsAngle (degrees) */
-   *(double *) pgsub->vale = CRAngle/DEGS2RADS;  /* CR angle (degrees) */
+   *(double *) pgsub->vale = 0.0;                /* nothing */
    *(double *) pgsub->valf = compositeAngle/DEGS2RADS;   
                                                  /* composite angle (degrees) */
    *(double *) pgsub->valg = f->null[5];         /* z2 */
@@ -2159,7 +1834,6 @@ long aoZero
    double  *ptr;
    double  fudgeAngle = 0.0;
    double  compositeAngle = 0.0;
-   double  CRAngle = 0.0;
    double  applyAstig = 1.0;
 
    ptr = (double *) pgsub->j;
@@ -2202,10 +1876,10 @@ long aoZero
 
       /* calculate composite correction angle */
 
-      CRAngle = ((f->CRAngleSign * (f->null[3])) - fudgeAngle)
-                *DEGS2RADS;
+      compositeAngle = ((f->CRAngleSign * (f->null[3])) - fudgeAngle)
+                       *DEGS2RADS;
 
-      f->thetaCR = CRAngle;
+      f->thetaCR = compositeAngle;
       f->sinThetaCR = sin(f->thetaCR);
       f->cosThetaCR = cos(f->thetaCR);
       f->sin2ThetaCR = sin(2*f->thetaCR);
@@ -2224,25 +1898,6 @@ long aoZero
       f->cos3ThetaPA = cos(3*f->thetaPA);
       f->sin4ThetaPA = sin(4*f->thetaPA);
       f->cos4ThetaPA = cos(4*f->thetaPA);
-
-      if ( aoCtrlIdP2->flipXWithM1 == aoCtrlIdP2->flipYWithM1 )
-      {
-         compositeAngle = f->thetaCR + aoCtrlIdP2->angleWithM1 + f->thetaPA;
-      }
-      else
-      {
-         compositeAngle = aoCtrlIdP2->angleWithM1 + f->thetaPA - f->thetaCR;
-      }
-
-      f->theta = compositeAngle;
-      f->sinTheta = sin(f->theta);
-      f->cosTheta = cos(f->theta);
-      f->sin2Theta = sin(2*f->theta);
-      f->cos2Theta = cos(2*f->theta);
-      f->sin3Theta = sin(3*f->theta);
-      f->cos3Theta = cos(3*f->theta);
-      f->sin4Theta = sin(4*f->theta);
-      f->cos4Theta = cos(4*f->theta);
 
       semGive(f->access);
    }
@@ -2264,17 +1919,17 @@ long aoZero
      }
      else
      {
-        /* For now theta = composite angle */
+        /* For now theta = 0.0 */
         astigModel.astig0 = 
-        astigModel.a1*cos(compositeAngle + astigModel.p1*DEGS2RADS) +
-        astigModel.a2*cos(2*compositeAngle + astigModel.p2*DEGS2RADS) +
-        astigModel.a3*cos(4*compositeAngle + astigModel.p3*DEGS2RADS) +
+        astigModel.a1*cos(0.0 + astigModel.p1*DEGS2RADS) +
+        astigModel.a2*cos(2*0.0 + astigModel.p2*DEGS2RADS) +
+        astigModel.a3*cos(4*0.0 + astigModel.p3*DEGS2RADS) +
         astigModel.c;
 
         astigModel.astig45 = 
-        astigModel.b1*sin(compositeAngle + astigModel.pp1*DEGS2RADS) +
-        astigModel.b2*sin(2*compositeAngle + astigModel.pp2*DEGS2RADS) +
-        astigModel.b3*sin(4*compositeAngle + astigModel.pp3*DEGS2RADS) +
+        astigModel.b1*sin(0.0 + astigModel.pp1*DEGS2RADS) +
+        astigModel.b2*sin(2*0.0 + astigModel.pp2*DEGS2RADS) +
+        astigModel.b3*sin(4*0.0 + astigModel.pp3*DEGS2RADS) +
         astigModel.d;
      }
 
@@ -2298,14 +1953,14 @@ long aoZero
      }
      else
      {
-        /* For now theta = compositeAngle */
+        /* For now theta = 0.0 */
 
         trefoilModel.costref = 
-        trefoilModel.a*cos(3*compositeAngle + trefoilModel.p*DEGS2RADS) +
+        trefoilModel.a*cos(3*0.0 + trefoilModel.p*DEGS2RADS) +
         trefoilModel.c;
 
         trefoilModel.sintref = 
-        trefoilModel.b*sin(3*compositeAngle + trefoilModel.pp*DEGS2RADS) +
+        trefoilModel.b*sin(3*0.0 + trefoilModel.pp*DEGS2RADS) +
         trefoilModel.d;
      }
 
@@ -2329,14 +1984,14 @@ long aoZero
      }
      else
      {
-        /* For now theta = compositeAngle*/
+        /* For now theta = 0.0 */
 
         comaModel.comaX = 
-        comaModel.a*cos(compositeAngle + comaModel.p*DEGS2RADS) +
+        comaModel.a*cos(0.0 + comaModel.p*DEGS2RADS) +
         comaModel.c;
 
         comaModel.comaY = 
-        comaModel.b*sin(compositeAngle + comaModel.pp*DEGS2RADS) +
+        comaModel.b*sin(0.0 + comaModel.pp*DEGS2RADS) +
         comaModel.d;
      }
 
@@ -2356,7 +2011,7 @@ long aoZero
    *(double *) pgsub->valb = f->null[1];         /* tAppl */
    *(double *) pgsub->valc = f->null[2];         /* trackId */
    *(double *) pgsub->vald = f->null[3];         /* tcsAngle (degrees) */
-   *(double *) pgsub->vale = CRAngle/DEGS2RADS;  /* CR angle (degrees) */
+   *(double *) pgsub->vale = 0.0;                /* nothing */
    *(double *) pgsub->valf = compositeAngle/DEGS2RADS;   
                                                  /* composite angle (degrees) */
    /* *(double *) pgsub->valg = f->null[5]; */        /* z2 */
@@ -2376,13 +2031,13 @@ long aoZero
 /*
  *+
  * FUNCTION NAME:
- * showAoDiagOi
+ * showAoDiagP2
  *
  * INVOCATION:
  * struct genSubRecord * pgsub
  * long   status;
  *
- * long showAoDiagOi (struct genSubRecord * pgsub)
+ * long showAoDiagP2 (struct genSubRecord * pgsub)
  *
  * PARAMETERS: (">" input, "!" modified, "<" output)
  * > genSubRecord (struct genSubRecord *)   pointer to record
@@ -2412,7 +2067,7 @@ long aoZero
  *-
  */
 
-STATUS showAoDiagOi
+STATUS showAoDiagP2
    (
    struct genSubRecord * pgsub
    )
@@ -2448,7 +2103,7 @@ STATUS showAoDiagOi
 
       if ( (indexCb < 0) && (indexCb > (CB_AO_CTRL_RECORD_NB - 1)) )
       {
-         printf ( "showAoDiagOi(): position in CB out of range\n" ) ;
+         printf ( "showAoDiag1(): position in CB out of range\n" ) ;
          return (OK);
       }
 
@@ -2518,13 +2173,13 @@ STATUS showAoDiagOi
 /*
  *+
  * FUNCTION NAME:
- * showFgDiag1Oi
+ * showFgDiag1P2
  *
  * INVOCATION:
  * struct genSubRecord * pgsub
  * long   status;
  *
- * long    showFgDiag1Oi(struct genSubRecord * pgsub)
+ * long    showFgDiag1P2(struct genSubRecord * pgsub)
  *
  * PARAMETERS: (">" input, "!" modified, "<" output)
  * > genSubRecord (struct genSubRecord *)   pointer to record
@@ -2554,7 +2209,7 @@ STATUS showAoDiagOi
  *-
  */
 
-STATUS showFgDiag1Oi(struct genSubRecord * pgsub)
+STATUS showFgDiag1P2(struct genSubRecord * pgsub)
 {
    int i=0;
    int j=0;
@@ -2589,7 +2244,7 @@ STATUS showFgDiag1Oi(struct genSubRecord * pgsub)
 
       if ( (indexCb < 0) && (indexCb > (CB_FG_CTRL_RECORD_NB - 1)) )
       {
-         printf ( "showFgDiag1Oi(): position in CB out of range\n" ) ;
+         printf ( "showFgDiag1P2(): position in CB out of range\n" ) ;
          return (ERROR);
       }
 
@@ -2658,13 +2313,13 @@ STATUS showFgDiag1Oi(struct genSubRecord * pgsub)
 /*
  *+
  * FUNCTION NAME:
- * showFgDiag2Oi
+ * showFgDiag2P2
  *
  * INVOCATION:
  * struct genSubRecord * pgsub
  * long   status;
  *
- * long    showFgDiag2Oi(struct genSubRecord * pgsub)
+ * long    showFgDiag2P2(struct genSubRecord * pgsub)
  *
  * PARAMETERS: (">" input, "!" modified, "<" output)
  * > genSubRecord (struct genSubRecord *)   pointer to record
@@ -2692,7 +2347,7 @@ STATUS showFgDiag1Oi(struct genSubRecord * pgsub)
  *-
  */
 
-STATUS showFgDiag2Oi(struct genSubRecord * pgsub)
+STATUS showFgDiag2P2(struct genSubRecord * pgsub)
 {
 
    if(semTake(accessFgData, WFS_TIMEOUT) != OK)

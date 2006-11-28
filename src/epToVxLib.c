@@ -1,5 +1,5 @@
 static struct {void *v; char *c;} rcsid = {&rcsid,
-   "$Id: epToVxLib.c,v 1.3 2005-06-08 21:12:15 gemvx Exp $"};
+   "$Id: epToVxLib.c,v 1.1.1.1 2002-01-29 01:53:30 cboyer Exp $"};
 
 /*+
  * MODULE NAME:
@@ -127,12 +127,6 @@ static struct {void *v; char *c;} rcsid = {&rcsid,
  *
  *INDENT-OFF*
  * $Log: not supported by cvs2svn $
- * Revision 1.2  2005/05/09 18:35:51  gemvx
- * Debug for unsync error
- *
- * Revision 1.1.1.1  2002/01/29 01:53:30  cboyer
- * Initial creation of the Gemini oiwfs GMOS repository
- *
  * Revision 1.5  2002/01/03 03:39:25  cboyer
  * Major modifications: Port to epics3.13.4 + threshold in real time
  *
@@ -3942,14 +3936,6 @@ STATUS   epToVxCarDaemon
                   EPICS_MAX_BYTES_STRING_ATTRIB);
       }
 
-      /*AAG #ifdef DEBUG*/
-      /*
-      MESSAGE_LOG1 (MSG_MINDEBUG, "epToVxCarDaemon: Command BEGIN with client ID = %d\n", CMD_PKT_CLIENT_ID (& beginContext)); 
-      printf("epToVxCarDaemon: Command BEGIN with COMMAND NUMBER = %d\n", CMD_PKT_COMMAND_NUMBER (& beginContext));
-      */
-      /*#endif */ /* DEBUG */
-
-
       /*
        * BUG WORK-AROUND.
        * Don't use Channel Access. Use database access instead.
@@ -3969,6 +3955,11 @@ STATUS   epToVxCarDaemon
          ERROR_SET2 (0, "Database access write to %s failed: %s", 
                      ERROR_LOG_NOW, pRecordName, message);
       }
+
+#ifdef DEBUG
+      printf ("epToVxCarDaemon: Command BEGIN with client ID = %d\n",
+              CMD_PKT_CLIENT_ID (& beginContext));
+#endif /* DEBUG */
 
       switch (CMD_PKT_COMMAND_MODIFIER (& beginContext) & EPTOVX_SIM_MODE_MASK)
       {
@@ -4008,12 +3999,6 @@ STATUS   epToVxCarDaemon
              * returns the timeout period for the current command).
              */
 
-	   /* AAG */
-      /*MESSAGE_LOG1 (MSG_MINDEBUG, "epToVxCarDaemon: Command DONE with client ID = %d\n", CMD_PKT_CLIENT_ID (& doneContext));
-      printf("epToVxCarDaemon: Command DONE with CMD NUMBER = %d\n", CMD_PKT_COMMAND_NUMBER (& doneContext));
-      */
-
-      /* */
             if (aio_read (& aioControlBlock) == ERROR)
             {
                ERROR_SET (0, "Asynchronous read of command-done pipe failed", 
@@ -4105,41 +4090,21 @@ STATUS   epToVxCarDaemon
                 * packet and report the error.
                 */
 
-	      ERROR_SET (S_epToVxLib_CAD_CAR_SYNCH_ERROR,
+               ERROR_SET (S_epToVxLib_CAD_CAR_SYNCH_ERROR,
                   "Unsynchronised command begin/done packets", ERROR_LOG_NOW);
-	      
-	      MESSAGE_LOG (MSG_WARNING, 
-                            "WARNING: Unsynchronised command begin/done packets");
-	      if (CMD_PKT_CLIENT_ID (& beginContext) != CMD_PKT_CLIENT_ID (& doneContext)) 
-		{
-		  printf ("epToVxCarDaemon UNSYNC: Command BEGIN with client ID = %d\n",
-			  CMD_PKT_CLIENT_ID (& beginContext));
-	      
-		  printf ("epToVxCarDaemon UNSYNC: Command DONE with client ID = %d\n",
-			  CMD_PKT_CLIENT_ID (& doneContext));
-		}
-	      if (CMD_PKT_COMMAND_NUMBER (& beginContext) !=
-		  CMD_PKT_COMMAND_NUMBER (& doneContext))
-		{
-		  printf ("epToVxCarDaemon UNSYNC: Command BEGIN with client CMD NUMBER = %d\n",
-			  CMD_PKT_COMMAND_NUMBER (& beginContext));
-	      
-		  printf ("epToVxCarDaemon UNSYNC: Command DONE with client CMD NUMBER = %d\n",
-			  CMD_PKT_COMMAND_NUMBER (& doneContext));
-		}
-	      
+
                CAR_FIELD_VALUE (pContext) = menuCarstatesERROR;
                CAR_FIELD_CLIENT_ID (pContext) = CAR_CLIENT_ID (& doneContext);
-               CAR_FIELD_ERROR_NUMBER (pContext) =  S_epToVxLib_CAD_CAR_SYNCH_ERROR;
-	       strncpy (CAR_FIELD_MESSAGE (pContext), "Synchronisation error",
+               CAR_FIELD_ERROR_NUMBER (pContext) = 
+               S_epToVxLib_CAD_CAR_SYNCH_ERROR;
+               strncpy (CAR_FIELD_MESSAGE (pContext), "Synchronisation error",
                         EPICS_MAX_BYTES_STRING_ATTRIB);
-
                /*
                 * BUG WORK-AROUND.
                 * Don't use Channel Access. Use database access instead.
                 * (See the "BUGS" section above).
                 */
-	      
+
                if ( (cicsDbPut (icidField, message, DBF_LONG,
                               &CAR_FIELD_CLIENT_ID (pContext)) == ERROR) ||
                     (cicsDbPut (ierrField, message, DBF_LONG,
@@ -4154,7 +4119,6 @@ STATUS   epToVxCarDaemon
                   ERROR_SET2 (0, "Database access write to %s failed: %s", 
                               ERROR_LOG_NOW, pRecordName, message);
                }
-	      
             }
             else if (CMD_PKT_ERROR_NUMBER (& doneContext) != 0)
             {
