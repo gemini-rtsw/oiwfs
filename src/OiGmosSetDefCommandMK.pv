@@ -52,7 +52,7 @@ int $(top)$(wfs)initSigModeSeqDark.PROC = 1 ;
 int $(top)$(wfs)initSigInitAoThresh.PROC = 1 ;
 int $(top)$(wfs)detSigInitAoThresh.DIR = 0 ;
 int $(top)$(wfs)detSigInitAoThresh.DIR = 3 ;
-
+int $(top)$(wfs)initSigInitPo.PROC=1 ;
 #
 # Init prmStatus 
 #
