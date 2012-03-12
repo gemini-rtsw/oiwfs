@@ -46,8 +46,9 @@ double $(top)$(wfs)initSigModeSeqDark.E = 2.5 ;
 
 int $(top)$(wfs)initSigModeSeq.PROC = 1 ;
 int $(top)$(wfs)initSigModeSeqDark.PROC = 1 ;
+int $(top)$(wfs)initSigInitPo.PROC=1 ;
 
 #
 # Init prmStatus 
 #
-int $(top)prmStatus.PROC = 1 ;
+#int $(top)prmStatus.PROC = 1 ;

@@ -196,3 +196,26 @@ wfs_switch dm screen copied from prm & different according to site
 - adl/wfs_switchMK/CP added
 - oiwfsGmosInstall 
 
+---------------------------------------------------------------------------
+	Code moved from CVS to SVN
+	V2-11 & V2-12 are dead version because they were never installed
+	and tested in production. The tags were preserved in SVN.
+
+	Old trunk was moved to tags/trunk-from-cvs
+	tags/V2-10 mas copied to trunk
+	Added runtime file changes made to configuration files at MK & CP
+	(mostly MK)
+	New version tagged as V2-13 -> V2-10 + run time version changes
+---------------------------------------------------------------------------
+
+par/defFullPoOiGmosMK.dat
+par/defBinPoOiGmosMK.dat
+    Z scale factor changed from -0.15 to -0.75.
+par/defDetContOiGmosMK.dat
+par/defDetContOiGmosCP.dat
+    ADC offsets updated
+src/OiGmosSetDefCommandMK.pv
+src/OiGmosSetDefCommandCP.pv
+    Added "int $(top)$(wfs)initSigInitPo.PROC=1;" and
+    int $(top)prmStatus.PROC = 1;
+
