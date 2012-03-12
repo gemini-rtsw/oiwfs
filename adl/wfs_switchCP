@@ -6,12 +6,12 @@ display {
 	majv="2"
 	mnrv="4"
 	ndyng="0"
-	npc="13"
-	nstr="56"
+	npc="16"
+	nstr="57"
 	ndynamic="10"
 	nplot="0"
 	nrd="0"
-	nes="2"
+	nes="1"
 	nkd="1"
 	npd="0"
 	npo="0"
@@ -23,23 +23,23 @@ display {
 	}
 	clr="1"
 	bclr="13"
-	nwords_dspy="2620"
+	nwords_dspy="2436"
 	nwords_sta="792"
 	nwords_cmap="0"
 	nwords_crules="0"
-	odyng="1632"
-	osta="840"
-	odynamic="1632"
-	oplot="2292"
-	ord="2292"
-	oes="2292"
-	okd="2608"
-	opd="2620"
-	opo="2620"
+	odyng="1606"
+	osta="814"
+	odynamic="1606"
+	oplot="2266"
+	ord="2266"
+	oes="2266"
+	okd="2424"
+	opd="2436"
+	opo="2436"
 	opc="68"
-	ostr="220"
-	ocmap="840"
-	ocrules="840"
+	ostr="256"
+	ocmap="814"
+	ocrules="814"
 	style="solid"
 	fill="outline"
 	width="0"
@@ -715,7 +715,7 @@ display {
 		groupid="0"
 	}
 	monitor {
-		chan="$(top)activeC.VAL"
+		chan="oiwfs:activeC.VAL"
 		clr="12"
 		bclr="7"
 		label="none"
@@ -757,155 +757,22 @@ display {
 		x="230"
 		y="244"
 		width="104"
-		height="24"
+		height="23"
 		groupid="0"
 	}
 	script[0] {
 		label="To .."
-		path="cd"
+		path="/gemini/epics3.13.4/prm/prm/cd"
 		args=""
 	}
 	script[1] {
 		label=" GMOS"
-		path="$EPICS/extensions/bin/solaris/caput $(top)prmSelect.C 1"
+		path="/gemini/epics3.13.4/prm/prm/data/switchOiwfs.csh 1"
 		args=""
 	}
 	script[2] {
 		label=" GNIRS"
-		path="$EPICS/extensions/bin/solaris/caput $(top)prmSelect.C 3"
-		args=""
-	}
-	script[3] {
-		label=""
-		path=""
-		args=""
-	}
-	script[4] {
-		label=""
-		path=""
-		args=""
-	}
-	script[5] {
-		label=""
-		path=""
-		args=""
-	}
-	script[6] {
-		label=""
-		path=""
-		args=""
-	}
-	script[7] {
-		label=""
-		path=""
-		args=""
-	}
-	script[8] {
-		label=""
-		path=""
-		args=""
-	}
-	script[9] {
-		label=""
-		path=""
-		args=""
-	}
-	script[10] {
-		label=""
-		path=""
-		args=""
-	}
-	script[11] {
-		label=""
-		path=""
-		args=""
-	}
-	script[12] {
-		label=""
-		path=""
-		args=""
-	}
-	script[13] {
-		label=""
-		path=""
-		args=""
-	}
-	script[14] {
-		label=""
-		path=""
-		args=""
-	}
-	script[15] {
-		label=""
-		path=""
-		args=""
-	}
-	script[16] {
-		label=""
-		path=""
-		args=""
-	}
-	script[17] {
-		label=""
-		path=""
-		args=""
-	}
-	script[18] {
-		label=""
-		path=""
-		args=""
-	}
-	script[19] {
-		label=""
-		path=""
-		args=""
-	}
-	script[20] {
-		label=""
-		path=""
-		args=""
-	}
-	script[21] {
-		label=""
-		path=""
-		args=""
-	}
-	script[22] {
-		label=""
-		path=""
-		args=""
-	}
-	script[23] {
-		label=""
-		path=""
-		args=""
-	}
-	clr="1"
-	bclr="13"
-	menu_title=""
-	decorate="none"
-}
-"execute script" {
-	object {
-		x="346"
-		y="244"
-		width="83"
-		height="25"
-		groupid="0"
-	}
-	script[0] {
-		label="..."
-		path="cd"
-		args=""
-	}
-	script[1] {
-		label="START"
-		path="/gemini/epics3.13.4/prm/prm/data/switchOiwfs.csh $(top)prmSelect.C"
-		args=""
-	}
-	script[2] {
-		label=""
-		path=""
+		path="/gemini/epics3.13.4/prm/prm/data/switchOiwfs.csh 3"
 		args=""
 	}
 	script[3] {
