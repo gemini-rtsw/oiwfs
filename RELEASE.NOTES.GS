@@ -160,11 +160,13 @@ Created branch from V2-8 for Gemini South
 ----------------------------------------------------------------------
 
 RELEASE.NOTES.GS
-    Copy of the file to keep track of GS changes (PG)
+    Copy of the file to keep track of GS changes
 
 par/defDetContOiGmosCP.dat
-    Updated ADC offsets to match version in use at the telescope (PG)
+    Updated ADC offsets to match version in use at the telescope
 
 src/OiGmosSetDefCommandCP.pv
     Updated initSigModeSeqDark.E to 3 to match version in use at the telescope
 
+startup/startupCP.vws
+    Updated DHS server
