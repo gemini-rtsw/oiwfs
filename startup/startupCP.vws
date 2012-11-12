@@ -21,7 +21,7 @@ pwd
 
 < $(version)/bin/$(arch)/local
 
-hostAdd ("jughead","172.17.2.14")
+hostAdd ("cpodhs04","172.17.3.55")
 
 ld < /gemini/external/GEM8.4/base/bin/$(arch)/iocCore
 ld < /gemini/external/GEM8.4/base/bin/$(arch)/seq
@@ -121,7 +121,7 @@ epToVxCaInitRecords ()
 # (clientName, numConnect, hostName, serverName)
 # (Uncomment this line to activate the DHS. Comment it to prevent the DHS 
 # from being used).
-detDhsParamInit ("oiwfs", 16, "172.17.2.14", "dataServerSS")
+detDhsParamInit ("oiwfs", 16, "172.17.3.55", "dataServerWfsSS")
 
 # Spawn generic-record i/o Daemon task after querying the number of processors
 NProc = 1
