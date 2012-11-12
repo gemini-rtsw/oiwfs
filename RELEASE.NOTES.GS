@@ -1,0 +1,170 @@
+V1-0 18 Janv 2002 CB:
+---------------------
+   - Copy of P2 V2-3 + specific modififications due to oiwfs-gmos
+   - TT guide values x 2 when binning. Gains for TT divided by 2 in par files.
+   - aO: add wfsStatus to writeWfsToTcs() in order to Zernikes to zero if 
+     wfsStatus is not OK
+   - add detPowerOn
+   - Port to epics3.13.4
+   - detDhsInit is now started from detControl.c
+
+dev-oiwfs-gmos equivalent to V1-0
+
+V1-1 08 Feb 2002 CB:
+--------------------
+   - add threshold in real time
+   - add writeToRm flag when doing guiding
+   - cicular buffer sizes increased
+   - aO: replace imageNb parameter with a time parameter, them imageNb is
+     computed from this time and current exposure time
+   - detInit and detReset: reset to FALSE signal processing and reject command
+     detObserveStart if signal processing not initialized
+   - Add flip in header of fg and ao circular buffers 
+
+V1-2 20 Feb 2002 CB:
+--------------------
+   - Fix a bug in aoCtrlContextUpdate()
+   - Init averageImageNb in the aoCbAoCtrlId
+   - circular buffers are D<date>T<time>OiGmos.cbi or cbcfg or cbcao
+   - add wfsStatus in writeWfsToSynchro() in order to set TTF to zero if 
+     wfsStatus is not OK (after probe offset subtraction)
+   - detInit(): init the geometry SIR records
+
+V1-3 05 March 2002 CB:
+----------------------
+   - Fix in bug in sequence closed loop if no GG 
+     (prevThresh was not initialized)
+   - startup: new dhs version (mainly tonado2.0)
+   - aoThresholdCompute() and aoThresholdPerSubapCompute(): background now
+     computed between index1 and index2
+
+dev-oiwfs-gmos-threshRT equivalent to V1-3
+
+V2-0 29 March 2002 CB:
+----------------------
+  - major modifications to have the timing and utility code downloaded from
+    EEPROMs
+  - remove from the user interface the detReset command
+  - aoP2Lib.c: aoTotalThresholdCompute(): comment out ERROR_SET if N>2
+
+V2-1 02 October 2002 CB: 
+------------------------
+  - oiwfs:dc:aoRms precision of 9
+  - add bancom card status in main screen 
+  - add fgTipGain, fgTiltGain, fgFocusGain, cfTipTiltBw, cfFocusBw SIR records
+  - split butterwoth filter in two one for probe arme guiding (TT only) and the
+    second one for focus M2 guiding
+  - adjust focus scale factor according to the exposure time, detSigInitFgGain
+    and updates the default focus gain at 100Hz when no observing
+  - Allow ao + chopping: aoModeCompute() modified to check the status of the
+    raw image
+  - Implement seeing computation following BE method
+  - set binning mode as the default mode
+  - add detSigOutput CAD and outGuide SIR
+  - add test36FullRefOiGmos.dat, test36BinRefOiGmos.dat, 
+    and test37FullRefOiGmos.dat, test36BinRefOiGmos.dat
+  - set default for focus gain to be 0.0003 and TT gain 0.04 for MK
+  - update vmeboot.asm and vmehead.asm with last version of DSP code V3.09
+  - compiled with GEM8.4
+
+WARNING: V2-1 is not working because the vmeboot.asm and vmehead.asm were 
+         updated with last version of DSP code V3.09 but not the boot code 
+         (vmerom.lod). All others modifications corresponding to this version
+         are working fine.
+
+V2-2 18 November 2002 CB:
+-------------------------
+  - update vmebootcode + vmeboot.asm and vmehead.asm with last version of 
+    DSP code V3.09
+  - colors.dl corrected for rules (ERROR instead of ERR)
+  - sig_main.adl: cosmetic modifications
+  - writeZernikes.c: writeWfsToTcs() check status of the GMOS CC opt sensor 
+    before sending new data to the TCS 
+  - remove errors when starting an observation already in progress
+  - add detPowerOff command
+  - modify detInit to initialize correctly signal processing, probe offset 
+    structure, butterworth filters and zero point models
+  - writeZernikes.c: writeWfsToSynchro() do not apply butterworth filter 
+    for focus when output TTF to AO system
+
+V2-3 25 November 2002 CB:
+-------------------------
+  - implement seeing computation according to FR's method
+  - startupCP.vws: change IP address for reggie
+  - back to old version vmeboot code ... because niri is not working with new 
+    version and it makes the switch impossible ...
+  - modify startup*vws to contain GEM8.4
+
+V2-4 04 February 2003 CB:
+-------------------------
+  - fix the astigmatism zero point model after rotation
+    if (FX=FY) CompositeAngle = CR + M1 + PA
+    else
+               CompositeAngle = M1 + PA - CR
+  - implement the new law for aO
+  - handle headTemp SIR record according to the site
+  - modify local.vws to handle the new server tyl in Gemini North
+ 
+V2-5 22 January 2004 CB:
+------------------------
+  - modify local.vws to handle the new server for astrodata
+  - update vme-39.asm code to version 0.33 and the boot code to version V3-09
+    (now SDSU VME board hardware identical to OIWFS NIRI SDSU VME board)
+    and also comment out in detObserveEnd error messages when frame status is
+    faulty
+
+V2-6 10 February 2004 CB:
+-------------------------
+  - read default gains from .dat file when pressing the default button
+  - set default of the detSigModeSeq CAD from pv load file (one per site)
+  - startup: increase stack size for tasks: recD, p2:detControlD and wfsControlD
+  - update internal parameters when the GMOS port change detPortGet()
+
+V2-7 May 2005 AA:
+----------------------
+
+1) Going back to DSP code of V2-4, while V2-6 is fixed
+vmeboot.asm v3.09a (V3.05 at GN in oi V2-4)
+vmehead.asm v3.09 (V3.05 at GN in oi V2-4)
+vme-39.asm v0.3
+
+2) Updating
+oiwfsGmosInstall
+IMP_StartupCP.oiwfs
+IMP_StartupMK.oiwfs (with 15 seconds pulse connection)
+startup/startupCP.vws
+src/epToVxLib.c (WARNING message for Unsync Error)
+par/defXXXCtrlOiGmosCP.dat: Updated default FG gains & fixed port 3 values
+par/defAoModOiGmosCP.dat: Fixed offsets  for astigmatism 0 and 45 
+par/defDetContOiGmosCP.dat: Fixed ADC values
+par/100Hz.fits: added
+par/10Hz.fits: added
+par/200Hz.fits: added
+par/50Hz.fits: added
+src/wfsDb.c: Updated default FG gains; Updated I par in ClosedLoopMode
+
+V2-8 AUG 2005 AA:
+----------------------
+  * set default of the detSigModeSeqDark CAD from pv load file 
+    - src/OiGmosSetDefCommandCP.pv updated
+    - src/OiGmosSetDefCommandMK.pv updated
+    - capfats/wfsGensub1.sch modified
+    - adl/detSigModeSeqDark.adl
+    - src/detControl.*: Added new functions
+
+  * removed wfsGetPort call (not used)
+
+----------------------------------------------------------------------
+V2-8 GS 12/Nov/12
+Created branch from V2-8 for Gemini South
+----------------------------------------------------------------------
+
+RELEASE.NOTES.GS
+    Copy of the file to keep track of GS changes (PG)
+
+par/defDetContOiGmosCP.dat
+    Updated ADC offsets to match version in use at the telescope (PG)
+
+src/OiGmosSetDefCommandCP.pv
+    Updated initSigModeSeqDark.E to 3 to match version in use at the telescope
+

@@ -36,7 +36,7 @@ int $(top)$(wfs)initSigModeSeqDark.A = 100 ;
 string $(top)$(wfs)initSigModeSeqDark.B = "./data" ;
 string $(top)$(wfs)initSigModeSeqDark.C = "coadd.fits";
 int $(top)$(wfs)initSigModeSeqDark.D = 100 ;
-double $(top)$(wfs)initSigModeSeqDark.E = 2.5 ;
+double $(top)$(wfs)initSigModeSeqDark.E = 3 ;
 };
 
 
