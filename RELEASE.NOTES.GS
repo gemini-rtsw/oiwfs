@@ -170,3 +170,6 @@ src/OiGmosSetDefCommandCP.pv
 
 startup/startupCP.vws
     Updated DHS server
+
+IMP_StartupCP.oiwfs
+    Commented out line 'Pulse...'
