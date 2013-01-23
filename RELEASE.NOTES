@@ -197,15 +197,14 @@ wfs_switch dm screen copied from prm & different according to site
 - oiwfsGmosInstall 
 
 ---------------------------------------------------------------------------
-	Code moved from CVS to SVN
-	V2-11 & V2-12 are dead version because they were never installed
-	and tested in production. The tags were preserved in SVN.
+    Code moved from CVS to SVN
+    V2-11 & V2-12 are dead version because they were never installed
+    and tested in production. The tags were preserved in SVN.
 
-	Old trunk was moved to tags/trunk-from-cvs
-	tags/V2-10 mas copied to trunk
-	Added runtime file changes made to configuration files at MK & CP
-	(mostly MK)
-	New version tagged as V2-13 -> V2-10 + run time version changes
+    Old trunk was moved to tags/trunk-from-cvs
+    tags/V2-10 mas copied to trunk
+    Added runtime file changes made to configuration files at MK & CP (mostly MK)
+    New version tagged as V2-13 -> V2-10 + run time version changes
 ---------------------------------------------------------------------------
 
 par/defFullPoOiGmosMK.dat
@@ -218,4 +217,17 @@ src/OiGmosSetDefCommandMK.pv
 src/OiGmosSetDefCommandCP.pv
     Added "int $(top)$(wfs)initSigInitPo.PROC=1;" and
     int $(top)prmStatus.PROC = 1;
+
+---------------------------------------
+	V2-14 JAN 2013 PG
+---------------------------------------
+
+startup.vws
+startupMK.vws
+IMP_Startup.oiwfs
+IMP_StartupMK.oiwfs
+    Changed DHS server from archie to mkodhs2
+
+detControl.c
+    Added Thermistor status to Health status (REL-851)
 
