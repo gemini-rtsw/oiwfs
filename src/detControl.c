@@ -15828,6 +15828,7 @@ STATUS detHeadTempGet
              ERROR)
          {
             ERROR_LOG ("Failed to read thermistor 1 temperature parameter");
+	    epToVxSetHealth ("dc", "BAD");
             return (ERROR);
          }
          else
@@ -15839,6 +15840,7 @@ STATUS detHeadTempGet
              == ERROR)
          {
             ERROR_LOG ("Failed to read thermistor 2 temperature parameter");
+	    epToVxSetHealth ("dc", "BAD");
             return (ERROR);
          }
          else
