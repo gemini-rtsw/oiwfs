@@ -153,3 +153,25 @@ V2-8 AUG 2005 AA:
     - src/detControl.*: Added new functions
 
   * removed wfsGetPort call (not used)
+
+---------------------------------------
+        V2-9-GS JAN 2013 PG
+---------------------------------------
+
+defDetContOiGmosCP.dat
+    Updated ADC offsets in use at the telescope
+OiGmosSetDefCommandCP.pv
+    Updated initSigModeSeqDark.E from 2.5 t0 3.0
+
+startupCP.vws
+    Changed DHS server from jughead to cpodhs04
+
+IMP_Startup.oiwfs
+IMP_Startup.sim4
+IMP_StartupCP.oiwfs
+IMP_StartupMK.oiwfs
+    Commented out 'Pulse connections' line
+
+detControl.c
+    Added Thermistor status to Health status (REL-851)
+
