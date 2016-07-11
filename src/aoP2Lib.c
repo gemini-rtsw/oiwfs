@@ -4632,7 +4632,7 @@ STATUS aoCentroidsCompute (
                   pMin = pImage + ((i-1)*aoCcdId->xPixels) +
                          (l*aoCcdId->xRaster) +
                          (k * aoCcdId->xPixels * aoCcdId->yRaster);
-                  pMax = pMin + aoCcdId->xRaster;
+                  pMax = pMin + (aoCcdId->xRaster-1);
 
                   for ( pi = pMin ; pi < pMax ; pi ++)
                   {
@@ -9264,7 +9264,7 @@ STATUS aoThresholdPerSubapCompute (
                   pMin = pImage + ((i-1)*aoCcdId->xPixels) +
                          (l*aoCcdId->xRaster) +
                          (k * aoCcdId->xPixels * aoCcdId->yRaster);
-                  pMax = pMin + aoCcdId->xRaster;
+                  pMax = pMin + (aoCcdId->xRaster-1);
 
                   for ( pi = pMin ; pi < pMax ; pi ++)
                       *(pn ++) = *pi;
