@@ -107,7 +107,7 @@ iocInit ("$(version)/data/resource.def")
 
 # Configure the initial state of the system
 #dbpf "pwfs2:dc:initialising.VAL","2"
-pvload "$(version)/data/pwfs2CP.pv","top=oiwfs:, sadtop=oiwfs:, wfs=dc:"
+pvload "$(version)/data/pwfs2CP.pv","top=gmoi:, sadtop=gmoi:, wfs=dc:"
 
 # Initialise the database records not initialised by iocInit.
 epToVxCaInitRecords ()
@@ -143,8 +143,8 @@ taskSpawn ("wfsControl",     100, 0x8, 6000,  wfsControl)
 taskDelay(5 * sysClkRateGet())
 
 # Spawn CAR Daemon tasks
-taskSpawn ("p2:detControlD", 98, 0x8, 10000, epToVxCarDaemon, "oiwfs:dc:detC")
-taskSpawn ("wfsControlD",    98, 0x8, 10000, epToVxCarDaemon, "oiwfs:controlC")
+taskSpawn ("p2:detControlD", 98, 0x8, 10000, epToVxCarDaemon, "gmoi:dc:detC")
+taskSpawn ("wfsControlD",    98, 0x8, 10000, epToVxCarDaemon, "gmoi:controlC")
 
 # Spawn CPU-resource monitoring task
 taskSpawn ("wfsResMonitor", 255, 0x8, 4000, wfsResourceMonitor, 10000000, 200000)
@@ -153,9 +153,9 @@ taskSpawn ("wfsResMonitor", 255, 0x8, 4000, wfsResourceMonitor, 10000000, 200000
 *0xfd050128 &= 0xffffbfff
 
 # More database initializations
-pvload "$(version)/data/OiGmosSetDefCommandCP.pv","top=oiwfs:, wfs=dc:"
+pvload "$(version)/data/OiGmosSetDefCommandCP.pv","top=gmoi:, wfs=dc:"
 
 # Start sequences
-seq &timeSeq, "sys=oiwfs:"
+seq &timeSeq, "sys=gmoi:"
 
 # End of standalone startup
