@@ -33,7 +33,7 @@
 /* defines */
 
 #ifndef   TOP
-#define   TOP   "oiwfs:"       /* Top level prefix for all EPICS record names */
+#define   TOP   "gmoi:"       /* Top level prefix for all EPICS record names */
 #endif   
 
    /*
