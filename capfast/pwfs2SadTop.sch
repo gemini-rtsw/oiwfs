@@ -7,8 +7,8 @@ s -832 2144 500 0 Gemini A&G Peripheral Wavefront Sensing 2 System
 [cell use]
 use pwfs2Sad 64 1095 100 0 pwfs2Sad#15
 xform 0 544 1296
-p 64 1072 100 0 1 set1:top oiwfs:
-p 64 1040 100 0 1 set2:sadtop oiwfs:
+p 64 1072 100 0 1 set1:top gmoi:
+p 64 1040 100 0 1 set2:sadtop gmoi:
 use bc200tr -1024 -104 -100 0 frame
 xform 0 656 1200
 p 1552 64 100 0 1 author:S.M.Beard

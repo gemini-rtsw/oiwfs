@@ -7,8 +7,8 @@ s 1488 80 500 512 pwfs2Top.sch
 [cell use]
 use pwfs2 64 1063 100 0 pwfs2#14
 xform 0 512 1360
-p 288 1040 100 0 1 set1:top oiwfs:
-p 288 1008 100 0 1 set2:sadtop oiwfs:
+p 288 1040 100 0 1 set1:top gmoi:
+p 288 1008 100 0 1 set2:sadtop gmoi:
 use bc200tr -1024 -104 -100 0 frame
 xform 0 656 1200
 p 1552 64 100 0 1 author:S.M.Beard
