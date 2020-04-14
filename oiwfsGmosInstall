@@ -52,6 +52,6 @@ cd startup
 editUAE
 cd ..
 
-gmake >> oiwfsGmosBuild.log 2>&1
+# gmake >> oiwfsGmosBuild.log 2>&1
 
 exit 0
