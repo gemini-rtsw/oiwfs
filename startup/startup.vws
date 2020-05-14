@@ -162,6 +162,6 @@ seq &timeSeq, "sys=oiwfs:"
 
 
 taskDelay(1 * sysClkRateGet())
-taskSpawn("autoPath", 100, 0, 6000, autoPath)
+taskSpawn("autoPath", 100, 0, 5000, autoPath)
 
 # End of standalone startup
