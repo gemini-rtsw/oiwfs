@@ -231,3 +231,8 @@ IMP_StartupMK.oiwfs
 detControl.c
     Added Thermistor status to Health status (REL-851)
 
+---------------------------------------
+	V2-15 MAY 2020 TC
+---------------------------------------
+
+Changed path to save CB's and readout fits files.
