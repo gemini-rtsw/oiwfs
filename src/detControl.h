@@ -456,7 +456,7 @@
                                     /* Name of the directory containing par   */
                                     /* files.                                 */
 
-#define   DET_CONTROL_DATA_FILE_PATH          "/gemdata/ioc_data/gmosoi"
+#define   DET_CONTROL_DATA_FILE_PATH          "/gemdata/ioc_data"
                                     /* Define the default directory to contain*/
                                     /* engineering data files.                */
 
