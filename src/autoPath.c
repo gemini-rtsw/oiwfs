@@ -81,7 +81,7 @@ STATUS autoPath () {
       now = time(NULL);
       tmnow = gmtime(&now);
 
-      sprintf(ioc_path, "%s/%d%s%d", DET_CONTROL_DATA_FILE_PATH,
+      sprintf(ioc_path, "%s/gmosoi/%d%s%d", DET_CONTROL_DATA_FILE_PATH,
          1900 + tmnow->tm_year, (char *)mdaytomonth[tmnow->tm_mon], tmnow->tm_mday);
 
       printf("autoPath: Creating IOC path: \"%s\".\n", ioc_path);
