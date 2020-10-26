@@ -167,4 +167,8 @@ pvload "$(version)/data/OiGmosSetDefCommandCP.pv","top=oiwfs:, wfs=dc:"
 # Start sequences
 seq &timeSeq, "sys=oiwfs:"
 
+# Spawn autoPath task to autocreate paths for CB's and wfs readout.
+taskDelay(1 * sysClkRateGet())
+taskSpawn("autoPath", 100, 0, 5000, autoPath)
+
 # End of standalone startup
