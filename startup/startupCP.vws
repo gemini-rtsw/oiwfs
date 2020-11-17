@@ -23,6 +23,11 @@ pwd
 
 hostAdd ("jughead","172.17.2.14")
 
+# Hawaii:
+# putenv("TIMEZONE=hawaii::600:000000:000000")
+# Chile:
+putenv("TIMEZONE=chile::180:040402:090602")
+
 ld < /gemini/external/GEM8.4/base/bin/$(arch)/iocCore
 ld < /gemini/external/GEM8.4/base/bin/$(arch)/seq
 ld < /gemini/external/GEM8.4/extensions/bin/$(arch)/pvload
@@ -58,6 +63,7 @@ ld < $(version)/bin/$(arch)/wfsControl
 ld < $(version)/bin/$(arch)/wfsResourceMonitor
 ld < $(version)/bin/$(arch)/simpleLog
 ld < $(version)/bin/$(arch)/fpscr
+ld < $(version)/bin/$(arch)/autoPath
 
 # Load test harness library if required
 ld < $(version)/bin/$(arch)/testKit
