@@ -38,15 +38,16 @@ LIBSRCS.c	= \
 
 APPLSRCS.c	= \
 	../drvVmi5588.c \
+	../wfsDb.c \
 	../detControl.c \
 	../simpleLog.c \
 	../wfsControl.c \
-	../wfsDb.c \
 	../wfsResourceMonitor.c \
 	../wfsSite.c \
 	../testKit.c \
 	../sdsuRead.c \
-	../fpscr.c
+	../fpscr.c \
+	../autoPath.c
 
 SRCS.c	= $(LIBSRCS.c) $(APPLSRCS.c)
 
@@ -73,6 +74,7 @@ LIBNAME	= wfsLibraries
 INC	= \
 	./cicsLib.h \
 	./dbTypes.h \
+	./wfsDb.h \
 	./detControl.h \
 	./epToVxLib.h \
 	./errorLib.h \
@@ -84,7 +86,6 @@ INC	= \
 	./sysextMemMap.h \
 	./timeoutLib.h \
 	./vmi5588.h \
-	./wfsDb.h \
 	./wfsLib.h \
 	./wfsSite.h \
 	./wfsControl.h \

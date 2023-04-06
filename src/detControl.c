@@ -136,6 +136,8 @@ static struct {void *v; char *c;} rcsid = {&rcsid,
 #include <timers.h>
 #include <float.h>
 #include <math.h>
+#include <tickLib.h>
+#include <sys/stat.h>
 #include <selectLib.h>
 #include <sirRecord.h>
 #include "menuCarstates.h"
@@ -294,6 +296,14 @@ extern PO_SCALE_ID poScaleId;      /* Pointer to probe offset scale factor    */
 extern long optsensorEnable;       /* Optical sensor state (GUIDE|DONT_GUIDE) */
                                    /* defined in writeZernikes.c              */
 
+extern char ioc_path[EPICS_MAX_BYTES_STRING_ATTRIB];            /* Path to where to write images, cb's  */
+extern char test_ioc[EPICS_MAX_BYTES_STRING_ATTRIB];            /* Path to where to write images, cb's  */
+extern int snprintf(char *str, size_t count, const char *fmt, ...);
+
+/* Note that EPICS_MAX_BYTES_STRING_ATTRIB == 40, and the current path is at 32 chars */
+
+extern char epToVxTopName[];                                    /* Name of pwfs                         */
+
 /******************************************************* External functions ***/
 
 extern void ImpMaster ();
@@ -303,6 +313,8 @@ extern void ImpMaster ();
 STATUS detReadDefaultDspCcdGeometry (SDSU_ID sdsuId, AO_CCD_ID aoCcdId);
 
 STATUS detSetDefaultDspCcdGeometry (SDSU_ID sdsuId, AO_CCD_ID aoCcdId);
+
+STATUS autoPath_createDir ();
 
 LOCAL uint32   detChop  (CAD_CMD_CONTEXT cadCmdContext, int commandNumber,
                          SDSU_ID sdsuId, OBS_ID obsId);
@@ -2372,6 +2384,11 @@ STATUS   detControl
 
          else if (commandNumber == DET_CONTROL_CMD_SIG_SAVE_CB)
          {
+         /*printf ("in detControl.c, line 2387\n");
+         printf("iin DET_CONTROL_CMD_SIG_SAVE_CB calling autoPath_createDir\n");
+         autoPath_createDir();
+         printf("in detControl.c, line 2390 detControl: IOC path: \"%s\".\n", ioc_path);
+	 */
 
             /* Init parameters for saving circular buffers */
 
@@ -19473,6 +19490,8 @@ uint32 detSigModeTotal
  *-
  */
 
+extern char *   getAttribSourceAddrs (CAD_CONTEXT pContext, char * pCmdPacket, uint32 attribNumber, uint32 defaultMask);
+
 uint32 detSigSaveCb
    (
    CAD_CMD_CONTEXT cadCmdContext,   /* CAD command context structure.         */
@@ -19487,6 +19506,8 @@ uint32 detSigSaveCb
    long         saveCbFgCtrlFlag; /* Save FG control circular buffer flag.    */
    char         pFilePath [EPICS_MAX_BYTES_STRING_ATTRIB + 1];
                                 /* Path name for circular buffer.             */
+   uint32       defaultMask;
+   char *CmdPacket;
 
    /*
     * Initialise the error number and obtain the attributes provided with the
@@ -19501,6 +19522,28 @@ uint32 detSigSaveCb
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 2,
                           (char *) & saveCbFgCtrlFlag);
    EPTOVX_CAD_ATTRIB_GET (cadCmdContext, commandNumber, 3, pFilePath);
+
+   CmdPacket = cadCmdContext->pCmdPacket;
+   #define CMD_PKT_DEFAULT_MASK(context) (* (uint32 *) (int) ((context)->pCmdPacket + 12))
+   #define CMD_PKT_DEFAULT_MASK_1(pCmdPkt) (* (uint32 *) (int) (pCmdPkt + 12))
+   if (CmdPacket == NULL) {
+      /*printf("detControl(19527): CmdPacket is null, using default mask\n"); */
+      defaultMask = CMD_PKT_DEFAULT_MASK(cadCmdContext);
+   }
+   else {
+      printf("detControl(19531): Using provided default mask\n");
+      defaultMask = CMD_PKT_DEFAULT_MASK_1(CmdPacket);
+   }
+   /* printf("detControl(19534): And the value we got is: '%s'\n", pFilePath); */
+   #undef CMD_PKT_DEFAULT_MASK
+   #undef CMD_PKT_DEFAULT_MASK_1
+
+   if ((defaultMask & (1 << 3)) == 0) {
+     printf("Default mask unset for pFilePath\n");
+   }
+   else {
+     printf("Default mask set for pFilePath\n");
+   }
 
    /*
     * Check there are valid SDSU and observation context structures.
@@ -24916,5 +24959,69 @@ STATUS detPortGet
 #endif
 
    return (OK) ;
+}
+
+/*+
+ *   MODULE NAME:
+ *   autoPath_createSDir
+ *IOC
+ *   FILENAME:
+ *   autoPath.c
+ *
+ *   PURPOSE:
+ *   Wavefront sensor task application code
+ *
+ *   DESCRIPTION:
+ *   This file contains the function "autoPath", which is started from
+ *   the command line (i.e., startup script) to watch for UTC midnight and
+ *   create a default directory and default paths for writing fits files
+ *   and circular buffers.
+ *
+ *   INCLUDE FILES:
+ *   None
+ *
+ *   DEFICIENCIES:
+ *   Never
+ *
+ *   ORIGINAL AUTHOR:
+ *   TCC
+ *
+ *   MODIFIED BY:
+ *   TCC
+ *
+ * INDENT-OFF*
+ *
+ *INDENT-ON*
+ *-
+ */
+STATUS autoPath_createDir () {
+   struct tm *tmutc;    /* UTC tm struct */
+   time_t now;
+   int offset;
+   struct stat sb;
+   char *site = getenv("SITE");
+
+
+      printf("autoPath: Creating IOC path: \"%s\".\n", ioc_path);
+
+
+      /*
+       * Attempt to create the directory. On failure, wait 10 minutes and try again
+       * just in case there's a transient error on nfs.
+       */
+
+      if (stat(ioc_path, &sb) == ERROR) {       /* Should fail as it hasn't been created yet */
+         if (mkdir(ioc_path) == ERROR) {
+            printf("autoPath: Failed to create directory \"%s\".\n", ioc_path);
+            taskDelay(10 * 60 * sysClkRateGet());
+         }
+      }
+      else {
+         printf("autoPath: Directory \"%s\" already exists.\n", ioc_path);
+      }
+
+   MESSAGE_LOG(MSG_WARNING, "autoPath task exited.");
+
+   return (OK);
 }
 
