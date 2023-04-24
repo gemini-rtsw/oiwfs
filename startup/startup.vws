@@ -160,3 +160,7 @@ taskSpawn ("wfsResMonitor", 255, 0x8, 4000, wfsResourceMonitor, 10000000, 200000
 seq &timeSeq, "sys=oiwfs:"
 
 # End of standalone startup
+#
+# Set processing mode automatically to sequence closed loop
+dbpf "gmoi:dc:detSigModeSeq.DIR","0"
+dbpf "gmoi:dc:detSigModeSeq.DIR","3"

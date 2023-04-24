@@ -175,3 +175,14 @@ IMP_StartupMK.oiwfs
 detControl.c
     Added Thermistor status to Health status (REL-851)
 
+
+---------------------------------------
+        V3-1-GS April 23 2023
+---------------------------------------
+
+   * REL-4121: f2oi and gmosoi processing mode is not  automatically set to sequence closed loop
+     - startup/startup.vws modified
+   * REL-2469: Update WFS to dump circular buffers in a user owned directory
+     - src/autoPath.c modified
+     - src/detControl.c modified
+     - src/wfsDb.c modified
