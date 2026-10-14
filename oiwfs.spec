@@ -160,6 +160,15 @@ cp -a IMP_Startup.oiwfs $D/ 2>/dev/null || :
 # carrying over here; this guards the next retune.
 %config(noreplace) %{deploy}/data/defDetContOiGmosMK.dat
 %config(noreplace) %{deploy}/data/OiGmosSetDefCommandMK.pv
+# Taking a dark makes the crate (NFS uid 2966) write <rate>Hz.fits and
+# coadd.fits into ./data. On pisces data/ was owned by that uid; here it is
+# root's, so it must be world-writable, and the darks shipped from source are
+# 666 and noreplace so an upgrade never replaces a dark taken on the sky.
+%dir %attr(0777,root,root) %{deploy}/data
+%config(noreplace) %attr(0666,root,root) %{deploy}/data/10Hz.fits
+%config(noreplace) %attr(0666,root,root) %{deploy}/data/50Hz.fits
+%config(noreplace) %attr(0666,root,root) %{deploy}/data/100Hz.fits
+%config(noreplace) %attr(0666,root,root) %{deploy}/data/200Hz.fits
 
 %files devel
 
