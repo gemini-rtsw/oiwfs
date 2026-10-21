@@ -4628,6 +4628,7 @@ STATUS detDhsTaskOpen
    {
       ERROR_SET1 (0, "Failed to spawn dhs task %s\n", 
                   ERROR_LOG_SAVE, dhsName );
+      free (dhsName);
       return (ERROR);
    }
 
