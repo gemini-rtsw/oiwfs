@@ -6804,6 +6804,7 @@ int   epToVxPipeOpen
       {
          ERROR_SET1 (0, "ioctl() execution failed after opening pipe \"%s\"", 
                      ERROR_LOG_SAVE, pPipeName);
+         close (fd);
          return (ERROR);
       }
    }
