@@ -340,6 +340,7 @@ STATUS   simpleLog (
 
             if ( (nByte > 0) && (nByte <= ERROR_LOG_BUFFER_SIZE) )
             {
+               pMsgBuffer [nByte] = '\0';
 
                /*
                 * Log the message to the console. The errorConsoleSem 
@@ -349,7 +350,7 @@ STATUS   simpleLog (
 
                if (semTake (errorConsoleSem, WAIT_FOREVER) != ERROR)
                {
-                  printf (pMsgBuffer);
+                  printf ("%s", pMsgBuffer);
                   semGive (errorConsoleSem);
                }
                else
@@ -369,7 +370,7 @@ STATUS   simpleLog (
 
                if ( logFileEnabled )
                {
-                  fprintf (logFileFp, pMsgBuffer);
+                  fprintf (logFileFp, "%s", pMsgBuffer);
 
                   if ( counter == 0 )
                   {
